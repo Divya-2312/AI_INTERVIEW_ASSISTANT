@@ -1,0 +1,29 @@
+{
+  "input_records": 1800,
+  "valid_records": 1800,
+  "rejected_records": 0,
+  "duplicate_records": 0,
+  "subject_distribution": {
+    "dbms": 600,
+    "hr": 500,
+    "java": 700
+  },
+  "source_distribution": {
+    "dataset_raw": 600,
+    "synthetic_rubric": 1200
+  },
+  "rejected_examples": [],
+  "unique_valid_records": 1800,
+  "split_counts": {
+    "train": 1348,
+    "validation": 180,
+    "test": 272
+  },
+  "distinct_prompt_counts": {
+    "train": 840,
+    "validation": 158,
+    "test": 213,
+    "total": 1211
+  },
+  "random_seed": 42
+}

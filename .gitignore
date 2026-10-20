@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+*/node_modules/
+package-lock.json
+
+# Environment variables & secrets (All .env files strictly excluded)
+.env*
+*.env*
+**/.env*
+peek.py
+peek_output.txt
+scripts/last_verify.txt
+
+# Large model artifacts & weights (exceeds GitHub 100MB limit)
+*.gguf
+*.bin
+*.pt
+*.safetensors
+*.onnx
+ai-service/models/**/*.gguf
+models/**/*.gguf
+
+# Python
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Frontend build outputs
+frontend/dist/
+frontend/build/
+dist/
+build/
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+outputs/
+temp/
+tmp/
+.DS_Store
+Thumbs.db

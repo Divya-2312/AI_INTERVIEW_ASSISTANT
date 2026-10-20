@@ -1,0 +1,16 @@
+{
+  "input_records": 1200,
+  "unique_records": 1200,
+  "duplicate_records": 0,
+  "task_distribution": {
+    "evaluate_answer": 600,
+    "generate_coding_problem": 200,
+    "generate_question": 400
+  },
+  "source_distribution": {
+    "dataset_raw": 600,
+    "synthetic_rubric": 600
+  },
+  "invalid_records": 0,
+  "files_processed": 6
+}

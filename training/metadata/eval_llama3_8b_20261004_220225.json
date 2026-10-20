@@ -1,0 +1,24 @@
+{
+  "model": "llama3:8b",
+  "timestamp": "2026-10-04T22:02:25.581186",
+  "total_samples": 15,
+  "json_valid_count": 15,
+  "json_valid_rate": 1.0,
+  "required_keys_valid_count": 0,
+  "required_keys_valid_rate": 0.0,
+  "evaluate_answer_analysis": {
+    "eval_samples_n": 9,
+    "band_accuracy_pct": 66.67,
+    "ordering_questions_n": 0,
+    "ordering_accuracy_pct": 0.0
+  },
+  "per_task": {
+    "evaluate_answer": {
+      "count": 15,
+      "json_valid_count": 15,
+      "json_valid_rate": 1.0,
+      "required_keys_valid_count": 0,
+      "required_keys_valid_rate": 0.0
+    }
+  }
+}

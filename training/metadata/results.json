@@ -1,0 +1,1140 @@
+{
+  "mockmate-llama-ft": {
+    "model": "mockmate-llama-ft",
+    "timestamp": "2026-10-16T23:45:48.533403",
+    "java_complexity": {
+      "total_programs": 30,
+      "exact_accuracy_pct": 0.0,
+      "within_one_class_accuracy_pct": 0.0,
+      "json_validity_rate_pct": 0.0,
+      "average_latency_sec": 3.879,
+      "per_class_accuracy": {
+        "O(1)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        },
+        "O(log N)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        },
+        "O(N)": {
+          "correct": 0,
+          "total": 5,
+          "accuracy_pct": 0.0
+        },
+        "O(N log N)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        },
+        "O(N^2)": {
+          "correct": 0,
+          "total": 5,
+          "accuracy_pct": 0.0
+        },
+        "O(N^3)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        },
+        "O(2^N)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        }
+      },
+      "details": [
+        {
+          "id": "real-comp-001",
+          "title": "First and Last Element Sum",
+          "true_time": "O(1)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.893
+        },
+        {
+          "id": "real-comp-002",
+          "title": "Bitwise Parity Check",
+          "true_time": "O(1)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.911
+        },
+        {
+          "id": "real-comp-003",
+          "title": "Arithmetic Series Sum Formula",
+          "true_time": "O(1)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.529
+        },
+        {
+          "id": "real-comp-004",
+          "title": "Matrix Center Coordinate Lookup",
+          "true_time": "O(1)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.944
+        },
+        {
+          "id": "real-comp-005",
+          "title": "Classic Binary Search",
+          "true_time": "O(log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.488
+        },
+        {
+          "id": "real-comp-006",
+          "title": "Integer Square Root via Binary Search",
+          "true_time": "O(log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 2.755
+        },
+        {
+          "id": "real-comp-007",
+          "title": "Repeated Division Power of Two Check",
+          "true_time": "O(log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.274
+        },
+        {
+          "id": "real-comp-008",
+          "title": "Recursive Binary Search with Helper",
+          "true_time": "O(log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 2.652
+        },
+        {
+          "id": "real-comp-009",
+          "title": "Array Maximum Finder",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.565
+        },
+        {
+          "id": "real-comp-010",
+          "title": "Two-Pointer String Palindrome Verification",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.111
+        },
+        {
+          "id": "real-comp-011",
+          "title": "Frequency Map using HashMap",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.497
+        },
+        {
+          "id": "real-comp-012",
+          "title": "Java Stream Filter and Sum",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.827
+        },
+        {
+          "id": "real-comp-013",
+          "title": "Linear Recursive Array Sum",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.436
+        },
+        {
+          "id": "real-comp-014",
+          "title": "Sorting Followed by Two-Pointer Target Search",
+          "true_time": "O(N log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.444
+        },
+        {
+          "id": "real-comp-015",
+          "title": "Merge Sort Divide and Conquer",
+          "true_time": "O(N log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.313
+        },
+        {
+          "id": "real-comp-016",
+          "title": "PriorityQueue Top-K Frequent Heap",
+          "true_time": "O(N log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.104
+        },
+        {
+          "id": "real-comp-017",
+          "title": "Interval Sorting and Overlap Merging",
+          "true_time": "O(N log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.881
+        },
+        {
+          "id": "real-comp-018",
+          "title": "All Pairs Nested For-Loops",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.19
+        },
+        {
+          "id": "real-comp-019",
+          "title": "Selection Sort Brute Force",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.638
+        },
+        {
+          "id": "real-comp-020",
+          "title": "Nested While-Loops Comparison",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.911
+        },
+        {
+          "id": "real-comp-021",
+          "title": "Loop with Linear Helper Method",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.921
+        },
+        {
+          "id": "real-comp-022",
+          "title": "2D Matrix Diagonal Sweep",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.054
+        },
+        {
+          "id": "real-comp-023",
+          "title": "Three Sum Brute Force",
+          "true_time": "O(N^3)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.539
+        },
+        {
+          "id": "real-comp-024",
+          "title": "Square Matrix Multiplication",
+          "true_time": "O(N^3)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.597
+        },
+        {
+          "id": "real-comp-025",
+          "title": "Triple While-Loops 3D Coordinate Grid Sweep",
+          "true_time": "O(N^3)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.766
+        },
+        {
+          "id": "real-comp-026",
+          "title": "Double Loop with Linear Search Helper",
+          "true_time": "O(N^3)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.82
+        },
+        {
+          "id": "real-comp-027",
+          "title": "Recursive Fibonacci without Memoization",
+          "true_time": "O(2^N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.391
+        },
+        {
+          "id": "real-comp-028",
+          "title": "Recursive Power Set Subsets Generation",
+          "true_time": "O(2^N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 6.244
+        },
+        {
+          "id": "real-comp-029",
+          "title": "Recursive 0/1 Knapsack without Memoization",
+          "true_time": "O(2^N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.419
+        },
+        {
+          "id": "real-comp-030",
+          "title": "Recursive Combination Sum with Binary Choices",
+          "true_time": "O(2^N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.266
+        }
+      ]
+    },
+    "hr_evaluation": {
+      "total_answers": 30,
+      "score_mae_points": 10.97,
+      "spearman_correlation": 0.9215,
+      "json_validity_rate_pct": 100.0,
+      "average_latency_sec": 4.073,
+      "details": [
+        {
+          "id": "real-hr-001",
+          "category": "Conflict Resolution",
+          "human_score": 94.0,
+          "pred_score": 82.0,
+          "abs_error": 12.0,
+          "latency": 4.251
+        },
+        {
+          "id": "real-hr-002",
+          "category": "Tight Deadlines",
+          "human_score": 92.0,
+          "pred_score": 85.0,
+          "abs_error": 7.0,
+          "latency": 4.252
+        },
+        {
+          "id": "real-hr-003",
+          "category": "Handling Failure",
+          "human_score": 95.0,
+          "pred_score": 82.0,
+          "abs_error": 13.0,
+          "latency": 4.278
+        },
+        {
+          "id": "real-hr-004",
+          "category": "Mentorship",
+          "human_score": 91.0,
+          "pred_score": 82.0,
+          "abs_error": 9.0,
+          "latency": 4.121
+        },
+        {
+          "id": "real-hr-005",
+          "category": "Ownership & Initiative",
+          "human_score": 93.0,
+          "pred_score": 82.0,
+          "abs_error": 11.0,
+          "latency": 4.12
+        },
+        {
+          "id": "real-hr-006",
+          "category": "Adapting to Change",
+          "human_score": 90.0,
+          "pred_score": 85.0,
+          "abs_error": 5.0,
+          "latency": 4.621
+        },
+        {
+          "id": "real-hr-007",
+          "category": "Stakeholder Management",
+          "human_score": 92.0,
+          "pred_score": 82.0,
+          "abs_error": 10.0,
+          "latency": 4.436
+        },
+        {
+          "id": "real-hr-008",
+          "category": "Prioritizing Tech Debt",
+          "human_score": 89.0,
+          "pred_score": 82.0,
+          "abs_error": 7.0,
+          "latency": 4.245
+        },
+        {
+          "id": "real-hr-009",
+          "category": "Ethical Dilemma",
+          "human_score": 93.0,
+          "pred_score": 82.0,
+          "abs_error": 11.0,
+          "latency": 4.224
+        },
+        {
+          "id": "real-hr-010",
+          "category": "Working in Distributed Teams",
+          "human_score": 91.0,
+          "pred_score": 82.0,
+          "abs_error": 9.0,
+          "latency": 5.256
+        },
+        {
+          "id": "real-hr-011",
+          "category": "Conflict Resolution",
+          "human_score": 62.0,
+          "pred_score": 67.0,
+          "abs_error": 5.0,
+          "latency": 3.773
+        },
+        {
+          "id": "real-hr-012",
+          "category": "Tight Deadlines",
+          "human_score": 58.0,
+          "pred_score": 67.0,
+          "abs_error": 9.0,
+          "latency": 4.182
+        },
+        {
+          "id": "real-hr-013",
+          "category": "Handling Failure",
+          "human_score": 55.0,
+          "pred_score": 67.0,
+          "abs_error": 12.0,
+          "latency": 3.929
+        },
+        {
+          "id": "real-hr-014",
+          "category": "Mentorship",
+          "human_score": 52.0,
+          "pred_score": 67.0,
+          "abs_error": 15.0,
+          "latency": 4.086
+        },
+        {
+          "id": "real-hr-015",
+          "category": "Ownership & Initiative",
+          "human_score": 64.0,
+          "pred_score": 67.0,
+          "abs_error": 3.0,
+          "latency": 3.508
+        },
+        {
+          "id": "real-hr-016",
+          "category": "Adapting to Change",
+          "human_score": 57.0,
+          "pred_score": 67.0,
+          "abs_error": 10.0,
+          "latency": 3.829
+        },
+        {
+          "id": "real-hr-017",
+          "category": "Stakeholder Management",
+          "human_score": 50.0,
+          "pred_score": 38.0,
+          "abs_error": 12.0,
+          "latency": 4.121
+        },
+        {
+          "id": "real-hr-018",
+          "category": "Prioritizing Tech Debt",
+          "human_score": 53.0,
+          "pred_score": 38.0,
+          "abs_error": 15.0,
+          "latency": 4.167
+        },
+        {
+          "id": "real-hr-019",
+          "category": "Ethical Dilemma",
+          "human_score": 56.0,
+          "pred_score": 67.0,
+          "abs_error": 11.0,
+          "latency": 4.379
+        },
+        {
+          "id": "real-hr-020",
+          "category": "Working in Distributed Teams",
+          "human_score": 54.0,
+          "pred_score": 55.0,
+          "abs_error": 1.0,
+          "latency": 4.17
+        },
+        {
+          "id": "real-hr-021",
+          "category": "Conflict Resolution",
+          "human_score": 25.0,
+          "pred_score": 16.0,
+          "abs_error": 9.0,
+          "latency": 4.563
+        },
+        {
+          "id": "real-hr-022",
+          "category": "Tight Deadlines",
+          "human_score": 30.0,
+          "pred_score": 43.0,
+          "abs_error": 13.0,
+          "latency": 3.898
+        },
+        {
+          "id": "real-hr-023",
+          "category": "Handling Failure",
+          "human_score": 20.0,
+          "pred_score": 67.0,
+          "abs_error": 47.0,
+          "latency": 4.284
+        },
+        {
+          "id": "real-hr-024",
+          "category": "Mentorship",
+          "human_score": 32.0,
+          "pred_score": 16.0,
+          "abs_error": 16.0,
+          "latency": 3.947
+        },
+        {
+          "id": "real-hr-025",
+          "category": "Ownership & Initiative",
+          "human_score": 28.0,
+          "pred_score": 26.0,
+          "abs_error": 2.0,
+          "latency": 3.432
+        },
+        {
+          "id": "real-hr-026",
+          "category": "Conflict Resolution",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.803
+        },
+        {
+          "id": "real-hr-027",
+          "category": "Tight Deadlines",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.553
+        },
+        {
+          "id": "real-hr-028",
+          "category": "Handling Failure",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.402
+        },
+        {
+          "id": "real-hr-029",
+          "category": "Mentorship",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 4.058
+        },
+        {
+          "id": "real-hr-030",
+          "category": "Adapting to Change",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.298
+        }
+      ]
+    }
+  },
+  "llama3.2:3b": {
+    "model": "llama3.2:3b",
+    "timestamp": "2026-10-16T23:49:54.479763",
+    "java_complexity": {
+      "total_programs": 30,
+      "exact_accuracy_pct": 0.0,
+      "within_one_class_accuracy_pct": 0.0,
+      "json_validity_rate_pct": 0.0,
+      "average_latency_sec": 4.263,
+      "per_class_accuracy": {
+        "O(1)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        },
+        "O(log N)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        },
+        "O(N)": {
+          "correct": 0,
+          "total": 5,
+          "accuracy_pct": 0.0
+        },
+        "O(N log N)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        },
+        "O(N^2)": {
+          "correct": 0,
+          "total": 5,
+          "accuracy_pct": 0.0
+        },
+        "O(N^3)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        },
+        "O(2^N)": {
+          "correct": 0,
+          "total": 4,
+          "accuracy_pct": 0.0
+        }
+      },
+      "details": [
+        {
+          "id": "real-comp-001",
+          "title": "First and Last Element Sum",
+          "true_time": "O(1)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 13.564
+        },
+        {
+          "id": "real-comp-002",
+          "title": "Bitwise Parity Check",
+          "true_time": "O(1)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.571
+        },
+        {
+          "id": "real-comp-003",
+          "title": "Arithmetic Series Sum Formula",
+          "true_time": "O(1)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.636
+        },
+        {
+          "id": "real-comp-004",
+          "title": "Matrix Center Coordinate Lookup",
+          "true_time": "O(1)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.776
+        },
+        {
+          "id": "real-comp-005",
+          "title": "Classic Binary Search",
+          "true_time": "O(log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.8
+        },
+        {
+          "id": "real-comp-006",
+          "title": "Integer Square Root via Binary Search",
+          "true_time": "O(log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.573
+        },
+        {
+          "id": "real-comp-007",
+          "title": "Repeated Division Power of Two Check",
+          "true_time": "O(log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.519
+        },
+        {
+          "id": "real-comp-008",
+          "title": "Recursive Binary Search with Helper",
+          "true_time": "O(log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.712
+        },
+        {
+          "id": "real-comp-009",
+          "title": "Array Maximum Finder",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.521
+        },
+        {
+          "id": "real-comp-010",
+          "title": "Two-Pointer String Palindrome Verification",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.25
+        },
+        {
+          "id": "real-comp-011",
+          "title": "Frequency Map using HashMap",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.553
+        },
+        {
+          "id": "real-comp-012",
+          "title": "Java Stream Filter and Sum",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.29
+        },
+        {
+          "id": "real-comp-013",
+          "title": "Linear Recursive Array Sum",
+          "true_time": "O(N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.439
+        },
+        {
+          "id": "real-comp-014",
+          "title": "Sorting Followed by Two-Pointer Target Search",
+          "true_time": "O(N log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.572
+        },
+        {
+          "id": "real-comp-015",
+          "title": "Merge Sort Divide and Conquer",
+          "true_time": "O(N log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 5.039
+        },
+        {
+          "id": "real-comp-016",
+          "title": "PriorityQueue Top-K Frequent Heap",
+          "true_time": "O(N log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.828
+        },
+        {
+          "id": "real-comp-017",
+          "title": "Interval Sorting and Overlap Merging",
+          "true_time": "O(N log N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.914
+        },
+        {
+          "id": "real-comp-018",
+          "title": "All Pairs Nested For-Loops",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.984
+        },
+        {
+          "id": "real-comp-019",
+          "title": "Selection Sort Brute Force",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 5.439
+        },
+        {
+          "id": "real-comp-020",
+          "title": "Nested While-Loops Comparison",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.733
+        },
+        {
+          "id": "real-comp-021",
+          "title": "Loop with Linear Helper Method",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.99
+        },
+        {
+          "id": "real-comp-022",
+          "title": "2D Matrix Diagonal Sweep",
+          "true_time": "O(N^2)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.688
+        },
+        {
+          "id": "real-comp-023",
+          "title": "Three Sum Brute Force",
+          "true_time": "O(N^3)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.3
+        },
+        {
+          "id": "real-comp-024",
+          "title": "Square Matrix Multiplication",
+          "true_time": "O(N^3)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.883
+        },
+        {
+          "id": "real-comp-025",
+          "title": "Triple While-Loops 3D Coordinate Grid Sweep",
+          "true_time": "O(N^3)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.313
+        },
+        {
+          "id": "real-comp-026",
+          "title": "Double Loop with Linear Search Helper",
+          "true_time": "O(N^3)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.422
+        },
+        {
+          "id": "real-comp-027",
+          "title": "Recursive Fibonacci without Memoization",
+          "true_time": "O(2^N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 3.338
+        },
+        {
+          "id": "real-comp-028",
+          "title": "Recursive Power Set Subsets Generation",
+          "true_time": "O(2^N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.315
+        },
+        {
+          "id": "real-comp-029",
+          "title": "Recursive 0/1 Knapsack without Memoization",
+          "true_time": "O(2^N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.449
+        },
+        {
+          "id": "real-comp-030",
+          "title": "Recursive Combination Sum with Binary Choices",
+          "true_time": "O(2^N)",
+          "pred_time": "UNKNOWN",
+          "exact": false,
+          "within_one": false,
+          "latency": 4.469
+        }
+      ]
+    },
+    "hr_evaluation": {
+      "total_answers": 30,
+      "score_mae_points": 11.4,
+      "spearman_correlation": 0.9269,
+      "json_validity_rate_pct": 96.67,
+      "average_latency_sec": 3.864,
+      "details": [
+        {
+          "id": "real-hr-001",
+          "category": "Conflict Resolution",
+          "human_score": 94.0,
+          "pred_score": 82.0,
+          "abs_error": 12.0,
+          "latency": 3.93
+        },
+        {
+          "id": "real-hr-002",
+          "category": "Tight Deadlines",
+          "human_score": 92.0,
+          "pred_score": 85.0,
+          "abs_error": 7.0,
+          "latency": 4.091
+        },
+        {
+          "id": "real-hr-003",
+          "category": "Handling Failure",
+          "human_score": 95.0,
+          "pred_score": 82.0,
+          "abs_error": 13.0,
+          "latency": 4.209
+        },
+        {
+          "id": "real-hr-004",
+          "category": "Mentorship",
+          "human_score": 91.0,
+          "pred_score": 82.0,
+          "abs_error": 9.0,
+          "latency": 4.025
+        },
+        {
+          "id": "real-hr-005",
+          "category": "Ownership & Initiative",
+          "human_score": 93.0,
+          "pred_score": 82.0,
+          "abs_error": 11.0,
+          "latency": 4.294
+        },
+        {
+          "id": "real-hr-006",
+          "category": "Adapting to Change",
+          "human_score": 90.0,
+          "pred_score": 82.0,
+          "abs_error": 8.0,
+          "latency": 4.029
+        },
+        {
+          "id": "real-hr-007",
+          "category": "Stakeholder Management",
+          "human_score": 92.0,
+          "pred_score": 82.0,
+          "abs_error": 10.0,
+          "latency": 4.093
+        },
+        {
+          "id": "real-hr-008",
+          "category": "Prioritizing Tech Debt",
+          "human_score": 89.0,
+          "pred_score": 82.0,
+          "abs_error": 7.0,
+          "latency": 4.217
+        },
+        {
+          "id": "real-hr-009",
+          "category": "Ethical Dilemma",
+          "human_score": 93.0,
+          "pred_score": 82.0,
+          "abs_error": 11.0,
+          "latency": 4.244
+        },
+        {
+          "id": "real-hr-010",
+          "category": "Working in Distributed Teams",
+          "human_score": 91.0,
+          "pred_score": 82.0,
+          "abs_error": 9.0,
+          "latency": 4.062
+        },
+        {
+          "id": "real-hr-011",
+          "category": "Conflict Resolution",
+          "human_score": 62.0,
+          "pred_score": 67.0,
+          "abs_error": 5.0,
+          "latency": 3.823
+        },
+        {
+          "id": "real-hr-012",
+          "category": "Tight Deadlines",
+          "human_score": 58.0,
+          "pred_score": 67.0,
+          "abs_error": 9.0,
+          "latency": 4.282
+        },
+        {
+          "id": "real-hr-013",
+          "category": "Handling Failure",
+          "human_score": 55.0,
+          "pred_score": 67.0,
+          "abs_error": 12.0,
+          "latency": 3.863
+        },
+        {
+          "id": "real-hr-014",
+          "category": "Mentorship",
+          "human_score": 52.0,
+          "pred_score": 67.0,
+          "abs_error": 15.0,
+          "latency": 3.989
+        },
+        {
+          "id": "real-hr-015",
+          "category": "Ownership & Initiative",
+          "human_score": 64.0,
+          "pred_score": 67.0,
+          "abs_error": 3.0,
+          "latency": 3.703
+        },
+        {
+          "id": "real-hr-016",
+          "category": "Adapting to Change",
+          "human_score": 57.0,
+          "pred_score": 67.0,
+          "abs_error": 10.0,
+          "latency": 3.737
+        },
+        {
+          "id": "real-hr-017",
+          "category": "Stakeholder Management",
+          "human_score": 50.0,
+          "pred_score": 38.0,
+          "abs_error": 12.0,
+          "latency": 4.072
+        },
+        {
+          "id": "real-hr-018",
+          "category": "Prioritizing Tech Debt",
+          "human_score": 53.0,
+          "pred_score": 44.0,
+          "abs_error": 9.0,
+          "latency": 4.142
+        },
+        {
+          "id": "real-hr-019",
+          "category": "Ethical Dilemma",
+          "human_score": 56.0,
+          "pred_score": 67.0,
+          "abs_error": 11.0,
+          "latency": 4.174
+        },
+        {
+          "id": "real-hr-020",
+          "category": "Working in Distributed Teams",
+          "human_score": 54.0,
+          "pred_score": 55.0,
+          "abs_error": 1.0,
+          "latency": 3.822
+        },
+        {
+          "id": "real-hr-021",
+          "category": "Conflict Resolution",
+          "human_score": 25.0,
+          "pred_score": 0.0,
+          "abs_error": 25.0,
+          "latency": 3.449
+        },
+        {
+          "id": "real-hr-022",
+          "category": "Tight Deadlines",
+          "human_score": 30.0,
+          "pred_score": 43.0,
+          "abs_error": 13.0,
+          "latency": 3.427
+        },
+        {
+          "id": "real-hr-023",
+          "category": "Handling Failure",
+          "human_score": 20.0,
+          "pred_score": 67.0,
+          "abs_error": 47.0,
+          "latency": 4.038
+        },
+        {
+          "id": "real-hr-024",
+          "category": "Mentorship",
+          "human_score": 32.0,
+          "pred_score": 16.0,
+          "abs_error": 16.0,
+          "latency": 3.276
+        },
+        {
+          "id": "real-hr-025",
+          "category": "Ownership & Initiative",
+          "human_score": 28.0,
+          "pred_score": 26.0,
+          "abs_error": 2.0,
+          "latency": 3.412
+        },
+        {
+          "id": "real-hr-026",
+          "category": "Conflict Resolution",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.603
+        },
+        {
+          "id": "real-hr-027",
+          "category": "Tight Deadlines",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.499
+        },
+        {
+          "id": "real-hr-028",
+          "category": "Handling Failure",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.71
+        },
+        {
+          "id": "real-hr-029",
+          "category": "Mentorship",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.466
+        },
+        {
+          "id": "real-hr-030",
+          "category": "Adapting to Change",
+          "human_score": 0.0,
+          "pred_score": 11.0,
+          "abs_error": 11.0,
+          "latency": 3.249
+        }
+      ]
+    }
+  }
+}

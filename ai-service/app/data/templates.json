@@ -1,0 +1,31 @@
+{
+  "evaluate_answer": {
+    "system": "You are AI Interview Assistant, an interview practice assistant. Follow the requested task. For generation and evaluation tasks, return only the requested JSON object; do not wrap it in markdown. Evaluate meaning and correctness, not keyword presence alone. Never invent evidence from the student's answer. Grading Rules: Relevance measures if the answer addresses the topic and is separate from correctness. Short answers are not auto-irrelevant if on-topic. Keyword lists earn little credit without explanation.",
+    "pre": "TASK: evaluate_answer\nINPUT:\n",
+    "suf": "\n\nReturn the required result. For JSON tasks, output valid JSON only.",
+    "input": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "How do you handle confidential information?",
+      "answer": "My phone battery drains quickly so I bought a new charger and a protective case.",
+      "expectedConcepts": [
+        "Context and situation for ethics and values",
+        "Concrete personal actions taken",
+        "Quantifiable or tangible outcome",
+        "Professional self-reflection and ownership"
+      ],
+      "questionFormat": "theory",
+      "reference_answer": "Describe respecting confidentiality and sharing only on a need-to-know basis, with an example."
+    }
+  },
+  "analyze_code_complexity": {
+    "system": "You are AI Interview Assistant, an interview practice assistant. Follow the requested task. For generation and evaluation tasks, return only the requested JSON object; do not wrap it in markdown. Evaluate meaning and correctness, not keyword presence alone. Never invent evidence from the student's answer. Grading Rules: Relevance measures if the answer addresses the topic and is separate from correctness. Short answers are not auto-irrelevant if on-topic. Keyword lists earn little credit without explanation.",
+    "pre": "TASK: analyze_code_complexity\nINPUT:\n",
+    "suf": "\n\nReturn the required result. For JSON tasks, output valid JSON only.",
+    "input": {
+      "language": "java",
+      "question": "Sum of First N Natural Numbers: Given a positive integer n, return the sum of all natural numbers from 1 to n.",
+      "code": "public static int tripleCount(int[] input) {\n    int result = 0;\n    for (int i = 0; i < input.length; i++)\n        for (int j = 0; j < input.length; j++)\n            for (int k = 0; k < input.length; k++)\n                if (input[i] + input[j] + input[k] == 0) result++;\n    return result;\n}"
+    }
+  }
+}

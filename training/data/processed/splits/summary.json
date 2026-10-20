@@ -1,0 +1,64 @@
+{
+  "input_records": 2000,
+  "valid_records": 2000,
+  "rejected_records": 0,
+  "duplicate_records": 0,
+  "subject_distribution": {
+    "dbms": 500,
+    "hr": 500,
+    "java": 1000
+  },
+  "source_distribution": {
+    "dataset_raw": 600,
+    "synthetic_rubric": 1400
+  },
+  "rejected_examples": [],
+  "unique_valid_records": 2000,
+  "split_counts": {
+    "train": 1490,
+    "validation": 202,
+    "test": 308
+  },
+  "task_counts_per_split": {
+    "train": {
+      "evaluate_answer": 748,
+      "generate_coding_problem": 143,
+      "analyze_code_complexity": 300,
+      "generate_question": 299
+    },
+    "validation": {
+      "evaluate_answer": 101,
+      "generate_coding_problem": 21,
+      "analyze_code_complexity": 40,
+      "generate_question": 40
+    },
+    "test": {
+      "evaluate_answer": 151,
+      "generate_coding_problem": 36,
+      "analyze_code_complexity": 60,
+      "generate_question": 61
+    }
+  },
+  "source_counts_per_split": {
+    "train": {
+      "synthetic_rubric": 1048,
+      "dataset_raw": 442
+    },
+    "validation": {
+      "synthetic_rubric": 141,
+      "dataset_raw": 61
+    },
+    "test": {
+      "synthetic_rubric": 211,
+      "dataset_raw": 97
+    }
+  },
+  "distinct_prompt_counts": {
+    "train": 1108,
+    "validation": 155,
+    "test": 237,
+    "total": 1500
+  },
+  "unfit_reports": [],
+  "random_seed": 42
+}
