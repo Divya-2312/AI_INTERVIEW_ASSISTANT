@@ -88,25 +88,25 @@ To dispatch real emails through Gmail SMTP:
 ### 1. MongoDB & Ollama
 Ensure local services are running:
 - MongoDB on `localhost:27017`
-- Ollama on `localhost:11434` with model `mockmate-llama-ft`
+- Ollama on `localhost:11434` with model `llama3.2:3b` (or fine-tuned model `mockmate-llama-ft`)
 
 ### 2. AI Engine Service (FastAPI)
 ```powershell
-cd mockmate/ai-service
+cd ai-service
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 Health verification: `curl http://localhost:8000/health`
 
 ### 3. Backend REST API (Node/Express)
 ```powershell
-cd mockmate/backend
+cd backend
 npm run dev
 ```
 Health verification: `curl http://localhost:5000/api/health`
 
 ### 4. Frontend Application (React + Vite)
 ```powershell
-cd mockmate/frontend
+cd frontend
 npm run dev
 ```
 Open in browser: `http://localhost:3000`
@@ -117,19 +117,19 @@ Open in browser: `http://localhost:3000`
 
 ### Backend Authentication Tests (40 Assertions)
 ```powershell
-cd mockmate/backend
+cd backend
 npm test
 ```
 Covers registration, email verification, login, JWT rotation, lockout, forgot password code validation, password reset, and legacy user compatibility.
 
 ### AI Service Tests (45 Tests)
 ```powershell
-cd mockmate/ai-service
+cd ai-service
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
 ### Frontend Build
 ```powershell
-cd mockmate/frontend
+cd frontend
 npm run build
 ```
