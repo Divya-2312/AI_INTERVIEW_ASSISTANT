@@ -3715,19 +3715,33 @@ class LlamaModel(BaseAIModel):
             return heuristic
 
     def _evaluate_coding_answer(self, question: str, answer: str, concepts: list, test_cases: list, language: str = None, explanation: str = None, schema: str = None, sample_data: str = None, reference_solution: str = None) -> dict:
+        import hashlib
         from app.services.code_executor import execute_coding_submission, is_java_available
 
         lang = (language or "java").lower().strip()
         test_cases = test_cases or []
+
+        # 0. Cache check for idempotency
+        norm_ans = _normalize_answer_for_eval(answer)
+        norm_q = _safe_str(question).strip().lower()
+        tc_repr = json.dumps(test_cases, sort_keys=True)
+        cache_raw = f"coding::{norm_q}::{norm_ans}::{lang}::{tc_repr}"
+        cache_key = hashlib.sha256(cache_raw.encode("utf-8")).hexdigest()
+        if not hasattr(self, "_eval_cache"):
+            self._eval_cache = {}
+        if cache_key in self._eval_cache:
+            return dict(self._eval_cache[cache_key])
 
         # Check if deterministic sandbox execution is available
         can_execute_deterministically = (lang == "sql") or (lang == "java" and is_java_available())
 
         if not can_execute_deterministically:
             # Fall back to LLM judge at temperature 0
-            return self._evaluate_coding_llm_fallback(question, answer, concepts, test_cases, lang, explanation)
+            res = self._evaluate_coding_llm_fallback(question, answer, concepts, test_cases, lang, explanation)
+            self._eval_cache[cache_key] = res
+            return res
 
-        # Deterministic execution via sandbox
+        # Deterministic execution via sandbox (generates EVIDENCE)
         exec_res = execute_coding_submission(
             language=lang,
             code=answer,
@@ -3740,37 +3754,171 @@ class LlamaModel(BaseAIModel):
         total_count = exec_res["totalCount"]
         passed_count = exec_res["passedCount"]
         compile_error = exec_res.get("compileError")
+        runtime_error = exec_res.get("runtimeError")
+        pass_rate = (passed_count / total_count * 100.0) if total_count > 0 else 0.0
 
-        # Compile error => 0 score. Otherwise score = round(100 * passed / total)
-        if compile_error:
-            final_score = 0
+        evidence = {
+            "passedCount": passed_count,
+            "totalCount": total_count,
+            "passRate": pass_rate,
+            "compileError": compile_error,
+            "runtimeError": runtime_error,
+            "testCaseResults": exec_res.get("results", []),
+        }
+
+        # Candidate code produces EVIDENCE; Base LLaMA produces JUDGEMENT
+        llama_rubric = None
+        llama_eval_status = "unavailable"
+        evaluator_entity = "executor"
+        rubric_mean = None
+        feedback = None
+        why_not_100 = None
+        corrected_code = None
+        correction_summary = None
+        strengths = []
+        weaknesses = []
+
+        if answer.strip():
+            failed_cases = [r for r in exec_res["results"] if r.get("status") != "PASSED"]
+            failed_summary = "\n".join(
+                f"- Case {r.get('id', i+1)} ({r.get('label') or 'test'}): expected={r.get('expected')!r}, got actual={r.get('actual')!r}, status={r.get('status')}"
+                for i, r in enumerate(failed_cases[:4])
+            )
+
+            prompt = (
+                f"You are a technical coding interviewer reviewing a {lang.upper()} submission.\n"
+                f"Deterministic execution evidence:\n"
+                f"- Test cases passed: {passed_count}/{total_count} ({pass_rate:.1f}%)\n"
+                f"- Compiler error: {compile_error or 'None'}\n"
+                f"- Runtime error: {runtime_error or 'None'}\n"
+                f"- Failed test cases:\n{failed_summary or 'None (all tests passed)'}\n\n"
+                f"Problem statement:\n{question}\n\n"
+                f"Candidate's code:\n{answer}\n\n"
+                f"Score each rubric criterion from 0 to 100 based on the candidate's code and execution evidence:\n"
+                f"- logicScore (0-100): algorithm correctness and logical structure\n"
+                f"- approachScore (0-100): suitability and optimality of data structures and approach\n"
+                f"- edgeCaseScore (0-100): handling boundary, empty, single-element, or extreme inputs\n"
+                f"- readabilityScore (0-100): naming, formatting, modularity, and cleanliness\n\n"
+                f"Respond ONLY with a JSON object in this exact format:\n"
+                f"{{\n"
+                f'  "logicScore": 0-100,\n'
+                f'  "approachScore": 0-100,\n'
+                f'  "edgeCaseScore": 0-100,\n'
+                f'  "readabilityScore": 0-100,\n'
+                f'  "summary": "1-2 sentence overall technical assessment",\n'
+                f'  "strengths": ["list of positive aspects"],\n'
+                f'  "weaknesses": ["list of areas for improvement"],\n'
+                f'  "correctedSolution": "the corrected code or query, or empty string if already optimal"\n'
+                f"}}"
+            )
+
+            try:
+                base_model = getattr(settings, "BASE_MODEL_NAME", self.model_name)
+                raw_text, _ = self._call_llama(
+                    prompt,
+                    timeout=60,
+                    num_predict=768,
+                    temperature=0.0,
+                    response_format="json",
+                    model_override=base_model,
+                )
+                data = _extract_json(raw_text)
+
+                l_score = max(0.0, min(100.0, float(data.get("logicScore", 0))))
+                a_score = max(0.0, min(100.0, float(data.get("approachScore", 0))))
+                e_score = max(0.0, min(100.0, float(data.get("edgeCaseScore", 0))))
+                r_score = max(0.0, min(100.0, float(data.get("readabilityScore", 0))))
+
+                rubric_mean = (l_score + a_score + e_score + r_score) / 4.0
+                llama_rubric = {
+                    "logicScore": round(l_score),
+                    "approachScore": round(a_score),
+                    "edgeCaseScore": round(e_score),
+                    "readabilityScore": round(r_score),
+                    "rubricMean": round(rubric_mean, 2),
+                    "summary": _safe_str(data.get("summary")),
+                }
+                feedback = _safe_str(data.get("summary")) or (f"Passed {passed_count}/{total_count} test cases.")
+                strengths = data.get("strengths") if isinstance(data.get("strengths"), list) else []
+                weaknesses = data.get("weaknesses") if isinstance(data.get("weaknesses"), list) else []
+                sol = _safe_str(data.get("correctedSolution"))
+                if sol and sol.strip():
+                    corrected_code = sol
+                llama_eval_status = "ok"
+                evaluator_entity = "base_llama"
+            except Exception as e:
+                logger.warning(f"[CodingEval] Base LLaMA rubric call failed ({e}). Falling back to execution-only scoring.")
+                llama_eval_status = "unavailable"
+                evaluator_entity = "executor"
+
+        # Fixed Formula: round(0.80 * passRate + 0.20 * llamaRubricScore)
+        if llama_eval_status == "ok" and rubric_mean is not None:
+            formula_score = round(0.80 * pass_rate + 0.20 * rubric_mean)
         else:
-            final_score = round(100 * passed_count / total_count) if total_count > 0 else 0
+            formula_score = round(pass_rate)
 
-        # LLaMA is used ONLY to write short feedback text AFTER the verdict is known (temperature 0)
-        feedback, why_not_100, corrected_code, correction_summary = self._generate_coding_feedback(
-            question=question,
-            answer=answer,
-            lang=lang,
-            final_score=final_score,
-            passed_count=passed_count,
-            total_count=total_count,
-            results=exec_res["results"],
-            compile_error=compile_error,
-            reference_solution=reference_solution,
-        )
+        # Strict Guards
+        # Guard 1: 100% pass -> final score >= 90 (model cannot fail passing code)
+        if pass_rate == 100.0 and not compile_error:
+            final_score = max(90, formula_score)
+        # Guard 2: 0% pass -> final score <= 20 (model cannot pass code that fails every test)
+        elif pass_rate == 0.0:
+            final_score = min(20, formula_score)
+        else:
+            final_score = formula_score
+
+        # Guard 3: Compile error -> final score <= 10
+        if compile_error:
+            final_score = min(10, final_score)
+
+        # Score clamp [0, 100]
+        final_score = max(0, min(100, final_score))
+
+        # Empty submission guard
+        if not answer.strip():
+            final_score = 0
+
+        # Build whyNot100, correctedCode, and correctionSummary
+        if (passed_count == total_count and total_count > 0 and not compile_error) or final_score == 100:
+            why_not_100 = None
+            corrected_code = None
+            correction_summary = None
+            if not feedback:
+                feedback = "All test cases passed successfully! Clean and optimal solution."
+            if not strengths:
+                strengths = ["Clean solution passing all test cases"]
+            weaknesses = []
+        else:
+            if not why_not_100:
+                if compile_error:
+                    why_not_100 = f"Code failed to compile: {compile_error.splitlines()[0]}"
+                else:
+                    why_not_100 = f"Solution passed {passed_count} of {total_count} test cases."
+            if not corrected_code:
+                corrected_code = reference_solution or None
+            if not correction_summary:
+                correction_summary = "Address failing test cases and handle boundary conditions."
+            if not feedback:
+                feedback = f"Solution passed {passed_count} of {total_count} test cases."
+            if not weaknesses:
+                weaknesses = [f"Failed {total_count - passed_count} test case(s)"]
 
         complexity = None
         if lang == "java" and answer.strip() and not compile_error:
             complexity = self._analyze_code_complexity(question=question, code=answer, lang=lang)
 
         model_used = getattr(self, "model_name", settings.MODEL_NAME)
-        return {
+        res = {
             "score": final_score,
             "passedCount": passed_count,
             "totalCount": total_count,
             "judgeMode": "deterministic",
             "testCaseResults": exec_res["results"],
+            "evidence": evidence,
+            "llamaRubric": llama_rubric,
+            "formulaVersion": "v2",
+            "evaluatedBy": evaluator_entity,
+            "llamaEvaluation": llama_eval_status,
             "feedback": feedback,
             "whyNot100": why_not_100,
             "scoreReason": why_not_100 or feedback,
@@ -3781,19 +3929,20 @@ class LlamaModel(BaseAIModel):
             "timeComplexity": complexity.get("timeComplexity") if complexity else None,
             "spaceComplexity": complexity.get("spaceComplexity") if complexity else None,
             "timeComplexityExplanation": complexity.get("explanation") if complexity else None,
-            # Strict constraint: theory metrics set to None for coding format
             "conceptCoverage": None,
             "correctness": None,
             "relevance": None,
             "communication": None,
-            "strengths": ["Clean solution passing all test cases"] if final_score == 100 else [],
-            "weaknesses": [] if final_score == 100 else [f"Failed {total_count - passed_count} test case(s)"],
+            "strengths": strengths,
+            "weaknesses": weaknesses,
             "missingConcepts": [],
             "stepByStepExplanation": explanation or None,
             "modelUsed": model_used,
-            "usedFallback": False,
-            "scoringSources": ["executor"],
+            "usedFallback": (llama_eval_status == "unavailable"),
+            "scoringSources": ["executor", "base_llama"] if llama_eval_status == "ok" else ["executor"],
         }
+        self._eval_cache[cache_key] = res
+        return res
 
     def _generate_coding_feedback(self, question: str, answer: str, lang: str, final_score: int, passed_count: int, total_count: int, results: list, compile_error: str = None, reference_solution: str = None) -> tuple:
         if final_score == 100:
@@ -4238,10 +4387,30 @@ class DevFallbackModel(BaseAIModel):
             total_count = exec_res["totalCount"]
             passed_count = exec_res["passedCount"]
             compile_error = exec_res.get("compileError")
-            if compile_error:
-                final_score = 0
+            runtime_error = exec_res.get("runtimeError")
+            pass_rate = (passed_count / total_count * 100.0) if total_count > 0 else 0.0
+
+            evidence = {
+                "passedCount": passed_count,
+                "totalCount": total_count,
+                "passRate": pass_rate,
+                "compileError": compile_error,
+                "runtimeError": runtime_error,
+                "testCaseResults": exec_res["results"],
+            }
+
+            formula_score = round(pass_rate)
+            if pass_rate == 100.0 and not compile_error:
+                final_score = max(90, formula_score)
+            elif pass_rate == 0.0:
+                final_score = min(20, formula_score)
             else:
-                final_score = round(100 * passed_count / total_count) if total_count > 0 else 0
+                final_score = formula_score
+
+            if compile_error:
+                final_score = min(10, final_score)
+
+            final_score = max(0, min(100, final_score))
 
             why_not_100 = None if final_score == 100 else f"Failed {total_count - passed_count} of {total_count} test cases."
             feedback = "All test cases passed successfully." if final_score == 100 else f"{passed_count} of {total_count} test cases passed."
@@ -4252,6 +4421,11 @@ class DevFallbackModel(BaseAIModel):
                 "totalCount": total_count,
                 "judgeMode": "deterministic",
                 "testCaseResults": exec_res["results"],
+                "evidence": evidence,
+                "llamaRubric": None,
+                "formulaVersion": "v2",
+                "evaluatedBy": "executor",
+                "llamaEvaluation": "unavailable",
                 "feedback": feedback,
                 "whyNot100": why_not_100,
                 "scoreReason": why_not_100 or feedback,
@@ -4269,7 +4443,7 @@ class DevFallbackModel(BaseAIModel):
                 "missingConcepts": [],
                 "stepByStepExplanation": explanation,
                 "modelUsed": "deterministic_executor",
-                "usedFallback": False,
+                "usedFallback": True,
                 "scoringSources": ["executor"],
             }
 

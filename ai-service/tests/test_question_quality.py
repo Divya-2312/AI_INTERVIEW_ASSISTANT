@@ -660,6 +660,150 @@ class TestQuestionQualityRules(unittest.TestCase):
         ]
         self.assertEqual(len(eligible_without_guard), 3, "Without guard, 3 items would have been accepted")
 
+    def test_coding_guard_100_percent_pass_gives_at_least_90(self):
+        """Proof: 100% pass gives at least 90, even if LLaMA rubric scores 0.
+        Without the guard, 0.80*100 + 0.20*0 = 80 (<90).
+        With the guard, max(90, 80) = 90.
+        """
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        zero_rubric = json.dumps({
+            "logicScore": 0, "approachScore": 0, "edgeCaseScore": 0, "readabilityScore": 0,
+            "summary": "Hallucinated penalty", "strengths": [], "weaknesses": ["Style"], "correctedSolution": ""
+        })
+        
+        tc = [{"id": 1, "input": "2, 3", "expectedOutput": "5", "label": "Case 1"}]
+        code = "public class Solution { public static int add(int a, int b) { return a + b; } }"
+        
+        with patch.object(provider, "_call_llama", return_value=(zero_rubric, "llama3.2:3b")):
+            res = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
+            
+            # Guard ensures score is at least 90
+            self.assertGreaterEqual(res["score"], 90, "100% pass must score >= 90")
+            self.assertEqual(res["score"], 90)
+            
+            # Negative proof: Without the guard, score would have been 80
+            ungarded_score = round(0.80 * 100.0 + 0.20 * 0.0)
+            self.assertLess(ungarded_score, 90, "Proves unguarded formula produces 80 < 90")
+
+    def test_coding_guard_0_percent_pass_gives_at_most_20(self):
+        """Proof: 0% pass gives at most 20, even if LLaMA rubric scores 100.
+        Guard ensures min(20, formula_score) <= 20.
+        """
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        perfect_rubric = json.dumps({
+            "logicScore": 100, "approachScore": 100, "edgeCaseScore": 100, "readabilityScore": 100,
+            "summary": "Great syntax", "strengths": ["Clean"], "weaknesses": [], "correctedSolution": ""
+        })
+        
+        tc = [{"id": 1, "input": "2, 3", "expectedOutput": "5", "label": "Case 1"}]
+        code = "public class Solution { public static int add(int a, int b) { return 999; } }"
+        
+        with patch.object(provider, "_call_llama", return_value=(perfect_rubric, "llama3.2:3b")):
+            res = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
+            self.assertLessEqual(res["score"], 20, "0% pass must score <= 20")
+            self.assertEqual(res["score"], 20)
+
+    def test_coding_guard_compile_error_gives_at_most_10(self):
+        """Proof: Compile error gives at most 10, even if LLaMA rubric scores 90.
+        Without the guard, 0.80*0 + 0.20*90 = 18 (>10).
+        With the guard, min(10, 18) = 10.
+        """
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        high_rubric = json.dumps({
+            "logicScore": 90, "approachScore": 90, "edgeCaseScore": 90, "readabilityScore": 90,
+            "summary": "Good idea but broke", "strengths": ["Thoughtful"], "weaknesses": ["Compile"], "correctedSolution": ""
+        })
+        
+        tc = [{"id": 1, "input": "2, 3", "expectedOutput": "5", "label": "Case 1"}]
+        code = "public class Solution { public static int add(int a, int b) { return a + ; } }"
+        
+        with patch.object(provider, "_call_llama", return_value=(high_rubric, "llama3.2:3b")):
+            res = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
+            self.assertLessEqual(res["score"], 10, "Compile error must score <= 10")
+            self.assertEqual(res["score"], 10)
+            
+            # Negative proof: Without the guard, score would have been 18
+            ungarded_score = round(0.80 * 0.0 + 0.20 * 90.0)
+            self.assertGreater(ungarded_score, 10, "Proves unguarded score is 18 > 10")
+
+    def test_coding_model_unavailable_gives_execution_only_and_no_crash(self):
+        """Proof: Model unavailable gives execution-only score, llamaEvaluation='unavailable', no crash."""
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        # 1 passed out of 2 = 50%
+        tc = [
+            {"id": 1, "input": "2, 3", "expectedOutput": "5", "label": "Case 1"},
+            {"id": 2, "input": "4, 4", "expectedOutput": "10", "label": "Case 2"},
+        ]
+        code = "public class Solution { public static int add(int a, int b) { return a + b; } }"
+        
+        with patch.object(provider, "_call_llama", side_effect=RuntimeError("Ollama connection refused")):
+            res = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
+            self.assertEqual(res["llamaEvaluation"], "unavailable")
+            self.assertEqual(res["evaluatedBy"], "executor")
+            self.assertIsNone(res["llamaRubric"])
+            self.assertEqual(res["score"], 50)
+            self.assertTrue(res["usedFallback"])
+            self.assertEqual(res["scoringSources"], ["executor"])
+
+    def test_coding_evaluation_idempotent_keyed_by_hash(self):
+        """Proof: Identical coding submission returns identical score and cached result."""
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        rubric = json.dumps({
+            "logicScore": 85, "approachScore": 80, "edgeCaseScore": 90, "readabilityScore": 85,
+            "summary": "Solid solution", "strengths": ["Clean"], "weaknesses": [], "correctedSolution": ""
+        })
+        tc = [{"id": 1, "input": "2, 3", "expectedOutput": "5", "label": "Case 1"}]
+        code = "public class Solution { public static int add(int a, int b) { return a + b; } }"
+        
+        with patch.object(provider, "_call_llama", return_value=(rubric, "llama3.2:3b")) as mock_call:
+            res1 = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
+            first_count = mock_call.call_count
+            res2 = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
+            
+            self.assertEqual(res1["score"], res2["score"])
+            self.assertEqual(res1["llamaRubric"], res2["llamaRubric"])
+            self.assertEqual(res1["evidence"], res2["evidence"])
+            self.assertEqual(mock_call.call_count, first_count, "Second evaluation must hit cache, invoking model 0 additional times")
+
 
 if __name__ == "__main__":
     unittest.main()

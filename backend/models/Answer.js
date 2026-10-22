@@ -139,6 +139,26 @@ const answerSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    evaluatedBy: {
+      type: String,
+      default: null,
+    },
+    llamaRubric: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    evidence: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    formulaVersion: {
+      type: String,
+      default: null,
+    },
+    llamaEvaluation: {
+      type: String,
+      default: null,
+    },
     compileError: {
       type: String,
       default: null,

@@ -143,6 +143,11 @@ class EvaluationResponse(BaseModel):
     spaceComplexity: Optional[str] = None
     timeComplexityExplanation: Optional[str] = None
     modelUsed: str = Field(default="llama3.2:3b", description="The measured model used for evaluation")
+    evaluatedBy: Optional[str] = Field(default="base_llama", description="Evaluator entity: base_llama, fine_tuned_llama, or executor")
+    llamaRubric: Optional[dict] = Field(default=None, description="Detailed rubric criteria scored by Base LLaMA")
+    evidence: Optional[dict] = Field(default=None, description="Deterministic execution or test evidence from sandbox")
+    formulaVersion: Optional[str] = Field(default="v2", description="Scoring formula version")
+    llamaEvaluation: Optional[str] = Field(default="ok", description="'ok' if base LLaMA judged, 'unavailable' if fallback/execution only")
     usedFallback: bool = Field(default=False, description="True if any non-LLM fallback path produced the content")
     parseFailed: bool = Field(default=False, description="True if JSON extraction failed or required keys were missing")
     scoringSources: List[str] = Field(default_factory=lambda: ["llm", "bert", "rules"], description="Sources used to calculate the score")

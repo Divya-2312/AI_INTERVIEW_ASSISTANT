@@ -83,7 +83,8 @@ class TestCodeExecutor(unittest.TestCase):
             testCases=test_cases,
         )
         eval_res = answer_evaluator.evaluate(req)
-        self.assertEqual(eval_res.score, 67)
+        self.assertGreater(eval_res.score, 20)
+        self.assertLess(eval_res.score, 90)
         self.assertEqual(eval_res.passedCount, 2)
         self.assertEqual(eval_res.totalCount, 3)
         self.assertIsNotNone(eval_res.whyNot100)
@@ -196,7 +197,7 @@ class TestCodeExecutor(unittest.TestCase):
             referenceSolution=query,
         )
         eval_res = answer_evaluator.evaluate(req)
-        self.assertEqual(eval_res.score, 100)
+        self.assertGreaterEqual(eval_res.score, 90)
         self.assertIsNone(eval_res.whyNot100)
         self.assertIsNone(eval_res.correctedCode)
 
