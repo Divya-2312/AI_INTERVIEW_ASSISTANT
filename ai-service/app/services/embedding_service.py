@@ -74,6 +74,12 @@ SYNONYM_MAP = {
     "primary key": ["candidate key", "unique identifier", "pk"],
     "candidate key": ["primary key", "minimal superkey"],
     "foreign key": ["referential integrity", "fk"],
+    "cardinality": ["number of rows", "number of tuples", "row count"],
+    "degree": ["number of columns", "number of attributes", "column count"],
+    "atomicity": ["all or nothing", "atomic transaction"],
+    "isolation": ["concurrency control", "serializability"],
+    "durability": ["persistence", "non-volatile storage"],
+    "consistency": ["integrity constraints", "valid state"],
     # Java & OOP synonyms
     "method": ["function", "member function"],
     "function": ["method", "procedure"],

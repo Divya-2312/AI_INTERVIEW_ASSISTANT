@@ -504,6 +504,58 @@ class TestQuestionQualityRules(unittest.TestCase):
             self.assertGreater(eval_res["score"], 50)
             self.assertIn("encapsulation", eval_res["coveredConcepts"])
 
+    def test_dbms_theory_synonym_matching(self):
+        """Rule 3 Proof (DBMS): Relational theory answers using standard DBMS synonyms match expected concepts."""
+        from app.models.llama_provider import _classify_expected_concepts
+        from app.services.embedding_service import embedding_service
+
+        # Test 1: "relation" for concept "table", "tuple" for concept "row", "attribute" for concept "column"
+        answer = "A relation in the relational model stores data formatted as tuples across various attributes."
+        concepts = ["table", "row", "column"]
+        covered, partial, missing = _classify_expected_concepts(concepts, answer, embedding_service)
+        self.assertIn("table", covered, "Expected 'relation' to cover concept 'table'")
+        self.assertIn("row", covered, "Expected 'tuple' to cover concept 'row'")
+        self.assertIn("column", covered, "Expected 'attribute' to cover concept 'column'")
+
+        # Test 2: "candidate key" for concept "primary key"
+        answer2 = "A candidate key uniquely identifies each record and satisfies minimal superkey requirements."
+        concepts2 = ["primary key"]
+        covered2, partial2, missing2 = _classify_expected_concepts(concepts2, answer2, embedding_service)
+        self.assertIn("primary key", covered2, "Expected 'candidate key' to cover concept 'primary key'")
+
+    def test_dbms_theory_fallback_when_model_down(self):
+        """Rule 6 Proof (DBMS): When model is unreachable, DBMS theory generates from bank and evaluates deterministically."""
+        from unittest.mock import patch
+        from app.models.llama_provider import ResilientAIModel
+        from app.services.question_generator import question_generator
+        from app.models.schemas import QuestionGenerationRequest
+
+        model = ResilientAIModel()
+
+        # Generation Fallback
+        with patch.object(model.llama, "generate_question", side_effect=Exception("Connection refused")):
+            req = QuestionGenerationRequest(subject="dbms", difficulty="easy", interviewType="technical", questionFormat="theory")
+            gen_res = question_generator.generate(req)
+            self.assertIsNotNone(gen_res)
+            self.assertEqual(gen_res.subject, "dbms")
+            self.assertEqual(gen_res.questionFormat, "theory")
+            self.assertTrue(len(gen_res.expectedConcepts) > 0)
+
+        # Evaluation Fallback
+        with patch.object(model.llama, "evaluate_answer", side_effect=Exception("Connection refused")):
+            eval_res = model.evaluate_answer(
+                question="What is 1NF in database normalization?",
+                answer="First normal form requires that each column contains atomic indivisible values and each row is unique.",
+                concepts=["1NF", "atomic values", "normalization"],
+                context=[],
+                question_format="theory",
+                subject="dbms"
+            )
+            self.assertTrue(eval_res["evaluationUnavailable"])
+            self.assertEqual(eval_res["modelUsed"], "deterministic_concept_coverage")
+            self.assertGreater(eval_res["score"], 50)
+            self.assertIn("atomic values", eval_res["coveredConcepts"])
+
 
 if __name__ == "__main__":
     unittest.main()
