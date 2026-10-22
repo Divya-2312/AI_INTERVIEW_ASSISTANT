@@ -431,6 +431,79 @@ class TestQuestionQualityRules(unittest.TestCase):
         self.assertEqual(_canonical_output(out_lf), _canonical_output(out_crlf))
         self.assertEqual(_canonical_output(out_lf), _canonical_output(out_trailing_spaces))
 
+    def test_java_theory_synonym_matching(self):
+        """Rule 3: Candidate answers using valid domain synonyms must match expected concepts."""
+        from app.models.llama_provider import _classify_expected_concepts
+        from app.services.embedding_service import embedding_service
+        
+        # Test 1: "derived class" for concept "subclass"
+        answer1 = "In object-oriented programming, a derived class inherits behavior from its parent."
+        concepts1 = ["subclass", "inheritance"]
+        covered, partial, missing = _classify_expected_concepts(concepts1, answer1, embedding_service)
+        self.assertIn("subclass", covered, "Expected 'derived class' to cover concept 'subclass'")
+        self.assertIn("inheritance", covered)
+
+        # Test 2: "instance creation" for concept "instantiation"
+        answer2 = "Object creation is done using the new keyword to allocate memory on the heap."
+        concepts2 = ["instantiation"]
+        covered2, partial2, missing2 = _classify_expected_concepts(concepts2, answer2, embedding_service)
+        self.assertIn("instantiation", covered2, "Expected 'object creation' to cover concept 'instantiation'")
+
+        # Test 3: "member function" for concept "method"
+        answer3 = "A class encapsulates data members and member functions that operate on that data."
+        concepts3 = ["method", "encapsulation"]
+        covered3, partial3, missing3 = _classify_expected_concepts(concepts3, answer3, embedding_service)
+        self.assertIn("method", covered3, "Expected 'member function' to cover concept 'method'")
+
+    def test_java_theory_evaluation_idempotent(self):
+        """Rule 4: Evaluation must be idempotent. Evaluating the same (question, answer) returns the same score."""
+        from app.models.llama_provider import DevFallbackModel, _THEORY_EVAL_CACHE
+        fallback_model = DevFallbackModel()
+        question = "What is polymorphism in Java?"
+        answer = "Polymorphism allows objects of different classes to be treated through a common interface, using method overriding."
+        concepts = ["polymorphism", "method overriding", "dynamic dispatch"]
+
+        res1 = fallback_model.evaluate_answer(question, answer, concepts, context=[], question_format="theory")
+        res2 = fallback_model.evaluate_answer(question, answer, concepts, context=[], question_format="theory")
+        
+        self.assertEqual(res1["score"], res2["score"])
+        self.assertEqual(res1["conceptCoverage"], res2["conceptCoverage"])
+        self.assertEqual(res1["coveredConcepts"], res2["coveredConcepts"])
+        self.assertEqual(res1["missingConcepts"], res2["missingConcepts"])
+
+    def test_java_theory_fallback_when_model_down(self):
+        """Rule 6: If base model is down and STRICT_AI_MODE is on, theory generation falls back to curated bank, and evaluation sets evaluationUnavailable=True."""
+        from unittest.mock import patch
+        from app.models.llama_provider import ResilientAIModel
+        from app.config import settings
+
+        model = ResilientAIModel()
+        
+        # Test Generation Fallback: when provider fails, question_generator falls back to curated catalogue
+        from app.services.question_generator import question_generator
+        from app.models.schemas import QuestionGenerationRequest
+        with patch.object(model.llama, "generate_question", side_effect=Exception("Connection refused")):
+            req = QuestionGenerationRequest(subject="java", difficulty="easy", interviewType="technical", questionFormat="theory")
+            gen_res = question_generator.generate(req)
+            self.assertIsNotNone(gen_res)
+            self.assertEqual(gen_res.subject, "java")
+            self.assertEqual(gen_res.questionFormat, "theory")
+            self.assertTrue(len(gen_res.expectedConcepts) > 0)
+
+        # Test Evaluation Fallback: when llama.evaluate_answer throws, deterministic concept coverage used
+        with patch.object(model.llama, "evaluate_answer", side_effect=Exception("Connection refused")):
+            eval_res = model.evaluate_answer(
+                question="What is encapsulation?",
+                answer="Encapsulation is data hiding using private access modifiers and public getters/setters.",
+                concepts=["encapsulation", "data hiding", "access modifiers"],
+                context=[],
+                question_format="theory"
+            )
+            self.assertTrue(eval_res["evaluationUnavailable"])
+            self.assertEqual(eval_res["modelUsed"], "deterministic_concept_coverage")
+            self.assertGreater(eval_res["score"], 50)
+            self.assertIn("encapsulation", eval_res["coveredConcepts"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -35,6 +35,7 @@ class FakeEmbedding:
 
 _emb_mod = types.ModuleType("app.services.embedding_service")
 _emb_mod.embedding_service = FakeEmbedding()
+_emb_mod.SYNONYM_MAP = {}
 sys.modules["app.services.embedding_service"] = _emb_mod
 
 _rag_mod = types.ModuleType("app.services.rag_service")
@@ -91,10 +92,14 @@ class PredictOutputExactMatch(unittest.TestCase):
         )
 
     def test_exact_is_100(self):
-        self.assertEqual(self.grade("10")["score"], 100)
+        res = self.grade("10")
+        self.assertEqual(res["score"], 100)
+        self.assertIsNone(res["communication"])
 
     def test_close_but_different_is_0(self):
-        self.assertEqual(self.grade("10.0")["score"], 0)
+        res = self.grade("10.0")
+        self.assertEqual(res["score"], 0)
+        self.assertIsNone(res["communication"])
         self.assertEqual(self.grade("The output is 10")["score"], 0)
         self.assertEqual(self.grade("100")["score"], 0)
 

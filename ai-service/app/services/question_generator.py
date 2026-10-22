@@ -27,11 +27,20 @@ class QuestionGenerator:
             top_k=2,
             rotate=rotate,
         )
-        q_data = self.provider.generate_question(
-            req.subject or "java", req.difficulty, context, req.previousQuestions,
-            question_format=req.questionFormat or "theory",
-            interview_type=req.interviewType,
-        )
+        try:
+            q_data = self.provider.generate_question(
+                req.subject or "java", req.difficulty, context, req.previousQuestions,
+                question_format=req.questionFormat or "theory",
+                interview_type=req.interviewType,
+            )
+        except Exception as e:
+            if (req.questionFormat or "theory").lower() == "theory" and (req.interviewType or "").lower() != "hr":
+                llama = getattr(self.provider, "llama", None)
+                if llama and hasattr(llama, "_get_guaranteed_unique_theory_question"):
+                    fallback = llama._get_guaranteed_unique_theory_question(req.subject or "java", req.difficulty, req.previousQuestions or [])
+                    if fallback:
+                        return QuestionResponse(**fallback)
+            raise e
         return QuestionResponse(**q_data)
 
 question_generator = QuestionGenerator()

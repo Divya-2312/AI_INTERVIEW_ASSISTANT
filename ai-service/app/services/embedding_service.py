@@ -61,6 +61,39 @@ def _load_model():
     return _model
 
 
+SYNONYM_MAP = {
+    # Relational DBMS synonyms
+    "table": ["relation", "entity"],
+    "relation": ["table", "entity"],
+    "row": ["tuple", "record"],
+    "tuple": ["row", "record"],
+    "record": ["row", "tuple"],
+    "column": ["attribute", "field"],
+    "attribute": ["column", "field"],
+    "field": ["column", "attribute", "member variable", "property"],
+    "primary key": ["candidate key", "unique identifier", "pk"],
+    "candidate key": ["primary key", "minimal superkey"],
+    "foreign key": ["referential integrity", "fk"],
+    # Java & OOP synonyms
+    "method": ["function", "member function"],
+    "function": ["method", "procedure"],
+    "subclass": ["child class", "derived class"],
+    "child class": ["subclass", "derived class"],
+    "derived class": ["subclass", "child class"],
+    "superclass": ["parent class", "base class"],
+    "parent class": ["superclass", "base class"],
+    "base class": ["superclass", "parent class"],
+    "instantiation": ["instance creation", "object creation"],
+    "instance creation": ["instantiation", "object creation"],
+    "inheritance": ["extends", "subclassing", "derived class"],
+    "encapsulation": ["data hiding", "information hiding"],
+    "polymorphism": ["method overriding", "dynamic dispatch", "runtime polymorphism"],
+    "overriding": ["runtime polymorphism", "dynamic dispatch"],
+    "overloading": ["compile-time polymorphism", "static polymorphism"],
+    "garbage collection": ["automatic memory management", "gc"],
+}
+
+
 class EmbeddingService:
     """
     Semantic embedding + similarity service.
@@ -99,15 +132,8 @@ class EmbeddingService:
 
     def best_sentence_similarity(self, concept: str, text: str) -> float:
         """
-        Semantic (never keyword/substring) coverage check for "does `text`
-        cover `concept` anywhere in it?" -- comparing a short concept phrase
-        against a whole multi-sentence answer as one blob dilutes the
-        embedding (a 2-word phrase and an 80-word paragraph don't align well
-        even when the paragraph clearly covers the idea in one sentence).
-        Splitting into sentences and taking the best individual match fixes
-        that dilution while staying entirely meaning-based: it's still pure
-        embedding cosine similarity, just computed against the most relevant
-        slice of the answer instead of the whole thing at once.
+        Semantic coverage check for "does `text` cover `concept` anywhere in it?"
+        Splits into sentences and takes the best individual match with synonym support.
         """
         if not concept or not text:
             return 0.0
@@ -121,6 +147,16 @@ class EmbeddingService:
             sim = cosine_similarity(concept_vec, self.get_embedding(sentence))
             if sim > best:
                 best = sim
+
+        # Check domain synonym expansions
+        c_lower = concept.lower().strip()
+        synonyms = SYNONYM_MAP.get(c_lower, [])
+        for syn in synonyms:
+            syn_vec = self.get_embedding(syn)
+            for sentence in sentences:
+                sim = cosine_similarity(syn_vec, self.get_embedding(sentence))
+                if sim > best:
+                    best = sim
 
         # If running bag-of-words fallback (no transformer model loaded), cosine
         # similarity is heavily diluted by sentence length. Asymmetric token overlap
@@ -139,3 +175,4 @@ class EmbeddingService:
 
 
 embedding_service = EmbeddingService()
+
