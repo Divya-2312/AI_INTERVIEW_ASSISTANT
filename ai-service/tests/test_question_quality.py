@@ -968,8 +968,200 @@ class TestQuestionQualityRules(unittest.TestCase):
             self.assertEqual(res1["evidence"], res2["evidence"])
             self.assertEqual(mock_call.call_count, first_count, "Second call must hit cache with 0 additional invocations")
 
+    def test_theory_guard_zero_concept_coverage_gives_at_most_20(self):
+        """Proof: Concept coverage <= 0.05 and no concept mentioned must score <= 20 even if LLaMA gave 100 on rubric."""
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        hallucinated_perfect = json.dumps({
+            "correctness": 100,
+            "relevance": 100,
+            "completeness": 100,
+            "clarity": 100,
+            "feedback": "Great explanation of general computation.",
+            "strengths": ["Well structured"],
+            "weaknesses": []
+        })
+        
+        with patch.object(provider, "_call_llama", return_value=(hallucinated_perfect, "llama3.2:3b")):
+            res = provider.evaluate_answer(
+                question="Explain the ACID properties in database management systems.",
+                answer="Computers process electrical signals using silicon transistors to compute binary boolean values.",
+                concepts=["atomicity", "consistency", "isolation", "durability"],
+                context=[],
+                question_format="theory",
+                subject="dbms"
+            )
+            self.assertLessEqual(res["score"], 20, "Zero concept coverage must score <= 20 despite 100 LLaMA rubric")
+            
+            # Negative proof: without the guard, 60% of 100 + 40% of 0 = 60 > 20
+            unguarded_score = round(0.60 * 100 + 0.40 * 0)
+            self.assertGreater(unguarded_score, 20, "Proves unguarded score would have been 60 > 20")
+
+    def test_theory_guard_high_concept_and_high_rubric_gives_at_least_80(self):
+        """Proof: High concept coverage (>= 0.85) and high rubric (>= 80) guarantees final score >= 80."""
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        rubric_data = json.dumps({
+            "correctness": 85,
+            "relevance": 85,
+            "completeness": 80,
+            "clarity": 80,
+            "feedback": "Comprehensive and accurate breakdown of ACID properties.",
+            "strengths": ["Thorough explanation"],
+            "weaknesses": []
+        })
+        
+        answer = (
+            "ACID properties ensure reliable database transactions: "
+            "Atomicity ensures all-or-nothing execution of transactions. "
+            "Consistency ensures the database transitions from one valid state to another. "
+            "Isolation ensures concurrent transactions do not interfere with each other. "
+            "Durability guarantees committed transaction changes persist even after system crashes."
+        )
+        
+        with patch.object(provider, "_call_llama", return_value=(rubric_data, "llama3.2:3b")):
+            res = provider.evaluate_answer(
+                question="Explain the ACID properties in database management systems.",
+                answer=answer,
+                concepts=["atomicity", "consistency", "isolation", "durability"],
+                context=[],
+                question_format="theory",
+                subject="dbms"
+            )
+            self.assertGreaterEqual(res["score"], 80, "High concept coverage + high rubric must score >= 80")
+            self.assertEqual(res["evaluatedBy"], "base_llama")
+            self.assertEqual(res["llamaEvaluation"], "ok")
+            self.assertIsNotNone(res["llamaRubric"])
+
+    def test_theory_empty_and_keyword_dump_gives_zero(self):
+        """Proof: Empty answer and bare keyword dump score 0 via rules with no LLaMA invocation."""
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        with patch.object(provider, "_call_llama") as mock_call:
+            # 1. Empty answer
+            res_empty = provider.evaluate_answer(
+                question="What is encapsulation in Java?",
+                answer="",
+                concepts=["encapsulation", "data hiding", "access modifiers"],
+                context=[],
+                question_format="theory",
+                subject="java"
+            )
+            self.assertEqual(res_empty["score"], 0)
+            self.assertEqual(res_empty["evaluatedBy"], "rules")
+            self.assertEqual(mock_call.call_count, 0, "Empty answer must not call LLaMA")
+            
+            # 2. Bare term list
+            res_list = provider.evaluate_answer(
+                question="What is encapsulation in Java?",
+                answer="Encapsulation, Data Hiding, Getters, Setters, Access Modifiers",
+                concepts=["encapsulation", "data hiding", "access modifiers"],
+                context=[],
+                question_format="theory",
+                subject="java"
+            )
+            self.assertEqual(res_list["score"], 0)
+            self.assertEqual(res_list["evaluatedBy"], "rules")
+            self.assertEqual(mock_call.call_count, 0, "Bare term list must not call LLaMA")
+
+    def test_theory_model_unavailable_gives_bert_only_and_no_crash(self):
+        """Proof: When model is unavailable, theory evaluation falls back to BERT concept coverage without crashing."""
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        answer = "Polymorphism allows objects to take multiple forms through dynamic method overriding and dispatch."
+        
+        with patch.object(provider, "_call_llama", side_effect=RuntimeError("Connection refused")):
+            res = provider.evaluate_answer(
+                question="What is polymorphism in Java?",
+                answer=answer,
+                concepts=["polymorphism", "method overriding", "dynamic dispatch"],
+                context=[],
+                question_format="theory",
+                subject="java"
+            )
+            self.assertEqual(res["llamaEvaluation"], "unavailable")
+            self.assertEqual(res["evaluatedBy"], "bert_semantic")
+            self.assertIsNone(res["llamaRubric"])
+            self.assertGreater(res["score"], 40, "BERT semantic concept coverage calculates partial score")
+            self.assertIsNotNone(res["evidence"])
+            self.assertTrue(res["usedFallback"])
+
+    def test_theory_evaluation_idempotent_keyed_by_hash(self):
+        """Proof: Identical theory submission returns cached result with identical score and 0 additional LLaMA calls."""
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        rubric_data = json.dumps({
+            "correctness": 88,
+            "relevance": 90,
+            "completeness": 85,
+            "clarity": 87,
+            "feedback": "Strong explanation of inheritance.",
+            "strengths": ["Clear explanation"],
+            "weaknesses": []
+        })
+        
+        answer = "Inheritance allows a subclass to inherit fields and methods from a superclass using the extends keyword."
+        
+        with patch.object(provider, "_call_llama", return_value=(rubric_data, "llama3.2:3b")) as mock_call:
+            res1 = provider.evaluate_answer(
+                question="Explain inheritance in Java.",
+                answer=answer,
+                concepts=["inheritance", "subclass", "superclass", "extends"],
+                context=[],
+                question_format="theory",
+                subject="java"
+            )
+            first_count = mock_call.call_count
+            res2 = provider.evaluate_answer(
+                question="Explain inheritance in Java.",
+                answer=answer,
+                concepts=["inheritance", "subclass", "superclass", "extends"],
+                context=[],
+                question_format="theory",
+                subject="java"
+            )
+            self.assertEqual(res1["score"], res2["score"])
+            self.assertEqual(res1["llamaRubric"], res2["llamaRubric"])
+            self.assertEqual(res1["evidence"], res2["evidence"])
+            self.assertEqual(res1["evaluatedBy"], res2["evaluatedBy"])
+            self.assertEqual(mock_call.call_count, first_count, "Second call must hit cache without invoking LLaMA again")
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 

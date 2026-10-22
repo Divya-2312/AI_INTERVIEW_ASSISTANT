@@ -3241,7 +3241,25 @@ class LlamaModel(BaseAIModel):
 
         # Java/DBMS theory: a bare list of terms is not an answer (see _is_bare_term_list).
         if _should_reject_term_list(question, answer):
-            return _keyword_list_evaluation(concepts)
+            res = _keyword_list_evaluation(concepts)
+            res["evidence"] = None
+            res["llamaRubric"] = None
+            res["formulaVersion"] = "v2"
+            res["evaluatedBy"] = "rules"
+            res["llamaEvaluation"] = "ok"
+            return res
+
+        # Empty answer check
+        if not (answer or "").strip():
+            res = _irrelevant_text_evaluation()
+            res["scoreReason"] = "You scored 0% because no answer was submitted."
+            res["feedback"] = "No answer was submitted."
+            res["evidence"] = None
+            res["llamaRubric"] = None
+            res["formulaVersion"] = "v2"
+            res["evaluatedBy"] = "rules"
+            res["llamaEvaluation"] = "ok"
+            return res
 
         norm_ans = _normalize_answer_for_eval(answer)
         norm_q = _safe_str(question).strip().lower()
@@ -3256,184 +3274,177 @@ class LlamaModel(BaseAIModel):
         semantic_sim = embedding_service.compute_similarity(expected_text, answer)
         question_sim = embedding_service.compute_similarity(question, answer)
         semantic_relevance = max(semantic_sim, question_sim)
-        # NOTE: The LLM model is only trained on this format after the Colab retrain.
-        input_dict = {
-            "interviewType": interview_type or "technical",
-            "question": question,
-            "answer": answer,
-            "expectedConcepts": concepts or [],
-            "questionFormat": question_format or "theory",
-        }
-        if explanation:
-            input_dict["reference_answer"] = explanation
-        if context:
-            input_dict["context"] = context
-        if hr_delivery_metrics:
-            input_dict["hrDeliveryMetrics"] = hr_delivery_metrics
 
-        prompt = build_training_style_prompt("evaluate_answer", input_dict)
-        raw_text, model_used = self._call_llama(prompt, timeout=90, num_predict=1024, system=TRAINING_SYSTEM_PROMPT, temperature=0.0)
-        parse_failed = False
-        data = {}
-        try:
-            data = _extract_json(raw_text)
-        except Exception as err:
-            parse_failed = True
-            logger.warning(f"[Evaluator] _extract_json failed on model response: {err}. Raw output: {raw_text[:200]!r}")
-
-        required_fields = ["relevance", "correctness", "conceptCoverage", "communication"]
-        missing_keys = [f for f in required_fields if f not in data or data[f] is None]
-        if missing_keys and not parse_failed:
-            parse_failed = True
-            logger.warning(f"[Evaluator] Model response missing required evaluation keys: {missing_keys}. Using default fallback values.")
-
-        try:
-            llm_relevance = max(0.0, min(1.0, float(data.get("relevance", 0.5))))
-        except (TypeError, ValueError):
-            llm_relevance = 0.5
-        raw_irrelevant = data.get("isIrrelevant", False)
-        model_says_irrelevant = raw_irrelevant is True or str(raw_irrelevant).strip().lower() == "true"
-        judgment_text = " ".join(
-            str(data.get(field) or "")
-            for field in ("feedback", "scoreReason", "weaknesses")
-        ).lower()
-        model_text_says_irrelevant = any(
-            phrase in judgment_text
-            for phrase in ("not relevant", "irrelevant", "unrelated", "off-topic", "does not address the question")
-        )
-        is_irrelevant = semantic_relevance < 0.30 and (
-            model_says_irrelevant
-            or model_text_says_irrelevant
-            or llm_relevance < 0.20
-        )
-        if is_irrelevant:
+        # Off-topic zero check: semantic relevance < 0.15 and no concept mentioned
+        mentions_any_concept = any(c.lower() in answer.lower() for c in (concepts or []))
+        if not mentions_any_concept and hasattr(embedding_service, "SYNONYM_MAP"):
+            for c in (concepts or []):
+                for syn in embedding_service.SYNONYM_MAP.get(c.lower(), []):
+                    if syn.lower() in answer.lower():
+                        mentions_any_concept = True
+                        break
+        if semantic_relevance < 0.15 and not mentions_any_concept:
             res = _irrelevant_text_evaluation()
-            res["parseFailed"] = parse_failed
+            res["evidence"] = None
+            res["llamaRubric"] = None
+            res["formulaVersion"] = "v2"
+            res["evaluatedBy"] = "rules"
+            res["llamaEvaluation"] = "ok"
             return res
 
-        # Prune any generic meta placeholders (like "java fundamentals") from concepts
+        # Call Base LLaMA at temperature 0 with strict JSON
+        prompt = (
+            f"You are a technical interviewer evaluating a {subject.upper() if subject else 'technical'} interview question.\n\n"
+            f"Question:\n{question}\n\n"
+            f"Expected Concepts / Reference Answer:\n{explanation or ', '.join(concepts or [])}\n\n"
+            f"Candidate's Answer:\n{answer}\n\n"
+            f"Evaluate the candidate's answer across 4 criteria from 0 to 100:\n"
+            f"- correctness (0-100): factual and technical accuracy\n"
+            f"- relevance (0-100): directly addressing the specific question asked\n"
+            f"- completeness (0-100): coverage of necessary technical depth and key points\n"
+            f"- clarity (0-100): structure, explanation quality, and technical articulation\n\n"
+            f"Respond ONLY with a JSON object in this exact format:\n"
+            f"{{\n"
+            f'  "correctness": 0-100,\n'
+            f'  "relevance": 0-100,\n'
+            f'  "completeness": 0-100,\n'
+            f'  "clarity": 0-100,\n'
+            f'  "feedback": "2-3 sentences of clear technical feedback",\n'
+            f'  "strengths": ["list of strengths"],\n'
+            f'  "weaknesses": ["list of weaknesses"]\n'
+            f"}}"
+        )
+
+        base_model = getattr(settings, "BASE_MODEL_NAME", self.model_name)
+        llama_rubric = None
+        llama_eval_status = "unavailable"
+        evaluator_entity = "bert_semantic"
+        llama_rubric_mean = None
+        data = {}
+        c_score, r_score, comp_score, clar_score = 0.0, 0.0, 0.0, 0.0
+        feedback = None
+        strengths = []
+        weaknesses = []
+
+        try:
+            raw_text, _ = self._call_llama(
+                prompt,
+                timeout=60,
+                num_predict=768,
+                temperature=0.0,
+                response_format="json",
+                model_override=base_model,
+            )
+            data = _extract_json(raw_text)
+            c_score = max(0.0, min(100.0, float(data.get("correctness", 0))))
+            r_score = max(0.0, min(100.0, float(data.get("relevance", 0))))
+            comp_score = max(0.0, min(100.0, float(data.get("completeness", 0))))
+            clar_score = max(0.0, min(100.0, float(data.get("clarity", 0))))
+            llama_rubric_mean = (c_score + r_score + comp_score + clar_score) / 4.0
+            llama_rubric = {
+                "correctness": round(c_score),
+                "relevance": round(r_score),
+                "completeness": round(comp_score),
+                "clarity": round(clar_score),
+                "rubricMean": round(llama_rubric_mean, 2),
+            }
+            feedback = _safe_str(data.get("feedback"))
+            strengths = data.get("strengths") if isinstance(data.get("strengths"), list) else []
+            weaknesses = data.get("weaknesses") if isinstance(data.get("weaknesses"), list) else []
+            llama_eval_status = "ok"
+            evaluator_entity = "base_llama"
+        except Exception as e:
+            logger.warning(f"[TheoryEval] Base LLaMA rubric call failed ({e}). Falling back to BERT concept coverage.")
+            llama_eval_status = "unavailable"
+            evaluator_entity = "bert_semantic"
+
+        # Concept coverage using BERT and synonym map
         valid_concepts = [
             c for c in (concepts or [])
             if not any(g in str(c).lower() for g in ("fundamentals", "core concepts", "basic principles", "general"))
         ]
-
         is_keyword_dump = _looks_like_keyword_dump(answer, valid_concepts)
-        missing_reported = _filter_to_current_question(data.get("missingConcepts") or [], valid_concepts)
-        weaknesses = _filter_to_current_question(data.get("weaknesses") or [], valid_concepts)
         covered, partially_covered, missing_concepts = _classify_expected_concepts(
             valid_concepts,
             answer,
             embedding_service,
-            (data.get("coveredConcepts") or []) + (data.get("strengths") or []),
+            (strengths or []) + (data.get("coveredConcepts") or []),
             data.get("partiallyCoveredConcepts") or [],
-            missing_reported,
+            data.get("missingConcepts") or [],
             semantic_relevance,
         )
         if valid_concepts:
             concept_coverage = (len(covered) + 0.5 * len(partially_covered)) / len(valid_concepts)
         else:
-            concept_coverage = _bounded_score(data.get("conceptCoverage"), semantic_relevance)
+            concept_coverage = semantic_relevance
 
-        correctness = _bounded_score(data.get("correctness"), 0.0)
-        communication = _bounded_score(data.get("communication"), 0.75)
-        if _is_fragmentary_answer(answer):
-            communication = min(communication, 0.45)
-        relevance = _bounded_score(0.75 * llm_relevance + 0.25 * semantic_relevance)
-        if semantic_relevance < 0.30:
-            relevance = min(relevance, semantic_relevance)
-        if not _as_bool(data.get("demonstratesUnderstanding"), True):
-            # Meaning-based judgement: terms present, understanding absent.
-            correctness = min(correctness, 0.30)
-            concept_coverage = min(concept_coverage, 0.30)
-            relevance = min(relevance, 0.40)
-            communication = min(communication, 0.45)
-        if is_keyword_dump:
-            correctness = min(correctness, 0.30)
+        concept_coverage_score = round(concept_coverage * 100.0)
 
-        # Logical Coherence: An answer with high correctness cannot have 0% concept coverage
-        if correctness >= 0.85:
-            concept_coverage = max(concept_coverage, min(1.0, correctness * 0.95))
-            if correctness >= 0.95:
-                concept_coverage = max(concept_coverage, 1.0)
-                missing_concepts = []
-                weaknesses = [w for w in weaknesses if not any(g in str(w).lower() for g in ("fundamentals", "core concepts", "general"))]
-        elif correctness >= 0.60:
-            concept_coverage = max(concept_coverage, min(1.0, correctness * 0.80))
-
-        if missing_concepts and correctness < 0.90:
-            score_reason = (
-                "You addressed the main topic, but some important concepts were missing: "
-                + ", ".join(missing_concepts) + "."
-            )
-            feedback = _safe_str(data.get("feedback")) or score_reason
-        elif is_keyword_dump:
-            score_reason = (
-                "The answer only lists relevant terms without explaining what they mean or how "
-                "they apply, so it doesn't demonstrate real understanding."
-            )
-            feedback = "This lists relevant terms but does not explain what any of them mean or how they relate to the question."
+        # Formula: round(0.60 * llamaRubricScore + 0.40 * conceptCoverageScore)
+        if llama_eval_status == "ok" and llama_rubric_mean is not None:
+            formula_score = round(0.60 * llama_rubric_mean + 0.40 * concept_coverage_score)
         else:
-            raw_score_reason = _safe_str(data.get("scoreReason"))
-            if raw_score_reason and _score_reason_matches_question(raw_score_reason, question, valid_concepts):
-                score_reason = raw_score_reason
-            elif correctness >= 0.90:
-                score_reason = "Your answer covered the required concepts accurately. Clear, well-explained response."
-            else:
-                score_reason = "Your answer covered the required concepts accurately. Improve any remaining depth or examples to make it more complete."
-            feedback = _safe_str(data.get("feedback")) or score_reason
+            formula_score = round(concept_coverage_score)
 
-        deeper_concepts = data.get("deeperConcepts") or []
-        improvement_suggestion = _safe_str(data.get("improvementSuggestion")) or None
-        if improvement_suggestion and not _score_reason_matches_question(improvement_suggestion, question, valid_concepts):
-            logger.warning(
-                f"[Evaluator] improvementSuggestion didn't match the question, discarding: "
-                f"{improvement_suggestion[:150]!r}"
-            )
-            deeper_concepts, improvement_suggestion = [], None
-        elif not improvement_suggestion:
-            deeper_concepts = []
+        # Strict Guards:
+        # Guard 1: If conceptCoverage == 0 and answer doesn't mention a single concept or synonym -> final score <= 20
+        if concept_coverage <= 0.05 and not mentions_any_concept:
+            final_score = min(20, formula_score)
+        else:
+            final_score = formula_score
 
-        if not improvement_suggestion and missing_concepts and correctness < 0.90:
-            improvement_suggestion = (
-                "To improve your answer, explain " + ", ".join(missing_concepts) +
-                " and connect those ideas directly to the question."
-            )
-        elif not improvement_suggestion and correctness >= 0.90:
-            improvement_suggestion = "Great explanation! To make your answer even stronger, consider adding a practical real-world example."
+        # Guard 2: If conceptCoverage >= 0.85 and llamaRubricScore >= 80 -> final score >= 80
+        if concept_coverage >= 0.85 and (llama_rubric_mean is not None and llama_rubric_mean >= 80):
+            final_score = max(80, final_score)
 
-        weaknesses = list(dict.fromkeys(missing_concepts + [w for w in weaknesses if not any(g in str(w).lower() for g in ("fundamentals", "core concepts", "general"))]))
-        rounded_cov = round(float(concept_coverage), 2)
-        rounded_corr = round(correctness, 2)
-        rounded_rel = round(relevance, 2)
-        rounded_comm = round(communication, 2)
+        final_score = max(0, min(100, final_score))
+
+        if is_keyword_dump:
+            final_score = min(20, final_score)
+            feedback = "This lists relevant terms but does not explain what any of them mean or how they relate to the question."
+            weaknesses = ["Answer is a list of terms, not an explanation"]
+            strengths = []
+
+        score_reason = feedback or f"Evaluation based on technical accuracy and concept coverage ({concept_coverage_score}%)."
+        evidence = {
+            "conceptCoverage": round(concept_coverage, 2),
+            "conceptCoverageScore": concept_coverage_score,
+            "coveredConcepts": covered,
+            "partiallyCoveredConcepts": partially_covered,
+            "missingConcepts": missing_concepts,
+        }
+
         is_sql_query = (language or "").lower() == "sql" or (
             (subject or "").lower() == "dbms" and bool(re.search(r'^\s*(?:--[^\n]*\n\s*)*SELECT\b', (answer or '').strip(), re.IGNORECASE))
-        )
-        comm_val = None if is_sql_query else rounded_comm
-        final_score = _calculate_text_score(
-            rounded_rel, rounded_corr, rounded_cov, comm_val
         )
 
         eval_res = {
             "score": final_score,
-            "conceptCoverage": rounded_cov,
-            "correctness": rounded_corr,
-            "relevance": rounded_rel,
-            "communication": comm_val,
-            "isIrrelevant": is_irrelevant,
-            "feedback": feedback,
-            "strengths": [] if is_keyword_dump or is_irrelevant else (data.get("strengths") or []),
-            "weaknesses": [] if is_irrelevant else (["Answer is a list of terms, not an explanation"] if is_keyword_dump else weaknesses),
+            "conceptCoverage": round(concept_coverage, 2),
+            "correctness": round(c_score / 100.0 if llama_eval_status == "ok" else concept_coverage, 2),
+            "relevance": round(r_score / 100.0 if llama_eval_status == "ok" else semantic_relevance, 2),
+            "communication": None if is_sql_query else round(clar_score / 100.0 if llama_eval_status == "ok" else 0.8, 2),
+            "isIrrelevant": False,
+            "evidence": evidence,
+            "llamaRubric": llama_rubric,
+            "formulaVersion": "v2",
+            "evaluatedBy": evaluator_entity,
+            "llamaEvaluation": llama_eval_status,
+            "feedback": feedback or score_reason,
+            "strengths": strengths,
+            "weaknesses": weaknesses,
             "coveredConcepts": covered,
             "partiallyCoveredConcepts": partially_covered,
             "missingConcepts": missing_concepts,
-            "deeperConcepts": deeper_concepts,
-            "improvementSuggestion": improvement_suggestion,
+            "deeperConcepts": [],
+            "improvementSuggestion": (
+                "Explain " + ", ".join(missing_concepts) + " and connect those ideas directly to the question."
+                if missing_concepts else None
+            ),
             "scoreReason": score_reason,
-            "modelUsed": model_used,
-            "usedFallback": False,
-            "parseFailed": parse_failed,
-            "scoringSources": ["llm", "bert", "rules"],
+            "modelUsed": getattr(self, "model_name", settings.MODEL_NAME),
+            "usedFallback": (llama_eval_status == "unavailable"),
+            "scoringSources": ["base_llama", "bert"] if llama_eval_status == "ok" else ["bert"],
         }
         if hasattr(self, "_eval_cache"):
             self._eval_cache[cache_key] = eval_res
@@ -4283,6 +4294,11 @@ class DevFallbackModel(BaseAIModel):
                 "correctness": 0.0,
                 "relevance": 0.0,
                 "communication": 0.0,
+                "evidence": None,
+                "llamaRubric": None,
+                "formulaVersion": "v2",
+                "evaluatedBy": "rules",
+                "llamaEvaluation": "ok",
                 "feedback": "No response provided. Attempting to answer every question is essential for interview practice.",
                 "strengths": [],
                 "weaknesses": ["Skipped response"],
@@ -4291,7 +4307,13 @@ class DevFallbackModel(BaseAIModel):
             }
 
         if _should_reject_term_list(question, answer):
-            return _keyword_list_evaluation(concepts)
+            res = _keyword_list_evaluation(concepts)
+            res["evidence"] = None
+            res["llamaRubric"] = None
+            res["formulaVersion"] = "v2"
+            res["evaluatedBy"] = "rules"
+            res["llamaEvaluation"] = "ok"
+            return res
 
         matched, partially_covered, missing = _classify_expected_concepts(
             concepts, answer, embedding_service
@@ -4308,7 +4330,13 @@ class DevFallbackModel(BaseAIModel):
         semantic_relevance = max(overall_sim, question_sim)
         is_irrelevant = semantic_relevance < 0.16
         if is_irrelevant:
-            return _irrelevant_text_evaluation()
+            res = _irrelevant_text_evaluation()
+            res["evidence"] = None
+            res["llamaRubric"] = None
+            res["formulaVersion"] = "v2"
+            res["evaluatedBy"] = "rules"
+            res["llamaEvaluation"] = "ok"
+            return res
 
         is_keyword_dump = _looks_like_keyword_dump(answer, concepts)
         relevance = semantic_relevance
@@ -4342,6 +4370,14 @@ class DevFallbackModel(BaseAIModel):
             weaknesses = [f"Did not cover: {c}" for c in missing[:3]] if missing else \
                 ["Incomplete answer", "Lacks structural detail"]
 
+        evidence = {
+            "conceptCoverage": round(coverage, 2),
+            "conceptCoverageScore": round(coverage * 100.0),
+            "coveredConcepts": matched,
+            "partiallyCoveredConcepts": partially_covered,
+            "missingConcepts": missing,
+        }
+
         return {
             "score": score,
             "conceptCoverage": 0.0 if is_irrelevant else round(coverage, 2),
@@ -4349,6 +4385,11 @@ class DevFallbackModel(BaseAIModel):
             "relevance": round(relevance, 2),
             "communication": comm_val,
             "isIrrelevant": False,
+            "evidence": evidence,
+            "llamaRubric": None,
+            "formulaVersion": "v2",
+            "evaluatedBy": "bert_semantic",
+            "llamaEvaluation": "unavailable",
             "feedback": fb,
             "strengths": strengths,
             "weaknesses": weaknesses,
