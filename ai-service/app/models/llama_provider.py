@@ -3604,8 +3604,20 @@ class LlamaModel(BaseAIModel):
         }
 
     def _evaluate_output_prediction(self, question: str, answer: str, concepts: list, expected_output: str, explanation: str = None, code_snippet: str = None, subject: str = "java") -> dict:
+        import hashlib
         norm = _canonical_output
         effective_expected = expected_output or ""
+
+        # 0. Cache check for idempotency
+        norm_ans = _normalize_answer_for_eval(answer)
+        norm_q = _safe_str(question).strip().lower()
+        norm_snippet = _safe_str(code_snippet).strip()
+        cache_raw = f"output_prediction::{norm_q}::{norm_ans}::{norm_snippet}::{effective_expected}"
+        cache_key = hashlib.sha256(cache_raw.encode("utf-8")).hexdigest()
+        if not hasattr(self, "_eval_cache"):
+            self._eval_cache = {}
+        if cache_key in self._eval_cache:
+            return dict(self._eval_cache[cache_key])
 
         # If code_snippet is provided for Java, verify against deterministic JVM execution
         if code_snippet and (subject or "java").lower() == "java":
@@ -3640,36 +3652,175 @@ class LlamaModel(BaseAIModel):
             if norm(clean_ans) == norm(effective_expected) or (expected_output and norm(clean_ans) == norm(expected_output)):
                 is_exact_match = True
 
-        score = 100 if is_exact_match else 0
-        feedback = (
-            "Correct! Your predicted output exactly matches the actual output."
-            if is_exact_match else
-            f"Your predicted output does not match the actual output ('{effective_expected}')."
-        )
-        score_reason = (
-            "Full marks: your stated output matches the actual output exactly."
-            if is_exact_match else
-            f"The prediction is incorrect. The actual output is '{effective_expected}', which does not match what you wrote ('{(answer or '').strip()}')."
-        )
-        weak_concepts = [] if is_exact_match else (concepts or [])
+        evidence = {
+            "predictedOutput": (answer or "").strip(),
+            "expectedOutput": effective_expected,
+            "exactMatch": is_exact_match,
+        }
 
-        return {
-            "score": score,
-            "conceptCoverage": round(score / 100.0, 2),
-            "correctness": round(score / 100.0, 2),
+        # Guard 1: Exact match against JVM stdout -> score 100 immediately
+        if is_exact_match:
+            res = {
+                "score": 100,
+                "conceptCoverage": 1.0,
+                "correctness": 1.0,
+                "relevance": 1.0,
+                "communication": None,
+                "isIrrelevant": False,
+                "evidence": evidence,
+                "llamaRubric": None,
+                "formulaVersion": "v2",
+                "evaluatedBy": "executor",
+                "llamaEvaluation": "ok",
+                "feedback": "Correct! Your predicted output exactly matches the actual output.",
+                "strengths": ["Exact output match"],
+                "weaknesses": [],
+                "missingConcepts": [],
+                "scoreReason": "Full marks: your stated output matches the actual output exactly.",
+                "stepByStepExplanation": explanation or None,
+                "modelUsed": getattr(self, "model_name", settings.MODEL_NAME),
+                "usedFallback": False,
+                "scoringSources": ["exact_match"],
+            }
+            self._eval_cache[cache_key] = res
+            return res
+
+        # If predicted output is wrong:
+        clean_text = (answer or "").strip()
+        tokens = [t for t in re.split(r"\s+", clean_text) if t]
+        has_explanation = (
+            len(tokens) > 3
+            and any(w in clean_text.lower() for w in [
+                "because", "since", "as", "due", "prints", "printed", "executes", "executed",
+                "output", "returns", "loop", "value", "variable", "line", "condition",
+                "increment", "decrement", "static", "initial", "final", "calls", "reason",
+                "produces", "gives", "yields", "evaluates", "result"
+            ])
+        )
+
+        # Guard 2: No explanation provided for wrong answer -> score 0
+        if not has_explanation or not clean_text:
+            res = {
+                "score": 0,
+                "conceptCoverage": 0.0,
+                "correctness": 0.0,
+                "relevance": 1.0 if clean_text else 0.0,
+                "communication": None,
+                "isIrrelevant": False,
+                "evidence": evidence,
+                "llamaRubric": None,
+                "formulaVersion": "v2",
+                "evaluatedBy": "executor",
+                "llamaEvaluation": "ok",
+                "feedback": f"Your predicted output does not match the actual output ('{effective_expected}').",
+                "strengths": [],
+                "weaknesses": concepts or [f"Incorrect output. Expected: {effective_expected}"],
+                "missingConcepts": concepts or [],
+                "scoreReason": f"The prediction is incorrect (expected '{effective_expected}'), and no explanation was provided.",
+                "stepByStepExplanation": explanation or None,
+                "modelUsed": getattr(self, "model_name", settings.MODEL_NAME),
+                "usedFallback": False,
+                "scoringSources": ["sandbox"],
+            }
+            self._eval_cache[cache_key] = res
+            return res
+
+        # Predicted output is wrong, but candidate provided explanation -> call Base LLaMA at temperature 0
+        prompt = (
+            "You are a Java technical interviewer reviewing a candidate's answer to an output prediction question.\n"
+            f"Code Snippet:\n{code_snippet or 'None'}\n\n"
+            f"Expected Output from JVM:\n{effective_expected}\n\n"
+            f"Candidate's Answer:\n{answer}\n\n"
+            "The candidate's predicted output is INCORRECT.\n"
+            "Diagnose their misconception and rate the partial correctness of their reasoning from 0 to 100:\n"
+            "- reasoningScore (0-100): 0 if completely wrong/irrelevant reasoning, up to 100 if reasoning understood the mechanics but made a minor calculation or boundary error.\n"
+            "- misconception: 1 sentence explaining the specific technical misunderstanding.\n"
+            "- explanation: 1-2 sentences walking through the correct execution path.\n\n"
+            "Respond ONLY with a JSON object in this exact format:\n"
+            "{\n"
+            '  "reasoningScore": 0-100,\n'
+            '  "misconception": "1 sentence describing the candidate\'s error",\n'
+            '  "explanation": "1-2 sentences describing the correct step-by-step evaluation"\n'
+            "}"
+        )
+
+        llama_rubric = None
+        llama_eval_status = "unavailable"
+        evaluator_entity = "executor"
+        reasoning_score = 0.0
+        misconception = None
+        model_explanation = None
+
+        try:
+            base_model = getattr(settings, "BASE_MODEL_NAME", self.model_name)
+            raw_text, _ = self._call_llama(
+                prompt,
+                timeout=60,
+                num_predict=512,
+                temperature=0.0,
+                response_format="json",
+                model_override=base_model,
+            )
+            data = _extract_json(raw_text)
+            reasoning_score = max(0.0, min(100.0, float(data.get("reasoningScore", 0))))
+            misconception = _safe_str(data.get("misconception"))
+            model_explanation = _safe_str(data.get("explanation"))
+            llama_rubric = {
+                "reasoningScore": round(reasoning_score),
+                "misconception": misconception,
+                "explanation": model_explanation,
+            }
+            llama_eval_status = "ok"
+            evaluator_entity = "base_llama"
+        except Exception as e:
+            logger.warning(f"[OutputPredictionEval] Base LLaMA misconception call failed ({e}). Falling back to execution-only scoring.")
+            llama_eval_status = "unavailable"
+            evaluator_entity = "executor"
+
+        if llama_eval_status == "ok":
+            # Partial score formula: min(30, round(0.30 * reasoningScore))
+            final_score = min(30, round(0.30 * reasoning_score))
+        else:
+            final_score = 0
+
+        # Guard: When output is wrong, score can NEVER exceed 30
+        final_score = max(0, min(30, final_score))
+
+        score_reason = (
+            f"Partial credit ({final_score}%): predicted output was incorrect (expected '{effective_expected}'), "
+            f"but reasoning showed partial understanding. Misconception: {misconception or 'None'}."
+            if final_score > 0 else
+            f"The prediction is incorrect. The actual output is '{effective_expected}'. Misconception: {misconception or 'Incorrect logic'}."
+        )
+
+        res = {
+            "score": final_score,
+            "conceptCoverage": round(final_score / 100.0, 2),
+            "correctness": round(final_score / 100.0, 2),
             "relevance": 1.0,
             "communication": None,
             "isIrrelevant": False,
-            "feedback": feedback,
-            "strengths": ["Correct output"] if is_exact_match else [],
-            "weaknesses": [] if is_exact_match else weak_concepts,
-            "missingConcepts": [] if is_exact_match else weak_concepts,
+            "evidence": evidence,
+            "llamaRubric": llama_rubric,
+            "formulaVersion": "v2",
+            "evaluatedBy": evaluator_entity,
+            "llamaEvaluation": llama_eval_status,
+            "feedback": (
+                f"Your predicted output was incorrect (expected '{effective_expected}'), but your reasoning received {final_score}% partial credit."
+                if final_score > 0 else
+                f"Your predicted output does not match the actual output ('{effective_expected}')."
+            ),
+            "strengths": ["Partial reasoning credited"] if final_score > 0 else [],
+            "weaknesses": [misconception] if misconception else (concepts or [f"Incorrect output. Expected: {effective_expected}"]),
+            "missingConcepts": concepts or [],
             "scoreReason": score_reason,
-            "stepByStepExplanation": explanation or None,
+            "stepByStepExplanation": model_explanation or explanation or None,
             "modelUsed": getattr(self, "model_name", settings.MODEL_NAME),
-            "usedFallback": False,
-            "scoringSources": ["exact_match"],
+            "usedFallback": (llama_eval_status == "unavailable"),
+            "scoringSources": ["base_llama", "sandbox"] if llama_eval_status == "ok" else ["sandbox"],
         }
+        self._eval_cache[cache_key] = res
+        return res
 
     def _analyze_code_complexity(self, question: str, code: str, lang: str = "java") -> dict:
         """
@@ -4318,13 +4469,26 @@ class DevFallbackModel(BaseAIModel):
             if norm(clean_ans) == norm(effective_expected) or (expected_output and norm(clean_ans) == norm(expected_output)):
                 is_match = True
 
+        evidence = {
+            "predictedOutput": (answer or "").strip(),
+            "expectedOutput": effective_expected,
+            "exactMatch": is_match,
+        }
+
         if is_match:
             return {
                 "score": 100, "conceptCoverage": 1.0, "correctness": 1.0, "relevance": 1.0, "communication": None,
+                "evidence": evidence,
+                "llamaRubric": None,
+                "formulaVersion": "v2",
+                "evaluatedBy": "executor",
+                "llamaEvaluation": "ok",
                 "feedback": "Correct! Your predicted output exactly matches the actual output.",
                 "strengths": ["Exact output match"], "weaknesses": [], "missingConcepts": [],
                 "scoreReason": "Full marks: your stated output matches the actual output exactly.",
                 "stepByStepExplanation": explanation,
+                "usedFallback": False,
+                "scoringSources": ["exact_match"],
             }
 
         return {
@@ -4333,6 +4497,11 @@ class DevFallbackModel(BaseAIModel):
             "correctness": 0.0,
             "relevance": 0.0,
             "communication": None,
+            "evidence": evidence,
+            "llamaRubric": None,
+            "formulaVersion": "v2",
+            "evaluatedBy": "executor",
+            "llamaEvaluation": "unavailable",
             "feedback": f"Your predicted output doesn't match the actual output ('{effective_expected}').",
             "strengths": [],
             "weaknesses": concept_list,
@@ -4343,6 +4512,8 @@ class DevFallbackModel(BaseAIModel):
                 + (f"This question was testing: {', '.join(concept_list)}." if concept_list else "")
             ),
             "stepByStepExplanation": explanation,
+            "usedFallback": True,
+            "scoringSources": ["fallback"],
         }
 
     def _evaluate_coding_fallback(self, answer: str, concepts: list, test_cases: list, explanation: str = None, language: str = None, schema: str = None, sample_data: str = None, reference_solution: str = None) -> dict:

@@ -804,6 +804,170 @@ class TestQuestionQualityRules(unittest.TestCase):
             self.assertEqual(res1["evidence"], res2["evidence"])
             self.assertEqual(mock_call.call_count, first_count, "Second evaluation must hit cache, invoking model 0 additional times")
 
+    def test_predict_output_guard_exact_match_gives_100(self):
+        """Proof: Exact match gives 100 immediately without model call. Model cannot lower it."""
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        snippet = "public class Solution { public static void main(String[] args) { System.out.println(42); } }"
+        
+        with patch.object(provider, "_call_llama") as mock_call:
+            res = provider._evaluate_output_prediction(
+                question="What is the output?",
+                answer="42",
+                concepts=["output"],
+                expected_output="42",
+                code_snippet=snippet,
+                subject="java",
+            )
+            self.assertEqual(res["score"], 100)
+            self.assertTrue(res["evidence"]["exactMatch"])
+            self.assertEqual(res["evaluatedBy"], "executor")
+            self.assertEqual(mock_call.call_count, 0, "Exact match must never call LLaMA")
+
+    def test_predict_output_guard_no_explanation_gives_0(self):
+        """Proof: Wrong output with NO explanation gives 0, even if LLaMA gave reasoningScore=100.
+        Without guard, min(30, round(0.30*100)) = 30.
+        With guard, score is 0.
+        """
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        perfect_reasoning = json.dumps({
+            "reasoningScore": 100,
+            "misconception": "Minor off-by-one",
+            "explanation": "Actual output is 10"
+        })
+        
+        with patch.object(provider, "_call_llama", return_value=(perfect_reasoning, "llama3.2:3b")):
+            # Candidate only gives wrong number "99" with no explanation
+            res = provider._evaluate_output_prediction(
+                question="What is the output?",
+                answer="99",
+                concepts=["loops"],
+                expected_output="10",
+                code_snippet="int x = 10; System.out.println(x);",
+                subject="java",
+            )
+            self.assertEqual(res["score"], 0, "No explanation for wrong output must score 0")
+            
+            # Negative proof: without guard, formula would have produced 30
+            ungarded_score = min(30, round(0.30 * 100))
+            self.assertGreater(ungarded_score, 0, "Proves unguarded score would have been 30 > 0")
+
+    def test_predict_output_partial_credit_with_explanation(self):
+        """Proof: Wrong output WITH explanation receives partial credit capped at 30."""
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        reasoning_data = json.dumps({
+            "reasoningScore": 80,
+            "misconception": "Forgot that the loop post-increments before printing",
+            "explanation": "The loop terminates after printing 10"
+        })
+        
+        ans_with_expl = "The output is 9 because the loop condition checks i < 10 and stops at 9 before printing."
+        
+        with patch.object(provider, "_call_llama", return_value=(reasoning_data, "llama3.2:3b")):
+            res = provider._evaluate_output_prediction(
+                question="What is the output?",
+                answer=ans_with_expl,
+                concepts=["loops"],
+                expected_output="10",
+                code_snippet="for (int i = 0; i <= 10; i++) {}",
+                subject="java",
+            )
+            self.assertEqual(res["score"], 24, "80 reasoningScore * 0.30 = 24 partial score")
+            self.assertLessEqual(res["score"], 30, "Partial score must never exceed 30")
+            self.assertEqual(res["evaluatedBy"], "base_llama")
+            self.assertEqual(res["llamaEvaluation"], "ok")
+
+    def test_predict_output_model_unavailable_gives_execution_only_and_no_crash(self):
+        """Proof: Model unavailable gives execution-only score (0 for wrong, 100 for exact), llamaEvaluation='unavailable', no crash."""
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        ans_with_expl = "The output is 9 because the loop terminates at index 9."
+        
+        with patch.object(provider, "_call_llama", side_effect=RuntimeError("Ollama connection refused")):
+            res = provider._evaluate_output_prediction(
+                question="What is the output?",
+                answer=ans_with_expl,
+                concepts=["loops"],
+                expected_output="10",
+                code_snippet="for (int i = 0; i <= 10; i++) {}",
+                subject="java",
+            )
+            self.assertEqual(res["score"], 0)
+            self.assertEqual(res["llamaEvaluation"], "unavailable")
+            self.assertEqual(res["evaluatedBy"], "executor")
+            self.assertIsNone(res["llamaRubric"])
+            self.assertTrue(res["usedFallback"])
+
+    def test_predict_output_evaluation_idempotent_keyed_by_hash(self):
+        """Proof: Identical output prediction submission returns identical score and cached result."""
+        import json
+        from unittest.mock import patch
+        from app.models.llama_provider import LlamaModel
+        
+        provider = LlamaModel.__new__(LlamaModel)
+        provider.model_name = "llama3.2:3b"
+        provider.endpoint = "http://localhost:11434/api/generate"
+        provider._eval_cache = {}
+        
+        reasoning_data = json.dumps({
+            "reasoningScore": 70,
+            "misconception": "Off by one error in loop condition",
+            "explanation": "Correct output is 10"
+        })
+        
+        ans_with_expl = "The output is 9 because the loop terminates at 9."
+        
+        with patch.object(provider, "_call_llama", return_value=(reasoning_data, "llama3.2:3b")) as mock_call:
+            res1 = provider._evaluate_output_prediction(
+                question="What is the output?",
+                answer=ans_with_expl,
+                concepts=["loops"],
+                expected_output="10",
+                code_snippet="for (int i = 0; i <= 10; i++) {}",
+                subject="java",
+            )
+            first_count = mock_call.call_count
+            res2 = provider._evaluate_output_prediction(
+                question="What is the output?",
+                answer=ans_with_expl,
+                concepts=["loops"],
+                expected_output="10",
+                code_snippet="for (int i = 0; i <= 10; i++) {}",
+                subject="java",
+            )
+            self.assertEqual(res1["score"], res2["score"])
+            self.assertEqual(res1["llamaRubric"], res2["llamaRubric"])
+            self.assertEqual(res1["evidence"], res2["evidence"])
+            self.assertEqual(mock_call.call_count, first_count, "Second call must hit cache with 0 additional invocations")
+
 
 if __name__ == "__main__":
     unittest.main()
