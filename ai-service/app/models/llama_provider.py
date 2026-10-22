@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import os
 import requests
 import json
 import re
@@ -232,7 +233,7 @@ class BaseAIModel(ABC):
         pass
 
     @abstractmethod
-    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical") -> dict:
+    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, **kwargs) -> dict:
         pass
 
 
@@ -355,10 +356,13 @@ def _irrelevant_text_evaluation() -> dict:
 
 
 def _calculate_text_score(relevance: float, correctness: float, concept_coverage: float,
-                          communication: float) -> int:
+                          communication: float = None) -> int:
+    vals = [v for v in (relevance, correctness, concept_coverage, communication) if v is not None]
+    if not vals:
+        return 0
     percents = [
         round(max(0.0, min(1.0, float(v))) * 100)
-        for v in (relevance, correctness, concept_coverage, communication)
+        for v in vals
     ]
     return int(sum(percents) / len(percents) + 0.5)
 
@@ -1291,7 +1295,11 @@ def _canonical_output(text: str) -> str:
     line-ending style and leading/trailing whitespace (a stray trailing newline
     isn't program output). Case, digits, punctuation and inner spacing all count.
     """
-    return (text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not text:
+        return ""
+    normalized = (text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+    lines = [line.rstrip() for line in normalized.split("\n")]
+    return "\n".join(lines)
 
 
 def _is_fragmentary_answer(answer: str) -> bool:
@@ -1735,7 +1743,7 @@ _GUARANTEED_UNIQUE_CODING_QUESTIONS = {
 _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS = {
     ("java", "easy"): [
         {
-            "questionText": "What is the exact output of the following code? Explain briefly if helpful.",
+            "questionText": "What is the exact output of the following code?",
             "questionType": "normal",
             "subject": "java",
             "difficulty": "easy",
@@ -1747,7 +1755,7 @@ _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS = {
             "explanation": "String concatenation operates left to right: 'Sum: ' + 10 becomes 'Sum: 10', then + 20 concatenates '20'."
         },
         {
-            "questionText": "What is the exact output of the following code? Explain briefly if helpful.",
+            "questionText": "What is the exact output of the following code?",
             "questionType": "normal",
             "subject": "java",
             "difficulty": "easy",
@@ -1761,7 +1769,7 @@ _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS = {
     ],
     ("java", "medium"): [
         {
-            "questionText": "What is the exact output of the following code? Explain briefly if helpful.",
+            "questionText": "What is the exact output of the following code?",
             "questionType": "normal",
             "subject": "java",
             "difficulty": "medium",
@@ -1773,7 +1781,7 @@ _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS = {
             "explanation": "Java resolves instance method calls at runtime according to the actual object type (Child), demonstrating dynamic dispatch."
         },
         {
-            "questionText": "What is the exact output of the following code? Explain briefly if helpful.",
+            "questionText": "What is the exact output of the following code?",
             "questionType": "normal",
             "subject": "java",
             "difficulty": "medium",
@@ -1787,7 +1795,7 @@ _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS = {
     ],
     ("java", "hard"): [
         {
-            "questionText": "What is the exact output of the following code? Explain briefly if helpful.",
+            "questionText": "What is the exact output of the following code?",
             "questionType": "normal",
             "subject": "java",
             "difficulty": "hard",
@@ -1801,7 +1809,7 @@ _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS = {
     ],
     ("dbms", "easy"): [
         {
-            "questionText": "What is the exact output of the following code? Explain briefly if helpful.",
+            "questionText": "What is the exact output of the following code?",
             "questionType": "normal",
             "subject": "dbms",
             "difficulty": "easy",
@@ -1815,7 +1823,7 @@ _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS = {
     ],
     ("dbms", "medium"): [
         {
-            "questionText": "What is the exact output of the following code? Explain briefly if helpful.",
+            "questionText": "What is the exact output of the following code?",
             "questionType": "normal",
             "subject": "dbms",
             "difficulty": "medium",
@@ -1829,6 +1837,48 @@ _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS = {
     ]
 }
 
+def _load_raw_output_predictions():
+    """Populates _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS with the 100 curated questions from raw dataset."""
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", "training", "data", "raw", "java_output_prediction_100.jsonl"),
+        os.path.join(os.getcwd(), "training", "data", "raw", "java_output_prediction_100.jsonl"),
+        os.path.join(os.getcwd(), "..", "training", "data", "raw", "java_output_prediction_100.jsonl"),
+        r"c:\Users\kavin\Downloads\MockMateAI-fresh\MockMateAI-Clean-Source\training\data\raw\java_output_prediction_100.jsonl",
+    ]
+    for p in candidates:
+        abs_p = os.path.abspath(p)
+        if os.path.exists(abs_p):
+            try:
+                with open(abs_p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        item = json.loads(line)
+                        subj = item.get("subject", "java").lower()
+                        diff = item.get("difficulty", "medium").lower()
+                        key = (subj, diff)
+                        if key not in _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS:
+                            _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS[key] = []
+                        q_obj = {
+                            "questionText": item.get("questionText", "What does the following Java program print?"),
+                            "questionType": "normal",
+                            "subject": subj,
+                            "difficulty": diff,
+                            "category": item.get("category", "Java Output Prediction"),
+                            "expectedConcepts": [f"{item.get('category', 'Java')} execution"],
+                            "questionFormat": "output_prediction",
+                            "codeSnippet": item.get("codeSnippet", "").replace("static int a = b + 1;", "static int a = Main.b + 1;"),
+                            "expectedOutput": _canonical_output(str(item.get("expectedOutput", "")).replace("\\n", "\n").replace("\\r", "").strip()),
+                            "explanation": item.get("explanation"),
+                        }
+                        if not any(x["codeSnippet"] == q_obj["codeSnippet"] for x in _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS[key]):
+                            _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS[key].append(q_obj)
+                break
+            except Exception as e:
+                logger.warning(f"Failed to load java_output_prediction_100.jsonl: {e}")
+
+_load_raw_output_predictions()
+
 
 class LlamaModel(BaseAIModel):
     """
@@ -1839,11 +1889,13 @@ class LlamaModel(BaseAIModel):
     """
     model_name: str = settings.MODEL_NAME
     ft_model_name: str = settings.FINE_TUNED_MODEL_NAME
+    complexity_model_name: str = getattr(settings, "COMPLEXITY_MODEL_NAME", settings.FINE_TUNED_MODEL_NAME)
 
-    def __init__(self, endpoint: str = settings.MODEL_ENDPOINT, model_name: str = settings.MODEL_NAME, ft_model_name: str = settings.FINE_TUNED_MODEL_NAME):
+    def __init__(self, endpoint: str = settings.MODEL_ENDPOINT, model_name: str = settings.MODEL_NAME, ft_model_name: str = settings.FINE_TUNED_MODEL_NAME, complexity_model_name: str = None):
         self.endpoint = endpoint
         self.model_name = model_name
         self.ft_model_name = ft_model_name
+        self.complexity_model_name = complexity_model_name or getattr(settings, "COMPLEXITY_MODEL_NAME", ft_model_name)
 
     def _call_llama(self, prompt: str, timeout: int = 300, num_predict: int = 1024, temperature: float = 0.7, response_format: str = None, system: str = None, model_override: str = None) -> tuple:
         target_model = model_override or self.model_name
@@ -1918,7 +1970,8 @@ class LlamaModel(BaseAIModel):
                 name = m.get("name", "")
                 if name == self.model_name or name.startswith(f"{self.model_name}:"):
                     model_match = m
-                if name == self.ft_model_name or name.startswith(f"{self.ft_model_name}:"):
+                ft_prefix = self.ft_model_name.split(":")[0]
+                if name == self.ft_model_name or name.startswith(f"{self.ft_model_name}:") or name == ft_prefix or name.startswith(f"{ft_prefix}:"):
                     ft_match = m
 
             active_match = ft_match or model_match
@@ -2061,7 +2114,9 @@ class LlamaModel(BaseAIModel):
             rejected_topics = []
             for attempt in range(5):
                 try:
-                    return self._generate_output_prediction_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected_topics)
+                    res = self._generate_output_prediction_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected_topics)
+                    res["_generation_meta"] = {"attempts": attempt + 1, "source": "model"}
+                    return res
                 except (ValueError, TypeError, AttributeError, KeyError) as e:
                     last_err = e
                     rejected_topics.append(str(e))
@@ -2069,7 +2124,9 @@ class LlamaModel(BaseAIModel):
             fallback_op = self._get_guaranteed_unique_output_prediction(subject, difficulty, previous)
             if fallback_op:
                 logger.warning(f"[LLaMA] 5 attempts exhausted, using guaranteed unique {difficulty} {subject} output prediction problem.")
-                return fallback_op
+                res = dict(fallback_op)
+                res["_generation_meta"] = {"attempts": 5, "source": "catalog"}
+                return res
             raise AIGenerationUnavailableError(
                 f"could not generate a valid {difficulty} output-prediction question after 5 attempts: {last_err}"
             )
@@ -2079,7 +2136,9 @@ class LlamaModel(BaseAIModel):
             rejected_signatures = []
             for attempt in range(5):
                 try:
-                    return self._generate_coding_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected_signatures)
+                    res = self._generate_coding_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected_signatures)
+                    res["_generation_meta"] = {"attempts": attempt + 1, "source": "model"}
+                    return res
                 except (ValueError, TypeError, AttributeError, KeyError) as e:
                     last_err = e
                     rejected_signatures.append(str(e))
@@ -2087,7 +2146,9 @@ class LlamaModel(BaseAIModel):
             fallback_q = self._get_guaranteed_unique_coding_question(subject, difficulty, previous)
             if fallback_q:
                 logger.warning(f"[LLaMA] 5 attempts exhausted, using guaranteed unique {difficulty} {subject} coding problem to avoid session crash.")
-                return fallback_q
+                res = dict(fallback_q)
+                res["_generation_meta"] = {"attempts": 5, "source": "catalog"}
+                return res
             raise AIGenerationUnavailableError(
                 f"could not generate a valid {difficulty} coding question after 5 attempts: {last_err}"
             )
@@ -2283,6 +2344,17 @@ class LlamaModel(BaseAIModel):
         ctx_str = "\n".join(context) if context else "Standard domain principles."
         prev_str = ", ".join(_safe_str(p) for p in (previous or [])) if previous else "None"
         op_focus = _pick_topic_focus(subject, previous, _OUTPUT_PREDICTION_FOCUS, _GENERIC_THEORY_FOCUS, rejected=rejected)
+        if (subject or "").lower() == "java":
+            req_msg = (
+                "Create a predict-the-output question for Java. Provide a single, complete, fully working "
+                "Java class with a public static void main(String[] args) method that prints output to System.out. "
+                "All variables used MUST be explicitly declared and initialized. Do not write multiple classes or undeclared variables. "
+                "Do NOT use Random, Math.random, System.currentTimeMillis, nanoTime, threads, hash codes, or user input. "
+                "The code must compile cleanly and produce 100% deterministic stdout. Do NOT provide expected output."
+            )
+        else:
+            req_msg = "Create a predict-the-output question."
+
         input_dict = {
             "interviewType": "technical",
             "subject": subject,
@@ -2291,10 +2363,10 @@ class LlamaModel(BaseAIModel):
             "category": op_focus,
             "context": ctx_str,
             "previous": prev_str,
-            "request": "Create a predict-the-output question. Preserve code and expected output exactly."
+            "request": req_msg,
         }
         prompt = build_training_style_prompt("generate_question", input_dict)
-        temp = min(0.85, 0.25 + (attempt * 0.15))
+        temp = min(0.30, 0.15 + (attempt * 0.03))
         raw_text, model_used = self._call_llama(
             prompt,
             system=TRAINING_SYSTEM_PROMPT,
@@ -2305,28 +2377,38 @@ class LlamaModel(BaseAIModel):
                 "type": "object",
                 "properties": {
                     "codeSnippet": {"type": "string"},
-                    "expectedOutput": {"type": "string"},
                     "category": {"type": "string"},
                     "expectedConcepts": {"type": "array", "items": {"type": "string"}},
                     "explanation": {"type": "string"},
                 },
-                "required": ["codeSnippet", "expectedOutput", "category", "expectedConcepts", "explanation"],
+                "required": ["codeSnippet", "category", "expectedConcepts", "explanation"],
                 "additionalProperties": False,
             },
         )
         data = _extract_json(raw_text)
 
         code = str(data.get("codeSnippet") or "").strip()
-        expected_output = str(data.get("expectedOutput") or "").strip()
-        if not code or not expected_output:
-            raise ValueError("LLaMA did not return a usable codeSnippet/expectedOutput pair")
+        if not code:
+            raise ValueError("LLaMA did not return a usable codeSnippet")
+
+        # Deterministically verify with double-run Java sandbox, check determinism, and ground-truth output
+        if (subject or "").lower() == "java":
+            from app.services.code_executor import verify_predict_output_snippet, is_java_available
+            if not is_java_available():
+                raise ValueError("Java runtime unavailable for predict-the-output verification")
+            ok, canon_out, err = verify_predict_output_snippet(code)
+            if not ok:
+                raise ValueError(f"Predict-the-output verification failed: {err}")
+            expected_output = canon_out
+        else:
+            expected_output = _canonical_output(str(data.get("expectedOutput") or "").strip())
 
         dup_reason = _is_duplicate_question(code, previous)
         if dup_reason:
             raise ValueError(f"generated code snippet is a duplicate: {dup_reason}")
 
         return {
-            "questionText": "What is the exact output of the following code? Explain briefly if helpful.",
+            "questionText": "What is the exact output of the following code?",
             "questionType": "normal",
             "subject": subject,
             "difficulty": difficulty,
@@ -2350,12 +2432,27 @@ class LlamaModel(BaseAIModel):
 
     def _generate_java_coding_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None) -> dict:
         """
-        'Coding' question: LLaMA writes a self-contained Java coding problem
-        (e.g. "write a program to compute the factorial of a number"),
-        along with 3-4 test cases (input + expected output). The candidate
-        submits actual code, which is later graded by LLaMA
-        (`_evaluate_coding_answer`) reasoning over the test cases.
+        'Coding' question: LLaMA writes a self-contained Java coding problem.
+        Verification pipeline:
+        - Checks Java runtime is available (otherwise serves from verified catalogue).
+        - Model provides title, description, methodSignature, testInputs, referenceSolution, alternativeSolution.
+        - Computes ground-truth expected outputs by executing referenceSolution in sandbox twice.
+        - Verifies alternativeSolution gives identical outputs on all test inputs.
+        - Builds starterCode deterministically from methodSignature only.
+        - Validates starterCode and questionText against leak guards.
+        - Formats questionText with signature, params, return type, and 2 executed worked examples.
         """
+        from app.services.code_executor import (
+            is_java_available,
+            generate_deterministic_starter_code,
+            check_starter_code_leak,
+            check_question_text_leak,
+            verify_dual_coding_solutions,
+        )
+
+        if not is_java_available():
+            raise ValueError("Java runtime (JDK) unavailable for model-generated coding verification")
+
         language = "java"
         difficulty_key = (difficulty or "medium").lower()
         if difficulty_key not in _CODING_DIFFICULTY_SPECS:
@@ -2393,13 +2490,21 @@ class LlamaModel(BaseAIModel):
             "category": chosen_problem,
             "context": f"Create an original programming problem. {avoid_clause}".strip(),
             "request": (
-                "Create a coding problem. IMPORTANT: starterCode MUST be only an empty method skeleton "
-                "with '// Write your code here' and a default return (do NOT put the solution in starterCode). "
-                "Put the complete working optimal code in referenceSolution."
-            )
+                "Create a Java coding problem. Return a valid JSON object with:\n"
+                "- title: concise problem title\n"
+                "- description: clear specification of problem requirements and constraints\n"
+                "- methodSignature: public static method signature, e.g. 'public static int findMax(int[] nums)'\n"
+                "- testInputs: list of 3 to 5 realistic input strings to test (include edge cases, e.g. '[1, 2, 3]', '[]', '-5')\n"
+                "- referenceSolution: optimal working Java class Solution with public static method\n"
+                "- alternativeSolution: a secondary, alternative or brute-force working Java class Solution with same method\n"
+                "- category: problem algorithmic topic\n"
+                "- expectedConcepts: list of algorithmic concepts tested\n"
+                "- explanation: brief solution explanation\n"
+                "DO NOT provide expected outputs for testInputs; outputs will be computed by running the code."
+            ),
         }
         prompt = build_training_style_prompt("generate_coding_problem", input_dict)
-        temp = min(0.85, 0.25 + (attempt * 0.15))
+        temp = min(0.30, 0.15 + (attempt * 0.03))
         raw_text, model_used = self._call_llama(
             prompt,
             system=TRAINING_SYSTEM_PROMPT,
@@ -2410,98 +2515,126 @@ class LlamaModel(BaseAIModel):
                 "type": "object",
                 "properties": {
                     "title": {"type": "string"},
-                    "questionText": {"type": "string"},
-                    "starterCode": {"type": "string"},
+                    "description": {"type": "string"},
+                    "methodSignature": {"type": "string"},
                     "category": {"type": "string"},
                     "expectedConcepts": {"type": "array", "items": {"type": "string"}},
-                    "testCases": {
+                    "testInputs": {
                         "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "input": {"type": "string"},
-                                "expectedOutput": {"type": "string"},
-                                "label": {"type": "string"},
-                            },
-                            "required": ["input", "expectedOutput", "label"],
-                            "additionalProperties": False,
-                        },
+                        "items": {"type": "string"},
                     },
-                    "explanation": {"type": "string"},
                     "referenceSolution": {"type": "string"},
+                    "alternativeSolution": {"type": "string"},
+                    "explanation": {"type": "string"},
                 },
-                "required": ["title", "questionText", "starterCode", "category", "expectedConcepts", "testCases", "explanation"],
+                "required": [
+                    "title",
+                    "description",
+                    "methodSignature",
+                    "category",
+                    "expectedConcepts",
+                    "testInputs",
+                    "referenceSolution",
+                    "alternativeSolution",
+                    "explanation",
+                ],
                 "additionalProperties": False,
             },
         )
         data = _extract_json(raw_text)
 
-        question_text = _safe_str(data.get("questionText") or data.get("question") or data.get("description"))
         title = _safe_str(data.get("title")) or f"Java: {chosen_problem}"
-        if not question_text:
-            question_text = f"Write a Java method to solve the following problem: {chosen_problem}."
+        description = _safe_str(data.get("description") or data.get("questionText"))
+        if not description:
+            raise ValueError("Model did not provide a problem description")
 
-        raw_starter = _safe_str(data.get("starterCode"))
-        raw_ref = _safe_str(data.get("referenceSolution") or data.get("solution") or data.get("referenceCode"))
+        method_sig = _safe_str(data.get("methodSignature"))
+        if not method_sig or "(" not in method_sig or ")" not in method_sig:
+            # Try to extract method signature from referenceSolution
+            ref_try = _safe_str(data.get("referenceSolution"))
+            sig_m = re.search(r"\b(?:public|protected|private)?\s*(static\s+)?[A-Za-z0-9_<>\[\]\s]+\s+[A-Za-z0-9_]+\s*\([^)]*\)", ref_try)
+            if sig_m:
+                method_sig = sig_m.group(0).strip()
+            else:
+                raise ValueError("Model did not provide a valid methodSignature")
 
-        # If reference solution is missing but starter code has the implementation, preserve it
-        if (not raw_ref or not _looks_like_java_method_stub(raw_ref)) and _looks_like_java_method_stub(raw_starter):
-            reference_solution = raw_starter
-        else:
-            reference_solution = raw_ref if _looks_like_java_method_stub(raw_ref) else raw_starter
+        raw_ref = _safe_str(data.get("referenceSolution"))
+        raw_alt = _safe_str(data.get("alternativeSolution"))
+        if not raw_ref or not _looks_like_java_method_stub(raw_ref):
+            raise ValueError("Model referenceSolution is missing or not a valid Java method/class")
 
-        # Guarantee starterCode is NEVER the typed solution: strip it into an empty stub
-        code_for_stub = raw_starter if _looks_like_java_method_stub(raw_starter) else reference_solution
-        starter_code = _make_java_starter_stub(code_for_stub, chosen_problem)
+        raw_inputs = data.get("testInputs") or []
+        if not isinstance(raw_inputs, list):
+            raw_inputs = []
+        test_inputs = [str(inp).strip() for inp in raw_inputs if str(inp).strip()]
+        if len(test_inputs) < 2:
+            raise ValueError(f"Insufficient testInputs from model: {len(test_inputs)} (need at least 2)")
 
-        if not reference_solution or not _looks_like_java_method_stub(reference_solution):
-            reference_solution = starter_code
+        # 1. Build starterCode deterministically from parsed method signature only
+        starter_code = generate_deterministic_starter_code(method_sig)
 
-        raw_cases = data.get("testCases") or data.get("tests") or data.get("examples") or []
-        test_cases = [
-            {
-                "input": _safe_str(tc.get("input", "")),
-                "expectedOutput": _safe_str(tc.get("expectedOutput", "")),
-                "label": (_safe_str(tc.get("label")) or f"Case {i + 1}"),
-            }
-            for i, tc in enumerate(raw_cases)
-            if isinstance(tc, dict)
-        ]
-        test_cases = [tc for tc in test_cases if tc["input"] and tc["expectedOutput"]]
-        if len(test_cases) < 2:
-            test_cases = [
-                {"input": "standard input sample", "expectedOutput": "valid expected result", "label": "Sample test 1"},
-                {"input": "boundary case input", "expectedOutput": "boundary output", "label": "Edge test 2"}
-            ]
+        # 2. Strict Leak Guards
+        ok_starter, starter_leak_err = check_starter_code_leak(starter_code, raw_ref)
+        if not ok_starter:
+            raise ValueError(f"Starter code leak guard failed: {starter_leak_err}")
 
-        _validate_missing_number_question(title, question_text, starter_code, data.get("explanation") or "", test_cases)
+        ok_text, text_leak_err = check_question_text_leak(description, raw_ref)
+        if not ok_text:
+            raise ValueError(f"Question text leak guard failed: {text_leak_err}")
 
-        # Validate generated test cases against reference solution using code_executor
-        from app.services.code_executor import execute_coding_submission, is_java_available
-        if is_java_available() and reference_solution and _looks_like_java_method_stub(reference_solution):
-            exec_res = execute_coding_submission(
-                language="java",
-                code=reference_solution,
-                test_cases=test_cases,
-            )
-            if exec_res.get("compileError") or exec_res.get("passedCount", 0) < len(test_cases):
-                err_detail = exec_res.get("compileError") or f"only {exec_res.get('passedCount', 0)} of {len(test_cases)} test cases passed"
-                raise ValueError(f"Generated test cases failed against reference solution: {err_detail}")
+        # 3. Dual solution execution verification in sandbox
+        ok_dual, verified_test_cases, dual_err = verify_dual_coding_solutions(
+            raw_ref,
+            raw_alt,
+            test_inputs,
+        )
+        if not ok_dual:
+            raise ValueError(f"Dual solution verification failed: {dual_err}")
 
-        off_tier = _detect_off_tier_problem(question_text, title, difficulty_key)
+        # 4. Format questionText with signature, parameters, return type and 2 worked examples
+        clean_sig = method_sig.strip().rstrip("{;").strip()
+        sig_m = re.search(
+            r"\b(?:public|protected|private)?\s*(static\s+)?"
+            r"([A-Za-z0-9_]+(?:<[A-Za-z0-9_,\s<>]+>)?(?:\[\s*\])*)\s+"
+            r"([A-Za-z0-9_]+)\s*\(([^)]*)\)",
+            clean_sig,
+        )
+        ret_type = sig_m.group(2).strip() if sig_m else "varies"
+        params_str = sig_m.group(4).strip() if sig_m else "varies"
+
+        ex1_in = verified_test_cases[0]["input"]
+        ex1_out = verified_test_cases[0]["expectedOutput"]
+        ex2_in = verified_test_cases[1]["input"] if len(verified_test_cases) > 1 else ex1_in
+        ex2_out = verified_test_cases[1]["expectedOutput"] if len(verified_test_cases) > 1 else ex1_out
+
+        formatted_question_text = (
+            f"{description}\n\n"
+            f"**Method Signature:**\n"
+            f"```java\n{clean_sig}\n```\n\n"
+            f"- **Parameters:** `{params_str}`\n"
+            f"- **Return Type:** `{ret_type}`\n\n"
+            f"**Example 1:**\n"
+            f"- Input: `{ex1_in}`\n"
+            f"- Output: `{ex1_out}`\n\n"
+            f"**Example 2:**\n"
+            f"- Input: `{ex2_in}`\n"
+            f"- Output: `{ex2_out}`"
+        )
+
+        off_tier = _detect_off_tier_problem(formatted_question_text, title, difficulty_key)
         if off_tier:
             raise ValueError(
                 f"generated problem is off-tier for {difficulty_key} difficulty "
                 f"(matched forbidden topic: {off_tier})"
             )
 
-        signature = f"{title}: {question_text}" if title else question_text
+        signature = f"{title}: {description}" if title else description
         dup_reason = _is_duplicate_question(signature, previous) or _is_duplicate_question(title, previous, threshold=0.92)
         if dup_reason:
             raise ValueError(f"generated coding problem is a duplicate: {dup_reason}")
 
         return {
-            "questionText": question_text,
+            "questionText": formatted_question_text,
             "questionType": "normal",
             "subject": subject,
             "difficulty": difficulty,
@@ -2511,9 +2644,9 @@ class LlamaModel(BaseAIModel):
             "language": language,
             "title": title or None,
             "starterCode": starter_code,
-            "testCases": test_cases,
-            "explanation": _safe_str(data.get("explanation")) or None,
-            "referenceSolution": reference_solution or None,
+            "testCases": verified_test_cases,
+            "explanation": str(data.get("explanation") or "").strip() or None,
+            "referenceSolution": raw_ref,
             "modelUsed": model_used,
         }
 
@@ -2663,12 +2796,38 @@ class LlamaModel(BaseAIModel):
         if not reference_query or re.search(r"^\s*select\s+\*\s+from\s+records;?\s*$", reference_query, re.IGNORECASE) or re.search(r"\bfrom\s+records\b", reference_query, re.IGNORECASE):
             raise ValueError(f"Generated SQL reference query is invalid or placeholder: {reference_query!r}")
 
+        # Validate reference query against strict SQL guard (single SELECT or WITH...SELECT, no DDL/DML/PRAGMA/ATTACH)
+        from app.services.code_executor import validate_sql_query_guard, clean_sqlite_schema
+        ok_guard, guard_err = validate_sql_query_guard(reference_query)
+        if not ok_guard:
+            raise ValueError(f"Generated SQL reference query failed SQL guard: {guard_err}")
+
         # Reject placeholder schema like "CREATE TABLE records" or unparsed JSON
         if not schema or re.search(r"\bcreate\s+table\s+records\b", schema, re.IGNORECASE) or "{" in schema:
             raise ValueError(f"Generated SQL schema is invalid or contains unparsed JSON: {schema!r}")
 
         if "create table" not in schema.lower():
             raise ValueError(f"Generated SQL schema missing CREATE TABLE statement: {schema!r}")
+
+        # Verify schema and reference query execution in SQLite, ensuring > 0 rows on sample data
+        conn_check = sqlite3.connect(":memory:")
+        try:
+            for s in clean_sqlite_schema(schema).split(";"):
+                if s.strip():
+                    conn_check.execute(s.strip())
+            if sample_data:
+                for s in sample_data.split(";"):
+                    if s.strip():
+                        conn_check.execute(s.strip())
+            cur = conn_check.cursor()
+            cur.execute(reference_query.strip().rstrip(";") + ";")
+            ref_rows = cur.fetchall()
+            if not ref_rows:
+                raise ValueError("Generated SQL reference query returned 0 rows on sample data; test dataset must produce non-empty result rows.")
+        except sqlite3.Error as e:
+            raise ValueError(f"Generated SQL schema or reference query failed SQLite execution: {e}")
+        finally:
+            conn_check.close()
 
         raw_cases = data.get("testCases") or data.get("tests") or data.get("examples") or []
         test_cases = [
@@ -2712,7 +2871,7 @@ class LlamaModel(BaseAIModel):
             sample_data=sample_data,
             reference_solution=reference_query,
         )
-        has_runtime_error = any(tc_res.get("status") == "RUNTIME_ERROR" for tc_res in exec_res.get("results", []))
+        has_runtime_error = any(tc_res.get("status") in ("RUNTIME_ERROR", "GUARD_VIOLATION") for tc_res in exec_res.get("results", []))
         if exec_res.get("compileError") or has_runtime_error:
             err_detail = exec_res.get("compileError") or next((tc_res.get("error") for tc_res in exec_res.get("results", []) if tc_res.get("error")), "execution error")
             raise ValueError(f"Generated SQL schema or reference query failed execution: {err_detail}")
@@ -2877,9 +3036,9 @@ class LlamaModel(BaseAIModel):
         )
 
     # UNTRAINED TASK (no fine-tuning data)
-    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None) -> dict:
+    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, **kwargs) -> dict:
         if question_format == "output_prediction":
-            return self._evaluate_output_prediction(question, answer, concepts, expected_output, explanation)
+            return self._evaluate_output_prediction(question, answer, concepts, expected_output, explanation, code_snippet=code_snippet, subject=subject)
         if question_format == "coding":
             return self._evaluate_coding_answer(question, answer, concepts, test_cases, language, explanation, schema=schema, sample_data=sample_data, reference_solution=reference_solution)
 
@@ -3047,8 +3206,12 @@ class LlamaModel(BaseAIModel):
         rounded_corr = round(correctness, 2)
         rounded_rel = round(relevance, 2)
         rounded_comm = round(communication, 2)
+        is_sql_query = (language or "").lower() == "sql" or (
+            (subject or "").lower() == "dbms" and bool(re.search(r'^\s*(?:--[^\n]*\n\s*)*SELECT\b', (answer or '').strip(), re.IGNORECASE))
+        )
+        comm_val = None if is_sql_query else rounded_comm
         final_score = _calculate_text_score(
-            rounded_rel, rounded_corr, rounded_cov, rounded_comm
+            rounded_rel, rounded_corr, rounded_cov, comm_val
         )
 
         return {
@@ -3056,7 +3219,7 @@ class LlamaModel(BaseAIModel):
             "conceptCoverage": rounded_cov,
             "correctness": rounded_corr,
             "relevance": rounded_rel,
-            "communication": rounded_comm,
+            "communication": comm_val,
             "isIrrelevant": is_irrelevant,
             "feedback": feedback,
             "strengths": [] if is_keyword_dump or is_irrelevant else (data.get("strengths") or []),
@@ -3095,7 +3258,7 @@ class LlamaModel(BaseAIModel):
                 "accuracy": 0.0,
                 "communication": 0.0,
                 "isIrrelevant": True,
-                "feedback": "The response does not address the question asked, so no credit can be given.",
+                "feedback": _HR_NOT_RELATED_MESSAGE,
                 "strengths": [],
                 "weaknesses": ["The answer does not relate to the question that was asked"],
                 "coveredConcepts": [],
@@ -3103,7 +3266,7 @@ class LlamaModel(BaseAIModel):
                 "missingConcepts": missing,
                 "deeperConcepts": [],
                 "improvementSuggestion": "Answer the question that was asked, using a specific example from your own experience.",
-                "scoreReason": "The answer is not about this question; score 0.",
+                "scoreReason": _HR_NOT_RELATED_MESSAGE,
                 "modelUsed": "hr_gate_filter",
                 "usedFallback": False,
                 "scoringSources": ["hr_gate", "rubric"],
@@ -3236,19 +3399,53 @@ class LlamaModel(BaseAIModel):
             "scoringSources": ["fine_tuned_llama", "bert", "rubric"],
         }
 
-    def _evaluate_output_prediction(self, question: str, answer: str, concepts: list, expected_output: str, explanation: str = None) -> dict:
+    def _evaluate_output_prediction(self, question: str, answer: str, concepts: list, expected_output: str, explanation: str = None, code_snippet: str = None, subject: str = "java") -> dict:
         norm = _canonical_output
-        is_exact_match = bool(answer and answer.strip()) and norm(answer) == norm(expected_output)
+        effective_expected = expected_output or ""
+
+        # If code_snippet is provided for Java, verify against deterministic JVM execution
+        if code_snippet and (subject or "java").lower() == "java":
+            try:
+                from app.services.code_executor import execute_java_snippet, is_java_available
+                if is_java_available():
+                    ok, real_out, _ = execute_java_snippet(code_snippet)
+                    if ok and real_out is not None and real_out.strip():
+                        effective_expected = real_out
+            except Exception as e:
+                logger.warning(f"[EvalOutputPrediction] Snippet verification fallback: {e}")
+
+        is_exact_match = bool(answer and answer.strip()) and (
+            norm(answer) == norm(effective_expected) or
+            (expected_output and norm(answer) == norm(expected_output))
+        )
+
+        # Multi-line vs single-line whitespace normalization tolerance
+        if not is_exact_match and effective_expected and answer and answer.strip():
+            ans_lines_to_spaces = " ".join(line.strip() for line in norm(answer).split("\n") if line.strip())
+            exp_lines_to_spaces = " ".join(line.strip() for line in norm(effective_expected).split("\n") if line.strip())
+            if ans_lines_to_spaces == exp_lines_to_spaces:
+                is_exact_match = True
+
+        # Tolerance for quotes, markdown code fences/backticks, or 'Output:' prefixes
+        if not is_exact_match and effective_expected and answer and answer.strip():
+            clean_ans = answer.strip()
+            if (clean_ans.startswith("`") and clean_ans.endswith("`")) or (clean_ans.startswith('"') and clean_ans.endswith('"')) or (clean_ans.startswith("'") and clean_ans.endswith("'")):
+                clean_ans = clean_ans[1:-1].strip()
+            if re.match(r'^(?:output|stdout|result)\s*:\s*', clean_ans, re.IGNORECASE):
+                clean_ans = re.sub(r'^(?:output|stdout|result)\s*:\s*', '', clean_ans, flags=re.IGNORECASE).strip()
+            if norm(clean_ans) == norm(effective_expected) or (expected_output and norm(clean_ans) == norm(expected_output)):
+                is_exact_match = True
+
         score = 100 if is_exact_match else 0
         feedback = (
             "Correct! Your predicted output exactly matches the actual output."
             if is_exact_match else
-            f"Your predicted output does not match the actual output ('{expected_output}')."
+            f"Your predicted output does not match the actual output ('{effective_expected}')."
         )
         score_reason = (
             "Full marks: your stated output matches the actual output exactly."
             if is_exact_match else
-            f"The prediction is incorrect. The actual output is '{expected_output}', which does not match what you wrote ('{(answer or '').strip()}')."
+            f"The prediction is incorrect. The actual output is '{effective_expected}', which does not match what you wrote ('{(answer or '').strip()}')."
         )
         weak_concepts = [] if is_exact_match else (concepts or [])
 
@@ -3257,7 +3454,7 @@ class LlamaModel(BaseAIModel):
             "conceptCoverage": round(score / 100.0, 2),
             "correctness": round(score / 100.0, 2),
             "relevance": 1.0,
-            "communication": 0.8,
+            "communication": None,
             "isIrrelevant": False,
             "feedback": feedback,
             "strengths": ["Correct output"] if is_exact_match else [],
@@ -3285,7 +3482,7 @@ class LlamaModel(BaseAIModel):
             "code": code
         }
         prompt = build_training_style_prompt("analyze_code_complexity", input_dict)
-        chosen_model = getattr(self, "ft_model_name", settings.FINE_TUNED_MODEL_NAME) if getattr(settings, "USE_FT_COMPLEXITY", True) else getattr(self, "model_name", settings.MODEL_NAME)
+        chosen_model = getattr(self, "complexity_model_name", getattr(settings, "COMPLEXITY_MODEL_NAME", getattr(self, "ft_model_name", settings.FINE_TUNED_MODEL_NAME))) if getattr(settings, "USE_FT_COMPLEXITY", True) else getattr(self, "model_name", settings.MODEL_NAME)
         try:
             raw_text, model_used = self._call_llama(
                 prompt,
@@ -3564,9 +3761,9 @@ class DevFallbackModel(BaseAIModel):
             "('ollama serve') with the configured model pulled, then check /health."
         )
 
-    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None) -> dict:
+    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, **kwargs) -> dict:
         if question_format == "output_prediction":
-            return self._evaluate_output_prediction_fallback(answer, concepts, expected_output, explanation)
+            return self._evaluate_output_prediction_fallback(answer, concepts, expected_output, explanation, code_snippet=code_snippet, subject=subject)
         if question_format == "coding":
             return self._evaluate_coding_fallback(answer, concepts, test_cases, explanation, language=language, schema=schema, sample_data=sample_data, reference_solution=reference_solution)
         if (interview_type or "").lower() == "hr":
@@ -3611,11 +3808,13 @@ class DevFallbackModel(BaseAIModel):
 
         is_keyword_dump = _looks_like_keyword_dump(answer, concepts)
         relevance = semantic_relevance
-        correctness = coverage
-        communication = 0.8 if length > 50 else 0.6
+        is_sql_query = (language or "").lower() == "sql" or (
+            (subject or "").lower() == "dbms" and bool(re.search(r'^\s*(?:--[^\n]*\n\s*)*SELECT\b', (answer or '').strip(), re.IGNORECASE))
+        )
+        comm_val = None if is_sql_query else (0.8 if length > 50 else 0.6)
         if is_keyword_dump:
             correctness = min(correctness, 0.3)
-        score = _calculate_text_score(relevance, correctness, coverage, communication)
+        score = _calculate_text_score(relevance, correctness, coverage, comm_val)
 
         if is_keyword_dump:
             fb = "This lists relevant terms but does not explain what any of them mean or how they relate to the question."
@@ -3643,7 +3842,7 @@ class DevFallbackModel(BaseAIModel):
             "conceptCoverage": 0.0 if is_irrelevant else round(coverage, 2),
             "correctness": round(correctness, 2),
             "relevance": round(relevance, 2),
-            "communication": round(communication, 2),
+            "communication": comm_val,
             "isIrrelevant": False,
             "feedback": fb,
             "strengths": strengths,
@@ -3717,24 +3916,53 @@ class DevFallbackModel(BaseAIModel):
             ),
         }
 
-    def _evaluate_output_prediction_fallback(self, answer: str, concepts: list, expected_output: str, explanation: str = None) -> dict:
+    def _evaluate_output_prediction_fallback(self, answer: str, concepts: list, expected_output: str, explanation: str = None, code_snippet: str = None, subject: str = "java") -> dict:
         norm = _canonical_output
+        effective_expected = expected_output or ""
+
+        # If code_snippet is provided for Java, verify against deterministic JVM execution
+        if code_snippet and (subject or "java").lower() == "java":
+            try:
+                from app.services.code_executor import execute_java_snippet, is_java_available
+                if is_java_available():
+                    ok, real_out, _ = execute_java_snippet(code_snippet)
+                    if ok and real_out is not None and real_out.strip():
+                        effective_expected = real_out
+            except Exception:
+                pass
+
         given = norm(answer)
-        expected = norm(expected_output)
+        expected = norm(effective_expected)
         concept_list = concepts or []
 
         if not given:
             return {
-                "score": 0, "conceptCoverage": 0.0, "correctness": 0.0, "relevance": 0.0, "communication": 0.0,
+                "score": 0, "conceptCoverage": 0.0, "correctness": 0.0, "relevance": 0.0, "communication": None,
                 "feedback": "No output was submitted.",
                 "strengths": [], "weaknesses": concept_list, "missingConcepts": concept_list,
                 "scoreReason": "You scored 0% instead of 100% because no output was submitted.",
                 "stepByStepExplanation": explanation,
             }
 
-        if given == expected:
+        is_match = (given == expected) or (expected_output and given == norm(expected_output))
+        if not is_match and effective_expected:
+            ans_lines_to_spaces = " ".join(line.strip() for line in given.split("\n") if line.strip())
+            exp_lines_to_spaces = " ".join(line.strip() for line in expected.split("\n") if line.strip())
+            if ans_lines_to_spaces == exp_lines_to_spaces:
+                is_match = True
+
+        if not is_match and effective_expected and answer and answer.strip():
+            clean_ans = answer.strip()
+            if (clean_ans.startswith("`") and clean_ans.endswith("`")) or (clean_ans.startswith('"') and clean_ans.endswith('"')) or (clean_ans.startswith("'") and clean_ans.endswith("'")):
+                clean_ans = clean_ans[1:-1].strip()
+            if re.match(r'^(?:output|stdout|result)\s*:\s*', clean_ans, re.IGNORECASE):
+                clean_ans = re.sub(r'^(?:output|stdout|result)\s*:\s*', '', clean_ans, flags=re.IGNORECASE).strip()
+            if norm(clean_ans) == norm(effective_expected) or (expected_output and norm(clean_ans) == norm(expected_output)):
+                is_match = True
+
+        if is_match:
             return {
-                "score": 100, "conceptCoverage": 1.0, "correctness": 1.0, "relevance": 1.0, "communication": 1.0,
+                "score": 100, "conceptCoverage": 1.0, "correctness": 1.0, "relevance": 1.0, "communication": None,
                 "feedback": "Correct! Your predicted output exactly matches the actual output.",
                 "strengths": ["Exact output match"], "weaknesses": [], "missingConcepts": [],
                 "scoreReason": "Full marks: your stated output matches the actual output exactly.",
@@ -3746,14 +3974,14 @@ class DevFallbackModel(BaseAIModel):
             "conceptCoverage": 0.0,
             "correctness": 0.0,
             "relevance": 0.0,
-            "communication": 0.0,
-            "feedback": f"Your predicted output doesn't match the actual output ('{expected_output}').",
+            "communication": None,
+            "feedback": f"Your predicted output doesn't match the actual output ('{effective_expected}').",
             "strengths": [],
             "weaknesses": concept_list,
             "missingConcepts": concept_list,
             "scoreReason": (
                 f"You scored 0% instead of 100% because the code actually outputs "
-                f"'{expected_output}', which doesn't exactly match what you wrote ('{answer.strip()}'). "
+                f"'{effective_expected}', which doesn't exactly match what you wrote ('{answer.strip()}'). "
                 + (f"This question was testing: {', '.join(concept_list)}." if concept_list else "")
             ),
             "stepByStepExplanation": explanation,
@@ -3915,9 +4143,9 @@ class ResilientAIModel(BaseAIModel):
                 "pulled, then check /health."
             ) from e
 
-    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None) -> dict:
+    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, **kwargs) -> dict:
         try:
-            return self.llama.evaluate_answer(question, answer, concepts, context, question_format, expected_output, explanation, test_cases, language, hr_delivery_metrics, interview_type, schema=schema, sample_data=sample_data, reference_solution=reference_solution)
+            return self.llama.evaluate_answer(question, answer, concepts, context, question_format, expected_output, explanation, test_cases, language, hr_delivery_metrics, interview_type, schema=schema, sample_data=sample_data, reference_solution=reference_solution, code_snippet=code_snippet, subject=subject, **kwargs)
         except Exception as e:
             if settings.STRICT_AI_MODE:
                 logger.error(f"[LLaMA] evaluate_answer failed: {e}")
@@ -3927,7 +4155,7 @@ class ResilientAIModel(BaseAIModel):
                     "Fallback evaluation is disabled to enforce fine-tuned model inference."
                 ) from e
             logger.warning(f"[LLaMA] evaluate_answer failed: {e}. Falling back to offline fallback model.")
-            return self.fallback.evaluate_answer(question, answer, concepts, context, question_format, expected_output, explanation, test_cases, language, hr_delivery_metrics, interview_type, schema=schema, sample_data=sample_data, reference_solution=reference_solution)
+            return self.fallback.evaluate_answer(question, answer, concepts, context, question_format, expected_output, explanation, test_cases, language, hr_delivery_metrics, interview_type, schema=schema, sample_data=sample_data, reference_solution=reference_solution, code_snippet=code_snippet, subject=subject, **kwargs)
 
 
 def get_ai_model_provider() -> BaseAIModel:

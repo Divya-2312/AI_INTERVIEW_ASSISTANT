@@ -18,6 +18,8 @@ from app.services.code_executor import (
     verify_dual_coding_solutions,
     is_java_available,
     execute_coding_submission,
+    validate_sql_query_guard,
+    execute_sql,
 )
 
 
@@ -325,6 +327,72 @@ class TestQuestionQualityRules(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("compilation error", err.lower())
 
+    def test_sql_guard_allows_single_select(self):
+        """SQL Guard: Valid single SELECT queries must be allowed."""
+        queries = [
+            "SELECT name, age FROM users WHERE age >= 18;",
+            "select id, count(*) from orders group by id having count(*) > 5",
+            "-- Comment\nSELECT * FROM customers WHERE status = 'ACTIVE' /* block */",
+            "SELECT 'drop table inside string' AS title FROM articles;",
+        ]
+        for q in queries:
+            with self.subTest(query=q):
+                ok, err = validate_sql_query_guard(q)
+                self.assertTrue(ok, f"Expected query to pass guard: {err}")
+
+    def test_sql_guard_allows_with_select(self):
+        """SQL Guard: CTE WITH ... SELECT queries must be allowed."""
+        q = "WITH active_users AS (SELECT id, name FROM users WHERE active = 1) SELECT * FROM active_users;"
+        ok, err = validate_sql_query_guard(q)
+        self.assertTrue(ok, f"Expected CTE to pass guard: {err}")
+
+    def test_sql_guard_rejects_dangerous_keywords(self):
+        """SQL Guard: Non-SELECT and destructive keywords must be rejected before execution."""
+        dangerous_queries = [
+            ("DROP TABLE users;", "drop"),
+            ("DELETE FROM employees WHERE id = 1;", "delete"),
+            ("UPDATE accounts SET balance = 1000;", "update"),
+            ("INSERT INTO logs VALUES ('test');", "insert"),
+            ("ALTER TABLE users ADD COLUMN phone TEXT;", "alter"),
+            ("ATTACH DATABASE ':memory:' AS evil;", "attach"),
+            ("DETACH DATABASE evil;", "detach"),
+            ("PRAGMA table_info(users);", "pragma"),
+            ("VACUUM;", "vacuum"),
+            ("REINDEX;", "reindex"),
+            ("TRUNCATE TABLE users;", "truncate"),
+            ("CREATE TABLE hacked (id INT);", "create"),
+        ]
+        for q, kw in dangerous_queries:
+            with self.subTest(keyword=kw):
+                ok, err = validate_sql_query_guard(q)
+                self.assertFalse(ok, f"Expected {kw} to be rejected")
+                self.assertTrue(
+                    kw in err.lower() or "only select" in err.lower(),
+                    f"Unexpected error reason: {err}",
+                )
+
+    def test_sql_guard_rejects_chained_multiple_statements(self):
+        """SQL Guard: Chained semicolons/multiple statements must be rejected."""
+        chained = "SELECT * FROM users; DROP TABLE users;"
+        ok, err = validate_sql_query_guard(chained)
+        self.assertFalse(ok)
+        self.assertIn("multiple sql statements", err.lower())
+
+    def test_sql_execution_blocked_by_guard(self):
+        """SQL Execution: A query violating the guard must be rejected with status GUARD_VIOLATION."""
+        schema = "CREATE TABLE users (id INT, name TEXT);"
+        test_cases = [{"input": "standard", "expectedOutput": "1 | Alice"}]
+        evil_query = "DROP TABLE users;"
+        res = execute_sql(
+            candidate_query=evil_query,
+            schema=schema,
+            test_cases=test_cases,
+        )
+        self.assertEqual(res["passedCount"], 0)
+        self.assertIn("sql guard rejected", res["compileError"].lower())
+        self.assertEqual(res["results"][0]["status"], "GUARD_VIOLATION")
+
 
 if __name__ == "__main__":
     unittest.main()
+

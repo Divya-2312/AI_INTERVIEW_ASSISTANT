@@ -885,7 +885,68 @@ def clean_sqlite_schema(ddl: str) -> str:
     cleaned = re.sub(r"\bENGINE\s*=\s*\w+", "", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\bDEFAULT\s+CHARSET\s*=\s*\w+", "", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\bON\s+UPDATE\s+CURRENT_TIMESTAMP\b", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bENUM\s*\([^)]*\)", "TEXT", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bBOOLEAN\b", "INTEGER", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bNOW\s*\(\s*\)", "CURRENT_TIMESTAMP", cleaned, flags=re.IGNORECASE)
     return cleaned
+
+
+_FORBIDDEN_SQL_KEYWORDS = {
+    "drop", "delete", "update", "insert", "alter", "attach", "detach",
+    "pragma", "vacuum", "reindex", "truncate", "exec", "execute", "grant",
+    "revoke", "create", "replace"
+}
+
+
+def validate_sql_query_guard(query: str) -> Tuple[bool, Optional[str]]:
+    """
+    SQL Guard: Allow ONLY a single SELECT (or WITH ... SELECT) statement.
+    Reject everything else before execution.
+    """
+    if not query or not query.strip():
+        return False, "Query is empty."
+
+    # Strip single line comments (-- ...)
+    clean = re.sub(r"--[^\n]*", " ", query)
+    # Strip block comments (/* ... */)
+    clean = re.sub(r"/\*[\s\S]*?\*/", " ", clean)
+    clean = clean.strip()
+
+    if not clean:
+        return False, "Query contains only comments or whitespace."
+
+    # Strip string literals to prevent false positives for keywords inside strings
+    clean_no_strings = re.sub(r"'(?:''|[^'])*'", "''", clean)
+    clean_no_strings = re.sub(r'"(?:""|[^"])*"', '""', clean_no_strings)
+
+    # Check for multiple statements (semicolon chaining)
+    trimmed_stmts = [s.strip() for s in clean_no_strings.split(";") if s.strip()]
+    if len(trimmed_stmts) > 1:
+        return False, "Multiple SQL statements are not permitted; only a single query is allowed."
+
+    if not trimmed_stmts:
+        return False, "No valid SQL statement found."
+
+    single_stmt = trimmed_stmts[0].strip()
+
+    first_word_m = re.match(r"^([A-Za-z]+)", single_stmt)
+    if not first_word_m:
+        return False, "Invalid SQL statement structure."
+
+    first_word = first_word_m.group(1).lower()
+    if first_word not in ("select", "with"):
+        return False, f"Only SELECT or WITH ... SELECT queries are permitted; got '{first_word.upper()}'."
+
+    if first_word == "with":
+        if not re.search(r"\bselect\b", single_stmt, re.IGNORECASE):
+            return False, "WITH clause must terminate with a SELECT statement."
+
+    tokens = [t.lower() for t in re.findall(r"\b[A-Za-z_]+\b", single_stmt)]
+    for tok in tokens:
+        if tok in _FORBIDDEN_SQL_KEYWORDS:
+            return False, f"Forbidden SQL operation or keyword detected: '{tok.upper()}'."
+
+    return True, None
 
 
 def normalize_sql_rows(rows: List[Tuple]) -> List[Tuple]:
@@ -903,8 +964,64 @@ def execute_sql(candidate_query: str, schema: str, test_cases: List[Dict[str, An
     Deterministically execute candidate SQL queries against an in-memory SQLite database.
     Builds the database from schema and sample data, comparing candidate query rows against
     the reference query rows.
+    Enforces SQL Guard: permits only a single SELECT or WITH ... SELECT statement.
     """
     test_cases = test_cases or []
+
+    # 0. Enforce SQL Guard on candidate query before executing SQLite
+    ok_cand, guard_cand_err = validate_sql_query_guard(candidate_query)
+    if not ok_cand:
+        results = []
+        for i, tc in enumerate(test_cases):
+            expected = str(tc.get("expectedOutput", tc.get("expected", ""))).strip()
+            results.append({
+                "id": i + 1,
+                "input": str(tc.get("input", "")).strip() or "Standard database state",
+                "expected": expected,
+                "actual": "",
+                "status": "GUARD_VIOLATION",
+                "error": f"SQL Guard Rejected: {guard_cand_err}",
+                "passed": False,
+                "expectedOutput": expected,
+                "actualOutput": "",
+                "failureReason": f"SQL Guard Rejected: {guard_cand_err}",
+                "label": tc.get("label"),
+            })
+        return {
+            "judgeMode": "deterministic",
+            "compileError": f"SQL Guard Rejected: {guard_cand_err}",
+            "passedCount": 0,
+            "totalCount": len(test_cases),
+            "results": results,
+        }
+
+    # Validate reference query if present
+    if reference_query:
+        ok_ref, guard_ref_err = validate_sql_query_guard(reference_query)
+        if not ok_ref:
+            results = []
+            for i, tc in enumerate(test_cases):
+                results.append({
+                    "id": i + 1,
+                    "input": str(tc.get("input", "")).strip() or "Standard database state",
+                    "expected": "",
+                    "actual": "",
+                    "status": "GUARD_VIOLATION",
+                    "error": f"Reference SQL Guard Rejected: {guard_ref_err}",
+                    "passed": False,
+                    "expectedOutput": "",
+                    "actualOutput": "",
+                    "failureReason": f"Reference SQL Guard Rejected: {guard_ref_err}",
+                    "label": tc.get("label"),
+                })
+            return {
+                "judgeMode": "deterministic",
+                "compileError": f"Reference SQL Guard Rejected: {guard_ref_err}",
+                "passedCount": 0,
+                "totalCount": len(test_cases),
+                "results": results,
+            }
+
     cleaned_cand_query = (candidate_query or "").strip().rstrip(";") + ";"
     cleaned_ref_query = (reference_query or "").strip().rstrip(";") + ";" if reference_query else ""
     cleaned_schema = clean_sqlite_schema(schema or "")
