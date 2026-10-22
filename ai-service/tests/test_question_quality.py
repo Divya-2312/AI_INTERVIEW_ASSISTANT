@@ -392,6 +392,45 @@ class TestQuestionQualityRules(unittest.TestCase):
         self.assertIn("sql guard rejected", res["compileError"].lower())
         self.assertEqual(res["results"][0]["status"], "GUARD_VIOLATION")
 
+    def test_predict_output_snippet_syntax_error_rejected(self):
+        """Rule 1 Proof: Broken Java snippets with compile errors must be rejected."""
+        if not is_java_available():
+            self.skipTest("JDK not available")
+        broken_snippet = (
+            "public class Solution {\n"
+            "    public static void main(String[] args) {\n"
+            "        int x = ;\n"
+            "    }\n"
+            "}"
+        )
+        ok, out, err = verify_predict_output_snippet(broken_snippet)
+        self.assertFalse(ok)
+        self.assertTrue("compilation failed" in err.lower() or "error" in err.lower())
+
+    def test_predict_output_snippet_infinite_loop_timeout_rejected(self):
+        """Rule 1 Proof: Snippets with infinite loops must time out and be rejected."""
+        if not is_java_available():
+            self.skipTest("JDK not available")
+        infinite_loop_snippet = (
+            "public class Solution {\n"
+            "    public static void main(String[] args) {\n"
+            "        while (true) {}\n"
+            "    }\n"
+            "}"
+        )
+        ok, out, err = verify_predict_output_snippet(infinite_loop_snippet, timeout_sec=2.0)
+        self.assertFalse(ok)
+        self.assertIn("timed out", err.lower())
+
+    def test_predict_output_crlf_lf_whitespace_normalization(self):
+        """Rule 1: Line ending variations (CRLF vs LF) and surrounding whitespace must match identically."""
+        from app.models.llama_provider import _canonical_output
+        out_lf = "Line 1\nLine 2\nLine 3"
+        out_crlf = "Line 1\r\nLine 2\r\nLine 3\r\n"
+        out_trailing_spaces = "Line 1   \nLine 2 \nLine 3\n\n"
+        self.assertEqual(_canonical_output(out_lf), _canonical_output(out_crlf))
+        self.assertEqual(_canonical_output(out_lf), _canonical_output(out_trailing_spaces))
+
 
 if __name__ == "__main__":
     unittest.main()
