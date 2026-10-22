@@ -175,7 +175,99 @@ class ModelConfigTests(unittest.TestCase):
         self.assertEqual(status["status"], "unreachable")
         self.assertIn("could not reach ollama", status["verification_reason"].lower())
 
+    def test_non_hr_evaluation_and_generation_strictly_use_base_model(self):
+        """
+        Architectural Enforcement: Non-HR evaluation and generation calls NEVER use
+        FINE_TUNED_MODEL_NAME or COMPLEXITY_MODEL_NAME, but strictly use BASE_MODEL_NAME.
+        Only HR evaluation and Big-O code complexity analysis route to the fine-tuned model.
+        """
+        import json
+        model = LlamaModel()
+        base_expected = settings.BASE_MODEL_NAME
+        ft_expected = settings.FINE_TUNED_MODEL_NAME
+        complexity_expected = getattr(settings, "COMPLEXITY_MODEL_NAME", settings.FINE_TUNED_MODEL_NAME)
+
+        # 1. Java Coding Evaluation routes to base model
+        with patch.object(model, "_call_llama") as mock_call:
+            mock_call.return_value = (json.dumps({
+                "logicScore": 90, "approachScore": 90, "edgeCaseScore": 90, "readabilityScore": 90,
+                "summary": "Great job", "strengths": [], "weaknesses": []
+            }), base_expected)
+            model.evaluate_answer(
+                question="Implement binary search",
+                answer="class Solution { public int search(int[] nums, int target) { return 0; } }",
+                concepts=["binary search"],
+                context=[],
+                question_format="coding",
+                test_cases=[{"input": "[1], 1", "expected": "0"}],
+                language="java"
+            )
+            rubric_call = [c for c in mock_call.call_args_list if "logicScore" in c.kwargs.get("prompt", "") or (len(c.args) > 0 and "logicScore" in c.args[0])]
+            self.assertTrue(len(rubric_call) > 0, "Coding evaluation must call LLaMA for rubric")
+            self.assertEqual(rubric_call[0].kwargs.get("model_override"), base_expected)
+            self.assertNotEqual(rubric_call[0].kwargs.get("model_override"), ft_expected)
+
+        # 2. Output Prediction Evaluation routes to base model
+        with patch.object(model, "_call_llama") as mock_call:
+            mock_call.return_value = (json.dumps({
+                "reasoningScore": 50, "misconception": "None", "explanation": "Ok"
+            }), base_expected)
+            model.evaluate_answer(
+                question="What is output?",
+                answer="The output is 5 because of loop incrementing.",
+                concepts=["loops"],
+                context=[],
+                question_format="output_prediction",
+                expected_output="10",
+                code_snippet="int x = 10;"
+            )
+            self.assertTrue(mock_call.called, "Output prediction evaluation must call LLaMA for misconception diagnosis")
+            self.assertEqual(mock_call.call_args.kwargs.get("model_override"), base_expected)
+            self.assertNotEqual(mock_call.call_args.kwargs.get("model_override"), ft_expected)
+
+        # 3. Theory Evaluation routes to base model
+        with patch.object(model, "_call_llama") as mock_call:
+            mock_call.return_value = (json.dumps({
+                "correctness": 80, "relevance": 80, "completeness": 80, "clarity": 80,
+                "feedback": "Good", "strengths": [], "weaknesses": []
+            }), base_expected)
+            model.evaluate_answer(
+                question="Explain encapsulation.",
+                answer="Encapsulation is data hiding through private fields and public methods.",
+                concepts=["encapsulation", "data hiding"],
+                context=[],
+                question_format="theory"
+            )
+            self.assertTrue(mock_call.called, "Theory evaluation must call LLaMA for 4-criterion rubric")
+            self.assertEqual(mock_call.call_args.kwargs.get("model_override"), base_expected)
+            self.assertNotEqual(mock_call.call_args.kwargs.get("model_override"), ft_expected)
+
+        # 4. Big-O Complexity Analysis routes to COMPLEXITY_MODEL_NAME / FINE_TUNED_MODEL_NAME
+        with patch.object(model, "_call_llama") as mock_call:
+            mock_call.return_value = (json.dumps({
+                "timeComplexity": "O(N)", "spaceComplexity": "O(1)", "explanation": "Linear scan"
+            }), complexity_expected)
+            model._analyze_code_complexity("Search", "for (int i=0; i<n; i++) {}")
+            self.assertTrue(mock_call.called, "Complexity analysis must invoke model")
+            self.assertEqual(mock_call.call_args.kwargs.get("model_override"), complexity_expected)
+
+        # 5. HR Evaluation routes to FINE_TUNED_MODEL_NAME
+        with patch.object(model, "_call_llama") as mock_call:
+            mock_call.return_value = (json.dumps({
+                "score": 85, "correctness": 85, "relevance": 85, "communication": 85,
+                "feedback": "Strong response using STAR format."
+            }), ft_expected)
+            model._evaluate_hr_answer(
+                question="Tell me about yourself.",
+                answer="I am a software engineer with 2 years experience building distributed web applications.",
+                concepts=["background", "experience"],
+                context=[]
+            )
+            self.assertTrue(mock_call.called, "HR evaluation must invoke model")
+            self.assertEqual(mock_call.call_args.kwargs.get("model_override"), ft_expected)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
