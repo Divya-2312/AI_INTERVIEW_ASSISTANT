@@ -50,11 +50,13 @@ export const getInterviewResult = async (req, res, next) => {
       const isCommItem = (item) => /communication|verbal|articulate|tone|delivery|speech/i.test(item || '');
       const allStrengths = answers.flatMap((a) => {
         const list = a.strengths || [];
-        return a.questionFormat === 'coding' ? list.filter((s) => !isCommItem(s)) : list;
+        const isTechnicalNoComm = a.questionFormat === 'coding' || a.questionFormat === 'output_prediction' || a.language === 'sql' || interview.subject === 'dbms';
+        return isTechnicalNoComm ? list.filter((s) => !isCommItem(s)) : list;
       });
       const allWeaknesses = answers.flatMap((a) => {
         const list = a.weaknesses || [];
-        return a.questionFormat === 'coding' ? list.filter((w) => !isCommItem(w)) : list;
+        const isTechnicalNoComm = a.questionFormat === 'coding' || a.questionFormat === 'output_prediction' || a.language === 'sql' || interview.subject === 'dbms';
+        return isTechnicalNoComm ? list.filter((w) => !isCommItem(w)) : list;
       });
 
       const strengths = allStrengths.length > 0

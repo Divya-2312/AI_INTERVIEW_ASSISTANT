@@ -20,6 +20,19 @@ class QuestionGenerator:
         # why the very first question came back the same so often. A random
         # jitter here means two fresh interviews with identical settings
         # still start from different context.
+        # Serve pre-verified questions from background pool first for technical interviews
+        if (req.interviewType or "").lower() != "hr":
+            from app.services.question_pool import question_pool
+            pooled = question_pool.pop_question(
+                subject=req.subject or "java",
+                question_format=req.questionFormat or "theory",
+                difficulty=req.difficulty or "medium",
+                previous_questions=req.previousQuestions or [],
+                previous_categories=getattr(req, "previousCategories", None) or [],
+            )
+            if pooled:
+                return QuestionResponse(**pooled)
+
         rotate = len(req.previousQuestions or []) + random.randint(0, 4)
         context = rag_service.retrieve_context(
             "hr" if req.interviewType.lower() == "hr" else req.subject or "general",
@@ -37,7 +50,10 @@ class QuestionGenerator:
             if (req.questionFormat or "theory").lower() == "theory" and (req.interviewType or "").lower() != "hr":
                 llama = getattr(self.provider, "llama", None)
                 if llama and hasattr(llama, "_get_guaranteed_unique_theory_question"):
-                    fallback = llama._get_guaranteed_unique_theory_question(req.subject or "java", req.difficulty, req.previousQuestions or [])
+                    fallback = llama._get_guaranteed_unique_theory_question(
+                        req.subject or "java", req.difficulty, req.previousQuestions or [],
+                        getattr(req, "previousCategories", None) or []
+                    )
                     if fallback:
                         return QuestionResponse(**fallback)
             raise e

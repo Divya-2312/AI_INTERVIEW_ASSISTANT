@@ -175,7 +175,15 @@ export const Result = () => {
               </div>
 
               <h4 style={{ marginBottom: '0.75rem', fontSize: '1.1rem' }}>{ans.questionText}</h4>
-              <ScoreBreakdown evaluation={ans} />
+              <ScoreBreakdown
+                evaluation={{
+                  ...ans,
+                  questionFormat: ans.questionFormat,
+                  language: ans.language,
+                  subject: interview?.subject || ans.subject,
+                  answerText: ans.answerText,
+                }}
+              />
 
               {ans.timeComplexity && (
                 <div

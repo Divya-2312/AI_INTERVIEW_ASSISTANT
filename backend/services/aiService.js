@@ -59,12 +59,13 @@ async function callAiService(path, body) {
 export const aiService = {
   // Generate Next Adaptive Question (theory or "predict the output"),
   // always via the fine-tuned LLaMA model in the Python AI microservice.
-  async generateQuestion({ interviewType, subject, difficulty, previousQuestions, previousAnswers, questionNumber, questionFormat }) {
+  async generateQuestion({ interviewType, subject, difficulty, previousQuestions, previousCategories, previousAnswers, questionNumber, questionFormat }) {
     return callAiService('/generate-question', {
       interviewType,
       subject: subject || 'N/A',
       difficulty: difficulty || 'medium',
       previousQuestions: previousQuestions || [],
+      previousCategories: previousCategories || [],
       previousAnswers: previousAnswers || [],
       questionNumber: questionNumber || 1,
       questionFormat: questionFormat || 'theory',
@@ -90,7 +91,7 @@ export const aiService = {
   // Evaluate Student Response using meaning-based (BERT embedding
   // similarity, blended with the LLaMA grader) semantic matching -- never
   // keyword substring matching or a bare answer-length heuristic.
-  async evaluateAnswer({ interviewType, subject, question, answer, expectedConcepts, questionFormat, expectedOutput, explanation, testCases, language, schema, sampleData, referenceSolution, hrDeliveryMetrics }) {
+  async evaluateAnswer({ interviewType, subject, question, answer, expectedConcepts, questionFormat, expectedOutput, codeSnippet, explanation, testCases, language, schema, sampleData, referenceSolution, hrDeliveryMetrics }) {
     return callAiService('/evaluate-answer', {
       interviewType,
       subject: subject || 'N/A',
@@ -99,6 +100,7 @@ export const aiService = {
       expectedConcepts: expectedConcepts || [],
       questionFormat: questionFormat || 'theory',
       expectedOutput: expectedOutput || null,
+      codeSnippet: codeSnippet || null,
       explanation: explanation || null,
       testCases: testCases || null,
       language: language || null,

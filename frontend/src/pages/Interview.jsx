@@ -532,7 +532,7 @@ export const Interview = () => {
   language: currentQuestion.language,
   schema: currentQuestion.schema,
   sampleData: currentQuestion.sampleData,
-  referenceSolution: lastEvalFeedback?.referenceSolution || currentQuestion.referenceSolution || null,
+  referenceSolution: lastEvalFeedback?.referenceSolution || null,
 }}       value={currentAnswer}
             onChange={(v) => {
               if (answerLocked) return;
@@ -677,7 +677,15 @@ export const Interview = () => {
                 </p>
               )
             )}
-            <ScoreBreakdown evaluation={lastEvalFeedback} />
+            <ScoreBreakdown
+              evaluation={{
+                ...lastEvalFeedback,
+                questionFormat: currentQuestion?.questionFormat || lastEvalFeedback?.questionFormat,
+                language: currentQuestion?.language || lastEvalFeedback?.language,
+                subject: interview?.subject || currentQuestion?.subject || lastEvalFeedback?.subject,
+                answerText: currentAnswer || lastEvalFeedback?.answerText,
+              }}
+            />
 
             {(lastEvalFeedback.score < 98 || lastEvalFeedback.isIrrelevant) &&
               ((lastEvalFeedback.weaknesses || []).length > 0 || (lastEvalFeedback.missingConcepts || []).length > 0) && (
@@ -882,7 +890,15 @@ export const Interview = () => {
                     </p>
                   )
                 )}
-                <ScoreBreakdown evaluation={lastEvalFeedback} />
+                <ScoreBreakdown
+                  evaluation={{
+                    ...lastEvalFeedback,
+                    questionFormat: currentQuestion?.questionFormat || lastEvalFeedback?.questionFormat,
+                    language: currentQuestion?.language || lastEvalFeedback?.language,
+                    subject: interview?.subject || currentQuestion?.subject || lastEvalFeedback?.subject,
+                    answerText: currentAnswer || lastEvalFeedback?.answerText,
+                  }}
+                />
               </div>
               <JudgeResultPanel
                 evaluation={lastEvalFeedback}

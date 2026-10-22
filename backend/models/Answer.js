@@ -36,6 +36,10 @@ const answerSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    category: {
+      type: String,
+      default: null,
+    },
     answerText: {
       type: String,
       required: true,

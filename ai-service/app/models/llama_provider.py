@@ -3020,9 +3020,10 @@ class LlamaModel(BaseAIModel):
             "modelUsed": model_used,
         }
 
-    def _get_guaranteed_unique_coding_question(self, subject: str, difficulty: str, previous: list) -> dict:
+    def _get_guaranteed_unique_coding_question(self, subject: str, difficulty: str, previous: list, previous_categories: list = None) -> dict:
         subj = (subject or "java").lower()
         diff = (difficulty or "medium").lower()
+        prev_cats = [c.lower() for c in (previous_categories or []) if c]
         catalog = _GUARANTEED_UNIQUE_CODING_QUESTIONS.get((subj, diff))
         if not catalog:
             catalog = [prob for (s, d), items in _GUARANTEED_UNIQUE_CODING_QUESTIONS.items() if s == subj for prob in items]
@@ -3030,6 +3031,9 @@ class LlamaModel(BaseAIModel):
             catalog = _GUARANTEED_UNIQUE_CODING_QUESTIONS.get(("java", "medium"), [])
         if catalog:
             for prob in catalog:
+                cat = (prob.get("category") or "").lower()
+                if cat and prev_cats.count(cat) >= 2:
+                    continue
                 sig = f"{prob['title']}: {prob['questionText']}"
                 if not _is_duplicate_question(sig, previous) and not _is_duplicate_question(prob['title'], previous, threshold=0.92):
                     res = dict(prob)
@@ -3040,6 +3044,9 @@ class LlamaModel(BaseAIModel):
         for (s, d), items in _GUARANTEED_UNIQUE_CODING_QUESTIONS.items():
             if s == subj:
                 for prob in items:
+                    cat = (prob.get("category") or "").lower()
+                    if cat and prev_cats.count(cat) >= 2:
+                        continue
                     sig = f"{prob['title']}: {prob['questionText']}"
                     if not _is_duplicate_question(sig, previous) and not _is_duplicate_question(prob['title'], previous, threshold=0.92):
                         res = dict(prob)
@@ -3050,27 +3057,43 @@ class LlamaModel(BaseAIModel):
                         return res
         return None
 
-    def _get_guaranteed_unique_output_prediction(self, subject: str, difficulty: str, previous: list) -> dict:
+    def _get_guaranteed_unique_output_prediction(self, subject: str, difficulty: str, previous: list, previous_categories: list = None) -> dict:
         subj = (subject or "java").lower()
         diff = (difficulty or "medium").lower()
+        prev_cats = [c.lower() for c in (previous_categories or []) if c]
         catalog = _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS.get((subj, diff)) or _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS.get(("java", "medium"), [])
         for prob in catalog:
+            cat = (prob.get("category") or "").lower()
+            if cat and prev_cats.count(cat) >= 2:
+                continue
             if not _is_duplicate_question(prob["codeSnippet"], previous):
                 res = dict(prob)
                 res["modelUsed"] = "verified_adaptive_catalog"
                 return res
         return None
 
-    def _get_guaranteed_unique_theory_question(self, subject: str, difficulty: str, previous: list) -> dict:
+    def _get_guaranteed_unique_theory_question(self, subject: str, difficulty: str, previous: list, previous_categories: list = None) -> dict:
         subj = (subject or "java").lower()
         diff = (difficulty or "medium").lower()
+        prev_cats = [c.lower() for c in (previous_categories or []) if c]
+        has_pair = any(prev_cats.count(c) >= 2 for c in set(prev_cats))
+        distinct_cats = len(set(prev_cats))
+        must_choose_new_cat = has_pair or (len(prev_cats) >= 3 and distinct_cats < 3) or (len(prev_cats) == 4 and distinct_cats < 4)
+
         catalog = _GUARANTEED_UNIQUE_THEORY_QUESTIONS.get((subj, diff))
         if not catalog:
             catalog = [prob for (s, d), items in _GUARANTEED_UNIQUE_THEORY_QUESTIONS.items() if s == subj for prob in items]
         if not catalog:
             catalog = _GUARANTEED_UNIQUE_THEORY_QUESTIONS.get(("java", "medium"), [])
+
+        # Pass 1: Try with must_choose_new_cat constraint
         if catalog:
             for prob in catalog:
+                cat = (prob.get("category") or "").lower()
+                if cat and prev_cats.count(cat) >= 2:
+                    continue
+                if must_choose_new_cat and cat and cat in prev_cats:
+                    continue
                 if not _is_duplicate_question(prob["questionText"], previous):
                     res = dict(prob)
                     res["modelUsed"] = "verified_adaptive_catalog"
@@ -3078,6 +3101,33 @@ class LlamaModel(BaseAIModel):
         for (s, d), items in _GUARANTEED_UNIQUE_THEORY_QUESTIONS.items():
             if s == subj:
                 for prob in items:
+                    cat = (prob.get("category") or "").lower()
+                    if cat and prev_cats.count(cat) >= 2:
+                        continue
+                    if must_choose_new_cat and cat and cat in prev_cats:
+                        continue
+                    if not _is_duplicate_question(prob["questionText"], previous):
+                        res = dict(prob)
+                        res["difficulty"] = diff
+                        res["modelUsed"] = "verified_adaptive_catalog"
+                        return res
+
+        # Pass 2: Fallback without must_choose_new_cat (only max 2 per cat and deduplication)
+        if catalog:
+            for prob in catalog:
+                cat = (prob.get("category") or "").lower()
+                if cat and prev_cats.count(cat) >= 2:
+                    continue
+                if not _is_duplicate_question(prob["questionText"], previous):
+                    res = dict(prob)
+                    res["modelUsed"] = "verified_adaptive_catalog"
+                    return res
+        for (s, d), items in _GUARANTEED_UNIQUE_THEORY_QUESTIONS.items():
+            if s == subj:
+                for prob in items:
+                    cat = (prob.get("category") or "").lower()
+                    if cat and prev_cats.count(cat) >= 2:
+                        continue
                     if not _is_duplicate_question(prob["questionText"], previous):
                         res = dict(prob)
                         res["difficulty"] = diff

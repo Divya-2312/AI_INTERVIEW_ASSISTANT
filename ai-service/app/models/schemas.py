@@ -6,6 +6,7 @@ class QuestionGenerationRequest(BaseModel):
     subject: Optional[str] = Field(default="N/A", description="java, dbms, or N/A")
     difficulty: str = Field(default="medium", description="easy, medium, hard")
     previousQuestions: List[str] = Field(default_factory=list)
+    previousCategories: List[str] = Field(default_factory=list)
     previousAnswers: List[str] = Field(default_factory=list)
     questionNumber: int = Field(default=1)
     # "theory" (default) = plain explanation-style question.
@@ -66,6 +67,7 @@ class AnswerEvaluationRequest(BaseModel):
     # Only used when questionFormat == "output_prediction": the actual
     # ground-truth output of the code snippet the candidate was shown.
     expectedOutput: Optional[str] = None
+    codeSnippet: Optional[str] = None
     # Hidden step-by-step derivation of expectedOutput, carried through
     # from question generation untouched -- shown to the candidate only
     # after they answer, as part of the evaluation result. Also reused for

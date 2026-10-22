@@ -266,13 +266,22 @@ export const ScoreBreakdown = ({ evaluation }) => {
   const pct = (v) =>
     typeof v === "number" ? Math.round(v * 100) : null;
 
+  // Technical items (Java output prediction, Java coding, DBMS SQL queries) do not evaluate Communication
+  const isNoComm =
+    evaluation.questionFormat === "output_prediction" ||
+    evaluation.format === "output_prediction" ||
+    evaluation.questionFormat === "coding" ||
+    evaluation.format === "coding" ||
+    evaluation.language === "sql" ||
+    (evaluation.subject === "dbms" && (evaluation.language === "sql" || evaluation.questionFormat === "coding" || evaluation.format === "coding" || /^\s*(?:--[^\n]*\n\s*)*SELECT\b/i.test(evaluation.answerText || evaluation.answer || '')));
+
   const items = [
     { label: "Relevance", value: pct(evaluation.relevance) },
     { label: "Correctness", value: pct(evaluation.correctness) },
     typeof evaluation.accuracy === "number"
       ? { label: "Accuracy", value: pct(evaluation.accuracy) }
       : { label: "Concept Coverage", value: pct(evaluation.conceptCoverage) },
-    { label: "Communication", value: pct(evaluation.communication) },
+    ...(isNoComm ? [] : [{ label: "Communication", value: pct(evaluation.communication) }]),
   ].filter((i) => i.value !== null);
 
   if (!items.length) return null;
@@ -396,8 +405,10 @@ export const CodeWorkspace = ({
   const diffStyle =
     DIFFICULTY_COLORS[diffKey] || DIFFICULTY_COLORS.medium;
 
+  // Initialise editor ONLY from starterCode (or candidate's active edits in value)
+  // No solution, reference, or explanation prop can ever reach the editor.
   const editorValue =
-    value && value.length > 0 ? value : question.starterCode || "";
+    typeof value === "string" && value.length > 0 ? value : (question?.starterCode || "");
 
   const isSql = (question.language || "java").toLowerCase() === "sql";
 
@@ -530,7 +541,7 @@ export const CodeWorkspace = ({
               questionKey={question.questionText || question.title}
               disabled={!isSubmitted}
               disabledTooltip="Submit your solution first to view the reference solution"
-              preloadedSolution={question.referenceSolution || null}
+              preloadedSolution={isSubmitted ? (question.referenceSolution || null) : null}
             />
           )}
 

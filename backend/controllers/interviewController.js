@@ -58,22 +58,47 @@ function makeJavaStarterStub(code) {
   return `public class ${className} {\n    ${fullSig} {\n        // Write your code here\n${defaultRet}    }\n}`;
 }
 
+function hasLeakedLogic(code) {
+  if (!code || typeof code !== 'string') return false;
+  const clean = code.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  if (/\b(for|while|do)\s*\(|\b(for|while|do)\b/.test(clean)) return true;
+  if (/\bif\s*\(|\bif\b/.test(clean)) return true;
+  if (/\bswitch\s*\(|\bswitch\b/.test(clean)) return true;
+  if (/\?/.test(clean)) return true;
+  // Semicolons count (a clean stub has at most 1 statement: return ...;)
+  const stmts = clean.split(';').filter((s) => s.trim().length > 0);
+  if (stmts.length > 1) return true;
+  return false;
+}
+
 function sanitizeQuestionForClient(q) {
   if (!q) return q;
   const copy = typeof q.toObject === 'function' ? q.toObject() : { ...q };
   delete copy.referenceSolution;
   delete copy.solution;
   delete copy._referenceQuery;
-  if (copy.questionFormat === 'output_prediction') {
-    delete copy.expectedOutput;
+  delete copy.explanation;
+  delete copy.expectedOutput;
+  delete copy._generation_meta;
+
+  if (Array.isArray(copy.testCases)) {
+    copy.testCases = copy.testCases.map((tc) => ({
+      id: tc.id,
+      input: tc.input !== undefined ? tc.input : '',
+      label: tc.label || '',
+    }));
   }
+
+  if (copy.questionFormat === 'output_prediction' && typeof copy.questionText === 'string') {
+    copy.questionText = copy.questionText
+      .replace(/\s*Explain\s+briefly\s+if\s+helpful\.?/gi, '')
+      .replace(/\s*Explain\s+if\s+helpful\.?/gi, '')
+      .trim();
+  }
+
   if (copy.questionFormat === 'coding' && (copy.language === 'java' || copy.subject === 'java' || !copy.language)) {
-    if (copy.starterCode) {
-      const hasLogic = /\b(for|while|do)\s*\(|\bif\s*\(|\bswitch\s*\(/.test(copy.starterCode) ||
-        (copy.starterCode.split(';').length > 3);
-      if (hasLogic) {
-        copy.starterCode = makeJavaStarterStub(copy.starterCode);
-      }
+    if (!copy.starterCode || hasLeakedLogic(copy.starterCode)) {
+      copy.starterCode = makeJavaStarterStub(copy.starterCode || copy.questionText || '');
     }
   }
   return copy;
@@ -180,6 +205,8 @@ export const submitAnswer = async (req, res, next) => {
       throw new Error('Answer text cannot be empty');
     }
 
+    const interview = await Interview.findById(req.params.id);
+
     const result = await interviewEngine.processAnswer(
       req.params.id,
       req.user._id,
@@ -201,12 +228,22 @@ export const submitAnswer = async (req, res, next) => {
     );
 
     const answerDoc = result.answerDoc || result.answer;
+    const isNoComm =
+      questionFormat === 'output_prediction' ||
+      questionFormat === 'coding' ||
+      language === 'sql' ||
+      (interview && interview.subject === 'dbms' && (language === 'sql' || questionFormat === 'coding' || /^\s*(?:--[^\n]*\n\s*)*SELECT\b/i.test(answerText || '')));
+
     const returnedEval = {
       ...(result.evaluation || {}),
       referenceSolution: answerDoc?.referenceSolution || null,
       questionId: answerDoc?.questionId || questionId || null,
       title: answerDoc?.title || title || null,
       questionText: answerDoc?.questionText || questionText || null,
+      questionFormat: answerDoc?.questionFormat || questionFormat || null,
+      language: answerDoc?.language || language || null,
+      subject: interview?.subject || null,
+      ...(isNoComm ? { communication: null } : {}),
     };
 
     res.status(200).json({
@@ -237,7 +274,12 @@ export const completeInterview = async (req, res, next) => {
     interview.status = 'completed';
     interview.completedAt = new Date();
 
-    const answers = await Answer.find({ interviewId: interview._id });
+    const rawAnswers = await Answer.find({ interviewId: interview._id });
+    const answerMap = new Map();
+    for (const a of rawAnswers) {
+      answerMap.set(a.questionId, a);
+    }
+    const answers = Array.from(answerMap.values());
     const totalQuestions = interview.questionsCount || 10;
     interview.attemptedCount = answers.length;
 
@@ -253,11 +295,13 @@ export const completeInterview = async (req, res, next) => {
     const isCommItem = (item) => /communication|verbal|articulate|tone|delivery|speech/i.test(item || '');
     const allStrengths = answers.flatMap((a) => {
       const list = a.strengths || [];
-      return a.questionFormat === 'coding' ? list.filter((s) => !isCommItem(s)) : list;
+      const isTechnicalNoComm = a.questionFormat === 'coding' || a.questionFormat === 'output_prediction' || a.language === 'sql' || interview.subject === 'dbms';
+      return isTechnicalNoComm ? list.filter((s) => !isCommItem(s)) : list;
     });
     const allWeaknesses = answers.flatMap((a) => {
       const list = a.weaknesses || [];
-      return a.questionFormat === 'coding' ? list.filter((w) => !isCommItem(w)) : list;
+      const isTechnicalNoComm = a.questionFormat === 'coding' || a.questionFormat === 'output_prediction' || a.language === 'sql' || interview.subject === 'dbms';
+      return isTechnicalNoComm ? list.filter((w) => !isCommItem(w)) : list;
     });
 
     const strengths = allStrengths.length > 0
@@ -271,27 +315,19 @@ export const completeInterview = async (req, res, next) => {
       'Elaborate on edge case scenarios and test with sample inputs before submitting.',
     ];
 
-    let result = await Result.findOne({ interviewId: interview._id });
-    if (!result) {
-      result = await Result.create({
-        interviewId: interview._id,
+    const result = await Result.findOneAndUpdate(
+      { interviewId: interview._id },
+      {
         userId: req.user._id,
-        overallScore: avgScore,
+        overallScore,
         strengths,
         weaknesses,
         recommendations,
         questionsAttempted: answers.length,
         totalQuestions: interview.questionsCount || 10,
-      });
-    } else {
-      result.overallScore = avgScore;
-      result.questionsAttempted = answers.length;
-      result.totalQuestions = interview.questionsCount || 10;
-      result.strengths = strengths;
-      result.weaknesses = weaknesses;
-      result.recommendations = recommendations;
-      await result.save();
-    }
+      },
+      { upsert: true, new: true }
+    );
 
     res.json({ success: true, message: 'Interview completed', interview, result });
   } catch (error) {

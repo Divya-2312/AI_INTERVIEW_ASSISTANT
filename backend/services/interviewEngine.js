@@ -18,7 +18,7 @@ const MAX_FOLLOW_UPS = parseInt(process.env.MAX_FOLLOW_UPS || '3', 10);
 //
 // This can NOT just be `answer.questionText` for every format:
 //   - output_prediction's questionText is always the same fixed sentence
-//     ("What is the exact output of the following code?..."), regardless
+//     ("What is the exact output of the following code?"), regardless
 //     of which code snippet was actually shown -- the snippet is the only
 //     part that varies, so it's the only part worth comparing.
 //   - coding's questionText is the full unique problem statement, so it's
@@ -58,6 +58,7 @@ export const interviewEngine = {
         subject: type === 'technical' ? subject : 'N/A',
         difficulty: difficulty || 'medium',
         previousQuestions: [],
+        previousCategories: [],
         previousAnswers: [],
         questionNumber: 1,
         questionFormat: interview.questionFormat,
@@ -97,6 +98,7 @@ export const interviewEngine = {
     const expOut = expectedOutput || interview.currentQuestionData?.expectedOutput || null;
     const sqlSchema = schema || interview.currentQuestionData?.schema || null;
     const sData = sampleData || interview.currentQuestionData?.sampleData || null;
+    const codeSnip = codeSnippet || interview.currentQuestionData?.codeSnippet || null;
 
     // 1. Evaluate answer via AI Service
     const evalResult = await aiService.evaluateAnswer({
@@ -107,8 +109,10 @@ export const interviewEngine = {
       expectedConcepts: expectedConcepts || [],
       questionFormat: questionFormat || interview.questionFormat || 'theory',
       expectedOutput: expOut,
-      explanation: explanation || null,
-      testCases: testCases || null,
+      explanation: explanation || interview.currentQuestionData?.explanation || null,
+      testCases: (testCases && testCases.some(tc => tc.expectedOutput !== undefined))
+        ? testCases
+        : (interview.currentQuestionData?.testCases || testCases || null),
       language: language || null,
       schema: sqlSchema,
       sampleData: sData,
@@ -139,20 +143,37 @@ export const interviewEngine = {
       });
     }
 
-    // 2. Store Answer in MongoDB
-    const answerDoc = await Answer.create({
+    // 2. Store or update Answer in MongoDB (prevents duplicates on retry)
+    const targetQId = questionId || 'q-' + Date.now();
+    let answerDoc = await Answer.findOne({
+      interviewId: interview._id,
+      questionId: targetQId,
+    });
+
+    const isNoComm =
+      questionFormat === 'output_prediction' ||
+      questionFormat === 'coding' ||
+      language === 'sql' ||
+      (interview.subject === 'dbms' && (language === 'sql' || questionFormat === 'coding' || /^\s*(?:--[^\n]*\n\s*)*SELECT\b/i.test(answerText || '')));
+
+    if (isNoComm) {
+      evalResult.communication = null;
+    }
+
+    const answerPayload = {
       interviewId: interview._id,
       userId,
-      questionId: questionId || 'q-' + Date.now(),
+      questionId: targetQId,
       questionText,
       codeSnippet: codeSnippet || null,
       title: title || null,
+      category: interview.currentQuestionData?.category || null,
       answerText,
       score: evalResult.score,
       conceptCoverage: evalResult.conceptCoverage,
       correctness: evalResult.correctness,
       relevance: evalResult.relevance,
-      communication: evalResult.communication,
+      communication: isNoComm ? null : evalResult.communication,
       ...(interview.type === 'hr' && typeof evalResult.accuracy === 'number'
         ? { accuracy: evalResult.accuracy }
         : {}),
@@ -194,10 +215,22 @@ export const interviewEngine = {
         : {}),
       questionFormat: questionFormat || interview.questionFormat || 'theory',
       isFollowUp: false,
-    });
+    };
 
-    // 3. Update Interview Progress State
-    const allAnswers = await Answer.find({ interviewId: interview._id });
+    if (answerDoc) {
+      Object.assign(answerDoc, answerPayload);
+      await answerDoc.save();
+    } else {
+      answerDoc = await Answer.create(answerPayload);
+    }
+
+    // 3. Update Interview Progress State (deduplicate by questionId)
+    const rawAnswers = await Answer.find({ interviewId: interview._id });
+    const answerMap = new Map();
+    for (const a of rawAnswers) {
+      answerMap.set(a.questionId, a);
+    }
+    const allAnswers = Array.from(answerMap.values());
     interview.attemptedCount = allAnswers.length;
 
     // Check follow-up eligibility (20-30% chance & under MAX_FOLLOW_UPS limit).
@@ -229,30 +262,35 @@ export const interviewEngine = {
       interview.currentQuestionData = null;
       await interview.save();
 
-      // Aggregate Result model (exclude communication factors for coding answers)
+      // Aggregate Result model (exclude communication factors for coding, output prediction, and dbms sql answers)
       const isCommItem = (item) => /communication|verbal|articulate|tone|delivery|speech/i.test(item || '');
       const allStrengths = allAnswers.flatMap((a) => {
         const list = a.strengths || [];
-        return a.questionFormat === 'coding' ? list.filter((s) => !isCommItem(s)) : list;
+        const isTechnicalNoComm = a.questionFormat === 'coding' || a.questionFormat === 'output_prediction' || a.language === 'sql' || interview.subject === 'dbms';
+        return isTechnicalNoComm ? list.filter((s) => !isCommItem(s)) : list;
       });
       const allWeaknesses = allAnswers.flatMap((a) => {
         const list = a.weaknesses || [];
-        return a.questionFormat === 'coding' ? list.filter((w) => !isCommItem(w)) : list;
+        const isTechnicalNoComm = a.questionFormat === 'coding' || a.questionFormat === 'output_prediction' || a.language === 'sql' || interview.subject === 'dbms';
+        return isTechnicalNoComm ? list.filter((w) => !isCommItem(w)) : list;
       });
 
-      await Result.create({
-        interviewId: interview._id,
-        userId,
-        overallScore: avgScore,
-        strengths: Array.from(new Set(allStrengths)).slice(0, 4),
-        weaknesses: Array.from(new Set(allWeaknesses)).slice(0, 4),
-        recommendations: [
-          `Continue practicing core ${interview.type === 'technical' ? interview.subject.toUpperCase() : 'HR'} interview questions.`,
-          'Elaborate on edge case scenarios and real project experiences.',
-        ],
-        questionsAttempted: interview.attemptedCount,
-        totalQuestions: interview.questionsCount,
-      });
+      await Result.findOneAndUpdate(
+        { interviewId: interview._id },
+        {
+          userId,
+          overallScore,
+          strengths: Array.from(new Set(allStrengths)).slice(0, 4),
+          weaknesses: Array.from(new Set(allWeaknesses)).slice(0, 4),
+          recommendations: [
+            `Continue practicing core ${interview.type === 'technical' ? interview.subject.toUpperCase() : 'HR'} interview questions.`,
+            'Elaborate on edge case scenarios and real project experiences.',
+          ],
+          questionsAttempted: interview.attemptedCount,
+          totalQuestions: interview.questionsCount,
+        },
+        { upsert: true, new: true }
+      );
     } else {
       // Generate Next Question
       //
@@ -263,6 +301,7 @@ export const interviewEngine = {
       // defeat duplicate-avoidance/rejection entirely for that format. See
       // questionSignature()'s docstring above.
       const prevQuestions = allAnswers.map((a) => questionSignature(a));
+      const prevCategories = allAnswers.map((a) => a.category).filter(Boolean);
       try {
         if (shouldAskFollowUp) {
           interview.followUpCount += 1;
@@ -286,6 +325,7 @@ export const interviewEngine = {
             subject: interview.subject,
             difficulty: interview.difficulty,
             previousQuestions: prevQuestions,
+            previousCategories: prevCategories,
             previousAnswers: prevAnswers,
             questionNumber: allAnswers.length + 1,
             questionFormat: interview.questionFormat || 'theory',

@@ -19,6 +19,7 @@ class Settings:
     BASE_MODEL_NAME: str = os.getenv("BASE_MODEL_NAME", "llama3.2:3b")
     BASE_MODEL_OLLAMA_NAME: str = os.getenv("BASE_MODEL_OLLAMA_NAME", "llama3.2:3b")
     FINE_TUNED_MODEL_NAME: str = os.getenv("FINE_TUNED_MODEL_NAME", "mockmate-llama-ft").strip()
+    COMPLEXITY_MODEL_NAME: str = os.getenv("COMPLEXITY_MODEL_NAME", os.getenv("FINE_TUNED_MODEL_NAME", "mockmate-llama-ft")).strip()
     # Default model for all tasks is the base model (llama3.2:3b)
     MODEL_NAME: str = os.getenv("MODEL_NAME", os.getenv("BASE_MODEL_OLLAMA_NAME", "llama3.2:3b")).strip()
     FINE_TUNED_ADAPTER_PATH: str = os.getenv("FINE_TUNED_ADAPTER_PATH", "./models/mockmate-llama-adapter")
@@ -44,6 +45,7 @@ class Settings:
             "base_model": cls.BASE_MODEL_NAME,
             "base_model_ollama_name": cls.BASE_MODEL_OLLAMA_NAME,
             "fine_tuned_model": cls.FINE_TUNED_MODEL_NAME,
+            "complexity_model": cls.COMPLEXITY_MODEL_NAME,
             "use_ft_hr": cls.USE_FT_HR,
             "use_ft_complexity": cls.USE_FT_COMPLEXITY,
             "adapter_path": cls.FINE_TUNED_ADAPTER_PATH,

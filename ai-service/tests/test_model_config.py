@@ -1,4 +1,5 @@
 import hashlib
+import os
 import unittest
 from unittest.mock import patch, MagicMock
 from app.config import settings
@@ -6,12 +7,14 @@ from app.models.llama_provider import LlamaModel, ResilientAIModel, AIGeneration
 
 TEST_GGUF_HASH = "a1b2c3d4e5f60000000000000000000000000000000000000000000000000000"
 BASE_BLOB_HASH = "9999999999990000000000000000000000000000000000000000000000000000"
+FT_TAG = settings.FINE_TUNED_MODEL_NAME if ":" in settings.FINE_TUNED_MODEL_NAME else f"{settings.FINE_TUNED_MODEL_NAME}:latest"
+FT_BASE = settings.FINE_TUNED_MODEL_NAME.split(":")[0]
 
 
 class ModelConfigTests(unittest.TestCase):
     def test_configured_model_is_used_strictly(self):
-        self.assertEqual(settings.MODEL_NAME, "llama3.2:3b")
-        self.assertEqual(settings.FINE_TUNED_MODEL_NAME, "mockmate-llama-ft")
+        self.assertEqual(settings.MODEL_NAME, os.getenv("MODEL_NAME", "llama3.2:3b").strip())
+        self.assertEqual(settings.FINE_TUNED_MODEL_NAME, os.getenv("FINE_TUNED_MODEL_NAME", "mockmate-llama-ft").strip())
         self.assertTrue(settings.USE_FT_HR)
         self.assertTrue(settings.USE_FT_COMPLEXITY)
 
@@ -37,7 +40,7 @@ class ModelConfigTests(unittest.TestCase):
         tags_response.status_code = 200
         tags_response.json.return_value = {
             "models": [
-                {"name": "mockmate-llama-ft:latest", "digest": "digest_ft_12345"},
+                {"name": FT_TAG, "digest": "digest_ft_12345"},
                 {"name": "llama3.2:3b", "digest": "digest_base_99999"}
             ]
         }
@@ -47,7 +50,7 @@ class ModelConfigTests(unittest.TestCase):
             res = MagicMock()
             res.status_code = 200
             name = (json or {}).get("name", "")
-            if "mockmate-llama-ft" in name:
+            if FT_BASE in name:
                 res.json.return_value = {
                     "modelfile": f"FROM C:\\Users\\user\\.ollama\\models\\blobs\\sha256-{expected_hash}\nSYSTEM You are MockMate AI.",
                     "details": {"family": "llama", "parameter_size": "3B", "quantization_level": "Q4_K_M"}
@@ -76,7 +79,7 @@ class ModelConfigTests(unittest.TestCase):
         tags_response.status_code = 200
         tags_response.json.return_value = {
             "models": [
-                {"name": "mockmate-llama-ft:latest", "digest": "digest_ft_12345"},
+                {"name": FT_TAG, "digest": "digest_ft_12345"},
                 {"name": "llama3.2:3b", "digest": "digest_base_99999"}
             ]
         }
@@ -106,7 +109,7 @@ class ModelConfigTests(unittest.TestCase):
         tags_response.status_code = 200
         tags_response.json.return_value = {
             "models": [
-                {"name": "mockmate-llama-ft:latest", "digest": "digest_base_same_99999"},
+                {"name": FT_TAG, "digest": "digest_base_same_99999"},
                 {"name": "llama3.2:3b", "digest": "digest_base_same_99999"}
             ]
         }
@@ -137,7 +140,7 @@ class ModelConfigTests(unittest.TestCase):
         tags_response.status_code = 200
         tags_response.json.return_value = {
             "models": [
-                {"name": "mockmate-llama-ft:latest", "digest": "digest_ft_12345"},
+                {"name": FT_TAG, "digest": "digest_ft_12345"},
                 {"name": "qwen2.5:7b", "digest": "digest_stock_qwen"}
             ]
         }
@@ -147,7 +150,7 @@ class ModelConfigTests(unittest.TestCase):
             res = MagicMock()
             res.status_code = 200
             name = (json or {}).get("name", "")
-            if "mockmate-llama-ft" in name or "qwen2.5" in name:
+            if FT_BASE in name or "qwen2.5" in name:
                 res.json.return_value = {
                     "modelfile": f"FROM C:\\Users\\user\\.ollama\\models\\blobs\\sha256-{stock_blob_hash}",
                     "details": {"digest": "digest_stock_qwen"}
