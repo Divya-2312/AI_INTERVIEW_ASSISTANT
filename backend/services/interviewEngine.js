@@ -84,9 +84,128 @@ export const interviewEngine = {
   },
 
   // Process Submitted Answer and Decide Next Action
-  async processAnswer(interviewId, userId, questionId, questionText, answerText, expectedConcepts, questionFormat, expectedOutput, explanation, testCases, language, codeSnippet, title, hrDeliveryMetrics, schema, sampleData, referenceSolution) {
+  async processAnswer(interviewId, userId, questionId, questionText, answerText, expectedConcepts, questionFormat, expectedOutput, explanation, testCases, language, codeSnippet, title, hrDeliveryMetrics, schema, sampleData, referenceSolution, questionIndex) {
     const interview = await Interview.findById(interviewId);
-    if (!interview) throw new Error('Interview session not found');
+    if (!interview) {
+      const err = new Error('Interview session not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const maxQuestions = interview.questionsCount || DEFAULT_QUESTION_COUNT;
+    const targetQId = questionId || 'q-' + Date.now();
+
+    // 1. Idempotency check: if this questionId or slot was already evaluated/saved, return it directly
+    const existingAnswers = await Answer.find({ interviewId: interview._id }).sort({ questionIndex: 1, createdAt: 1 });
+    const matchedAnswer = existingAnswers.find(
+      (a) => a.questionId === targetQId || (typeof questionIndex === 'number' && a.questionIndex === questionIndex)
+    );
+    if (matchedAnswer) {
+      return {
+        evaluation: {
+          score: matchedAnswer.score,
+          conceptCoverage: matchedAnswer.conceptCoverage,
+          correctness: matchedAnswer.correctness,
+          relevance: matchedAnswer.relevance,
+          communication: matchedAnswer.communication,
+          ...(interview.type === 'hr' && typeof matchedAnswer.accuracy === 'number'
+            ? { accuracy: matchedAnswer.accuracy }
+            : {}),
+          isIrrelevant: matchedAnswer.isIrrelevant,
+          feedback: matchedAnswer.feedback,
+          strengths: matchedAnswer.strengths,
+          weaknesses: matchedAnswer.weaknesses,
+          coveredConcepts: matchedAnswer.coveredConcepts || [],
+          partiallyCoveredConcepts: matchedAnswer.partiallyCoveredConcepts || [],
+          missingConcepts: matchedAnswer.missingConcepts || [],
+          improvementSuggestion: matchedAnswer.improvementSuggestion,
+          scoreReason: matchedAnswer.scoreReason,
+          whyNot100: matchedAnswer.whyNot100,
+          referenceSolution: matchedAnswer.referenceSolution,
+          questionId: matchedAnswer.questionId,
+          questionText: matchedAnswer.questionText,
+          title: matchedAnswer.title,
+          questionFormat: matchedAnswer.questionFormat,
+          language: matchedAnswer.language,
+          subject: interview.subject,
+        },
+        answerDoc: matchedAnswer,
+        interviewStatus: interview.status,
+        nextQuestion: interview.currentQuestionData,
+        isFollowUp: matchedAnswer.isFollowUp || false,
+      };
+    }
+
+    // 2. Reject if interview is already completed or question limit reached
+    if (interview.status !== 'in-progress' || existingAnswers.length >= maxQuestions) {
+      const err = new Error(
+        interview.status !== 'in-progress'
+          ? `Interview session is ${interview.status}`
+          : `Interview question limit of ${maxQuestions} reached`
+      );
+      err.statusCode = 409;
+      err.status = 409;
+      throw err;
+    }
+
+    // 3. Atomic reservation of the question slot
+    const updatedInterview = await Interview.findOneAndUpdate(
+      {
+        _id: interview._id,
+        status: 'in-progress',
+        attemptedCount: { $lt: maxQuestions },
+      },
+      {
+        $inc: { attemptedCount: 1 },
+      },
+      { new: true }
+    );
+
+    if (!updatedInterview) {
+      // Check again if a concurrent request finished this question
+      const latestExisting = await Answer.findOne({
+        interviewId: interview._id,
+        $or: [{ questionId: targetQId }, ...(typeof questionIndex === 'number' ? [{ questionIndex }] : [])],
+      });
+      if (latestExisting) {
+        return {
+          evaluation: {
+            score: latestExisting.score,
+            conceptCoverage: latestExisting.conceptCoverage,
+            correctness: latestExisting.correctness,
+            relevance: latestExisting.relevance,
+            communication: latestExisting.communication,
+            ...(interview.type === 'hr' && typeof latestExisting.accuracy === 'number'
+              ? { accuracy: latestExisting.accuracy }
+              : {}),
+            isIrrelevant: latestExisting.isIrrelevant,
+            feedback: latestExisting.feedback,
+            strengths: latestExisting.strengths,
+            weaknesses: latestExisting.weaknesses,
+            improvementSuggestion: latestExisting.improvementSuggestion,
+            scoreReason: latestExisting.scoreReason,
+            whyNot100: latestExisting.whyNot100,
+            referenceSolution: latestExisting.referenceSolution,
+            questionId: latestExisting.questionId,
+            questionText: latestExisting.questionText,
+            title: latestExisting.title,
+            questionFormat: latestExisting.questionFormat,
+            language: latestExisting.language,
+            subject: interview.subject,
+          },
+          answerDoc: latestExisting,
+          interviewStatus: interview.status,
+          nextQuestion: interview.currentQuestionData,
+          isFollowUp: latestExisting.isFollowUp || false,
+        };
+      }
+      const err = new Error(`Interview question limit of ${maxQuestions} reached or session no longer in-progress`);
+      err.statusCode = 409;
+      err.status = 409;
+      throw err;
+    }
+
+    const assignedSlot = typeof questionIndex === 'number' ? questionIndex : existingAnswers.length;
 
     const isInvalidSqlPlaceholder = (s) => typeof s === 'string' && (/select\s+\*\s+from\s+records/i.test(s) || /\bfrom\s+records\b/i.test(s));
     let rawRefSol = referenceSolution ||
@@ -100,25 +219,31 @@ export const interviewEngine = {
     const sData = sampleData || interview.currentQuestionData?.sampleData || null;
     const codeSnip = codeSnippet || interview.currentQuestionData?.codeSnippet || null;
 
-    // 1. Evaluate answer via AI Service
-    const evalResult = await aiService.evaluateAnswer({
-      interviewType: interview.type,
-      subject: interview.subject,
-      question: questionText,
-      answer: answerText,
-      expectedConcepts: expectedConcepts || [],
-      questionFormat: questionFormat || interview.questionFormat || 'theory',
-      expectedOutput: expOut,
-      explanation: explanation || interview.currentQuestionData?.explanation || null,
-      testCases: (testCases && testCases.some(tc => tc.expectedOutput !== undefined))
-        ? testCases
-        : (interview.currentQuestionData?.testCases || testCases || null),
-      language: language || null,
-      schema: sqlSchema,
-      sampleData: sData,
-      referenceSolution: refSol,
-      hrDeliveryMetrics: interview.type === 'hr' ? hrDeliveryMetrics || null : null,
-    });
+    // 4. Evaluate answer via AI Service
+    let evalResult;
+    try {
+      evalResult = await aiService.evaluateAnswer({
+        interviewType: interview.type,
+        subject: interview.subject,
+        question: questionText,
+        answer: answerText,
+        expectedConcepts: expectedConcepts || [],
+        questionFormat: questionFormat || interview.questionFormat || 'theory',
+        expectedOutput: expOut,
+        explanation: explanation || interview.currentQuestionData?.explanation || null,
+        testCases: (testCases && testCases.some(tc => tc.expectedOutput !== undefined))
+          ? testCases
+          : (interview.currentQuestionData?.testCases || testCases || null),
+        language: language || null,
+        schema: sqlSchema,
+        sampleData: sData,
+        referenceSolution: refSol,
+        hrDeliveryMetrics: interview.type === 'hr' ? hrDeliveryMetrics || null : null,
+      });
+    } catch (evalErr) {
+      await Interview.updateOne({ _id: interview._id }, { $inc: { attemptedCount: -1 } });
+      throw evalErr;
+    }
 
     if (evalResult.isIrrelevant === true) {
       Object.assign(evalResult, {
@@ -143,13 +268,7 @@ export const interviewEngine = {
       });
     }
 
-    // 2. Store or update Answer in MongoDB (prevents duplicates on retry)
-    const targetQId = questionId || 'q-' + Date.now();
-    let answerDoc = await Answer.findOne({
-      interviewId: interview._id,
-      questionId: targetQId,
-    });
-
+    // 5. Store Answer in MongoDB with unique compound index on (interviewId, questionIndex)
     const isNoComm =
       questionFormat === 'output_prediction' ||
       questionFormat === 'coding' ||
@@ -164,6 +283,7 @@ export const interviewEngine = {
       interviewId: interview._id,
       userId,
       questionId: targetQId,
+      questionIndex: assignedSlot,
       questionText,
       codeSnippet: codeSnippet || null,
       title: title || null,
@@ -222,43 +342,75 @@ export const interviewEngine = {
       isFollowUp: false,
     };
 
-    if (answerDoc) {
-      Object.assign(answerDoc, answerPayload);
-      await answerDoc.save();
-    } else {
+    let answerDoc;
+    try {
       answerDoc = await Answer.create(answerPayload);
+    } catch (saveErr) {
+      if (saveErr.code === 11000) {
+        // Compound index conflict: rollback attemptedCount and return saved answer
+        await Interview.updateOne({ _id: interview._id }, { $inc: { attemptedCount: -1 } });
+        const concurrentAnswer = await Answer.findOne({
+          interviewId: interview._id,
+          questionIndex: assignedSlot,
+        });
+        if (concurrentAnswer) {
+          return {
+            evaluation: {
+              score: concurrentAnswer.score,
+              conceptCoverage: concurrentAnswer.conceptCoverage,
+              correctness: concurrentAnswer.correctness,
+              relevance: concurrentAnswer.relevance,
+              communication: concurrentAnswer.communication,
+              ...(interview.type === 'hr' && typeof concurrentAnswer.accuracy === 'number'
+                ? { accuracy: concurrentAnswer.accuracy }
+                : {}),
+              isIrrelevant: concurrentAnswer.isIrrelevant,
+              feedback: concurrentAnswer.feedback,
+              strengths: concurrentAnswer.strengths,
+              weaknesses: concurrentAnswer.weaknesses,
+              improvementSuggestion: concurrentAnswer.improvementSuggestion,
+              scoreReason: concurrentAnswer.scoreReason,
+              whyNot100: concurrentAnswer.whyNot100,
+              referenceSolution: concurrentAnswer.referenceSolution,
+              questionId: concurrentAnswer.questionId,
+              questionText: concurrentAnswer.questionText,
+            },
+            answerDoc: concurrentAnswer,
+            interviewStatus: interview.status,
+            nextQuestion: interview.currentQuestionData,
+            isFollowUp: concurrentAnswer.isFollowUp || false,
+          };
+        }
+      }
+      await Interview.updateOne({ _id: interview._id }, { $inc: { attemptedCount: -1 } });
+      throw saveErr;
     }
 
-    // 3. Update Interview Progress State (deduplicate by questionId)
-    const rawAnswers = await Answer.find({ interviewId: interview._id });
-    const answerMap = new Map();
-    for (const a of rawAnswers) {
-      answerMap.set(a.questionId, a);
-    }
-    const allAnswers = Array.from(answerMap.values());
-    interview.attemptedCount = allAnswers.length;
+    // 6. Update Interview Progress State (strictly derived from saved answers and never exceeds maxQuestions)
+    const rawAnswers = await Answer.find({ interviewId: interview._id }).sort({ questionIndex: 1, createdAt: 1 });
+    const allAnswers = rawAnswers;
+    interview.attemptedCount = Math.min(allAnswers.length, maxQuestions);
 
-    // Check follow-up eligibility (20-30% chance & under MAX_FOLLOW_UPS limit).
-    // Follow-ups are always plain theory-style questions, so they're skipped
-    // entirely in output_prediction/coding mode -- otherwise a code-based
-    // interview would randomly switch back to a theory question mid-session.
+    // Follow-ups count as one of the 10 slots; max 3 follow-ups; only if under maxQuestions
+    const isHr = interview.type === 'hr';
     const randomRoll = Math.floor(Math.random() * 100);
     const shouldAskFollowUp =
       interview.questionFormat !== 'output_prediction' &&
       interview.questionFormat !== 'coding' &&
       randomRoll < FOLLOW_UP_PERCENTAGE &&
-      interview.followUpCount < MAX_FOLLOW_UPS &&
+      interview.followUpCount < (isHr ? 3 : MAX_FOLLOW_UPS) &&
+      interview.attemptedCount < maxQuestions &&
       answerText.trim().length > 30;
 
     let nextQuestion = null;
 
-    if (interview.attemptedCount >= interview.questionsCount) {
-      // Complete Session
+    if (interview.attemptedCount >= maxQuestions) {
+      // Complete Session - strictly 10 questions
       interview.status = 'completed';
       interview.completedAt = new Date();
 
       // Calculate overall score based on all questions
-      const totalQuestions = interview.questionsCount || 10;
+      const totalQuestions = maxQuestions;
       const validScores = allAnswers.map((a) => a.score).filter((s) => typeof s === 'number');
       const sum = validScores.reduce((acc, curr) => acc + curr, 0);
       const overallScore = Math.round(sum / totalQuestions);
@@ -292,20 +444,13 @@ export const interviewEngine = {
             'Elaborate on edge case scenarios and real project experiences.',
           ],
           questionsAttempted: interview.attemptedCount,
-          totalQuestions: interview.questionsCount,
+          totalQuestions: maxQuestions,
         },
         { upsert: true, new: true }
       );
     } else {
       // Generate Next Question
-      //
-      // Built from questionSignature(), NOT a plain a.questionText map --
-      // for output_prediction, questionText is always the same fixed
-      // instruction sentence, so using it directly here would hand the AI
-      // service a list of identical, useless "already asked" strings and
-      // defeat duplicate-avoidance/rejection entirely for that format. See
-      // questionSignature()'s docstring above.
-      const prevQuestions = allAnswers.map((a) => questionSignature(a));
+      const prevQuestions = allAnswers.flatMap((a) => [questionSignature(a), a.questionId].filter(Boolean));
       const prevCategories = allAnswers.map((a) => a.category).filter(Boolean);
       try {
         if (shouldAskFollowUp) {
@@ -317,9 +462,6 @@ export const interviewEngine = {
             previousQuestion: questionText,
             studentAnswer: answerText,
             expectedConcepts,
-            // So the AI service knows every question already asked this
-            // session (not just the immediately previous one) and can
-            // avoid generating a follow-up that repeats an earlier one.
             previousQuestions: prevQuestions,
           });
         } else {
@@ -337,19 +479,9 @@ export const interviewEngine = {
           });
         }
       } catch (genError) {
-        // The answer was already graded and saved above (evalResult exists),
-        // but the NEXT question could not be generated (e.g. the AI
-        // microservice/Ollama dropped mid-session). Previously this threw
-        // straight out of processAnswer: the frontend's try/catch never
-        // reached `setLastEvalFeedback`, so the candidate's score silently
-        // vanished, the on-screen question never advanced, and re-clicking
-        // Submit created ANOTHER graded Answer for the very same question --
-        // which is exactly what looked like "the same question repeating".
-        // Roll back the just-created answer so a retry is clean, and
-        // surface the evaluation to the caller anyway so the score isn't
-        // lost even though there's no next question yet.
         await Answer.deleteOne({ _id: answerDoc._id });
         interview.attemptedCount = Math.max(0, interview.attemptedCount - 1);
+        await interview.save();
         const err = new Error(
           genError.message ||
             'Your answer was graded, but the next question could not be generated because the AI ' +

@@ -135,7 +135,7 @@ export const getUserInterviews = async (req, res, next) => {
         const interviewObj = interview.toObject();
         const answers = await Answer.find({ interviewId: interview._id });
         const totalQuestions = interview.questionsCount || 10;
-        interviewObj.attemptedCount = answers.length;
+        interviewObj.attemptedCount = Math.min(answers.length, totalQuestions);
         interviewObj.totalQuestions = totalQuestions;
 
         // Calculate overall score based on all questions (e.g., 1/10 attended with 100% is 10%)
@@ -144,9 +144,9 @@ export const getUserInterviews = async (req, res, next) => {
           const sum = validScores.reduce((a, b) => a + b, 0);
           const computedScore = Math.round(sum / totalQuestions);
           interviewObj.score = computedScore;
-          if (interview.score !== computedScore || interview.attemptedCount !== answers.length) {
+          if (interview.score !== computedScore || interview.attemptedCount !== interviewObj.attemptedCount) {
             interview.score = computedScore;
-            interview.attemptedCount = answers.length;
+            interview.attemptedCount = interviewObj.attemptedCount;
             await interview.save();
           }
         }
@@ -174,7 +174,7 @@ export const getInterviewById = async (req, res, next) => {
     const answers = await Answer.find({ interviewId: interview._id });
     const totalQuestions = interview.questionsCount || 10;
     const interviewObj = interview.toObject();
-    interviewObj.attemptedCount = answers.length;
+    interviewObj.attemptedCount = Math.min(answers.length, totalQuestions);
     interviewObj.totalQuestions = totalQuestions;
 
     if (answers.length > 0) {
@@ -197,7 +197,7 @@ export const submitAnswer = async (req, res, next) => {
     const {
       questionId, questionText, answerText, expectedConcepts, questionFormat,
       expectedOutput, explanation, testCases, language, codeSnippet, title,
-      hrDeliveryMetrics, schema, sampleData, referenceSolution
+      hrDeliveryMetrics, schema, sampleData, referenceSolution, questionIndex
     } = req.body;
 
     if (!answerText || answerText.trim().length === 0) {
@@ -206,6 +206,75 @@ export const submitAnswer = async (req, res, next) => {
     }
 
     const interview = await Interview.findById(req.params.id);
+    if (!interview) {
+      res.status(404);
+      throw new Error('Interview session not found');
+    }
+    if (interview.userId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error('Access denied');
+    }
+
+    const targetQId = questionId || 'q-' + Date.now();
+    const existingAnswers = await Answer.find({ interviewId: interview._id }).sort({ questionIndex: 1, createdAt: 1 });
+    const maxQuestions = interview.questionsCount || 10;
+
+    // 1. Idempotency check: if this questionId or slot was already evaluated/saved, return it directly
+    const matchedAnswer = existingAnswers.find(
+      (a) => a.questionId === targetQId || (typeof questionIndex === 'number' && a.questionIndex === questionIndex)
+    );
+    if (matchedAnswer) {
+      const isNoComm =
+        matchedAnswer.questionFormat === 'output_prediction' ||
+        matchedAnswer.questionFormat === 'coding' ||
+        matchedAnswer.language === 'sql' ||
+        (interview.subject === 'dbms' && (matchedAnswer.language === 'sql' || matchedAnswer.questionFormat === 'coding' || /^\s*(?:--[^\n]*\n\s*)*SELECT\b/i.test(matchedAnswer.answerText || '')));
+
+      return res.status(200).json({
+        success: true,
+        evaluation: {
+          score: matchedAnswer.score,
+          conceptCoverage: matchedAnswer.conceptCoverage,
+          correctness: matchedAnswer.correctness,
+          relevance: matchedAnswer.relevance,
+          communication: isNoComm ? null : matchedAnswer.communication,
+          ...(interview.type === 'hr' && typeof matchedAnswer.accuracy === 'number'
+            ? { accuracy: matchedAnswer.accuracy }
+            : {}),
+          isIrrelevant: matchedAnswer.isIrrelevant,
+          feedback: matchedAnswer.feedback,
+          strengths: matchedAnswer.strengths,
+          weaknesses: matchedAnswer.weaknesses,
+          coveredConcepts: matchedAnswer.coveredConcepts || [],
+          partiallyCoveredConcepts: matchedAnswer.partiallyCoveredConcepts || [],
+          missingConcepts: matchedAnswer.missingConcepts || [],
+          improvementSuggestion: matchedAnswer.improvementSuggestion,
+          scoreReason: matchedAnswer.scoreReason,
+          whyNot100: matchedAnswer.whyNot100,
+          referenceSolution: matchedAnswer.referenceSolution,
+          questionId: matchedAnswer.questionId,
+          questionText: matchedAnswer.questionText,
+          title: matchedAnswer.title,
+          questionFormat: matchedAnswer.questionFormat,
+          language: matchedAnswer.language,
+          subject: interview.subject,
+        },
+        answer: matchedAnswer,
+        nextQuestion: sanitizeQuestionForClient(interview.currentQuestionData),
+        isFollowUp: matchedAnswer.isFollowUp || false,
+        interviewStatus: interview.status,
+      });
+    }
+
+    // 2. Reject with 409 if status is not in-progress or question count reached
+    if (interview.status !== 'in-progress' || existingAnswers.length >= maxQuestions) {
+      return res.status(409).json({
+        success: false,
+        message: interview.status !== 'in-progress'
+          ? `Interview session is ${interview.status}`
+          : `Interview question limit of ${maxQuestions} reached`,
+      });
+    }
 
     const result = await interviewEngine.processAnswer(
       req.params.id,
@@ -224,7 +293,8 @@ export const submitAnswer = async (req, res, next) => {
       hrDeliveryMetrics,
       schema,
       sampleData,
-      referenceSolution
+      referenceSolution,
+      questionIndex
     );
 
     const answerDoc = result.answerDoc || result.answer;

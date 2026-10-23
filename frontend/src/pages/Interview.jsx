@@ -334,6 +334,7 @@ export const Interview = () => {
   }, [currentQuestion?.id, currentQuestion?.questionText]);
 
   const handleAnswerSubmit = async () => {
+    if (evaluating || answerLockedRef.current) return;
     if (!currentAnswer.trim()) {
       setValidationError(
         currentQuestion?.questionFormat === 'coding'
@@ -348,7 +349,7 @@ export const Interview = () => {
       setIsListening(false);
     }
 
-    // Lock the answer exactly as submitted (text, editor and speech input).
+    // Immediately lock the answer and disable submission while in flight
     answerLockedRef.current = true;
     setAnswerLocked(true);
     setEvaluating(true);
@@ -357,7 +358,8 @@ export const Interview = () => {
 
     try {
       const payload = {
-        questionId: currentQuestion?.id || `q-${questionCount}`,
+        questionId: currentQuestion?.id || currentQuestion?.questionId || `q-${questionCount}`,
+        questionIndex: questionCount - 1,
         questionText: currentQuestion?.questionText || currentQuestion?.question,
         answerText: currentAnswer.trim(),
         expectedConcepts: currentQuestion?.expectedConcepts || [],
@@ -403,7 +405,7 @@ export const Interview = () => {
       setIsFollowUpBadge(res.isFollowUp);
       setEvaluating(false);
 
-      if (res.interviewStatus === 'completed' || !res.nextQuestion) {
+      if (res.interviewStatus === 'completed' || !res.nextQuestion || questionCount >= totalQ) {
         setIsInterviewCompleted(true);
       } else {
         setPendingNextQuestion(res.nextQuestion);
@@ -439,7 +441,7 @@ export const Interview = () => {
   const handleAdvanceToNextQuestion = () => {
     if (pendingNextQuestion) {
       setCurrentQuestion(pendingNextQuestion);
-      setQuestionCount((prev) => prev + 1);
+      setQuestionCount((prev) => Math.min(prev + 1, totalQ));
       setCurrentAnswer(
         pendingNextQuestion?.questionFormat === 'coding' && pendingNextQuestion?.starterCode
           ? pendingNextQuestion.starterCode
@@ -784,7 +786,7 @@ export const Interview = () => {
         {/* Action Controls */}
         <div className="flex-between answer-actions" style={{ marginTop: '1.5rem' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Question {questionCount} of {totalQ}
+            Question {Math.min(questionCount, totalQ)} of {totalQ}
           </div>
 
           {lastEvalFeedback ? (
@@ -800,10 +802,10 @@ export const Interview = () => {
           ) : (
             <Button 
               onClick={handleAnswerSubmit} 
-              disabled={evaluating}
-              icon={questionCount === totalQ ? Send : ArrowRight}
+              disabled={evaluating || answerLocked}
+              icon={questionCount >= totalQ ? Send : ArrowRight}
             >
-              {evaluating ? 'Submitting & Grading...' : questionCount === totalQ ? 'Submit & Finish' : 'Submit Answer'}
+              {evaluating ? 'Submitting & Grading...' : questionCount >= totalQ ? 'Submit & Finish' : 'Submit Answer'}
             </Button>
           )}
         </div>
@@ -816,7 +818,7 @@ export const Interview = () => {
         <Card className="answer-section-card" style={{ marginTop: '1rem' }}>
           <div className="flex-between answer-actions">
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Question {questionCount} of {totalQ}
+              Question {Math.min(questionCount, totalQ)} of {totalQ}
             </div>
             {lastEvalFeedback ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -851,10 +853,10 @@ export const Interview = () => {
             ) : (
               <Button
                 onClick={handleAnswerSubmit}
-                disabled={evaluating}
-                icon={questionCount === totalQ ? Send : ArrowRight}
+                disabled={evaluating || answerLocked}
+                icon={questionCount >= totalQ ? Send : ArrowRight}
               >
-                {evaluating ? 'Running & Grading...' : questionCount === totalQ ? 'Submit & Finish Interview' : 'Submit Solution'}
+                {evaluating ? 'Running & Grading...' : questionCount >= totalQ ? 'Submit & Finish Interview' : 'Submit Solution'}
               </Button>
             )}
           </div>

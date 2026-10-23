@@ -192,10 +192,18 @@ const answerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    questionIndex: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+answerSchema.index({ interviewId: 1, questionIndex: 1 }, { unique: true });
+
 export const Answer = mongoose.model('Answer', answerSchema);
+

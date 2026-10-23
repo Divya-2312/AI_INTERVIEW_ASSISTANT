@@ -45,6 +45,7 @@ class QuestionGenerator:
                 req.subject or "java", req.difficulty, context, req.previousQuestions,
                 question_format=req.questionFormat or "theory",
                 interview_type=req.interviewType,
+                previous_categories=getattr(req, "previousCategories", None) or [],
             )
         except Exception as e:
             if (req.questionFormat or "theory").lower() == "theory" and (req.interviewType or "").lower() != "hr":

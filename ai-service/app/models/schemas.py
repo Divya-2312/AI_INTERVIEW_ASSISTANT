@@ -90,6 +90,8 @@ class AnswerEvaluationRequest(BaseModel):
     model_config = {"populate_by_name": True}
 
 class QuestionResponse(BaseModel):
+    id: Optional[str] = None
+    questionId: Optional[str] = None
     questionText: str
     questionType: str = "normal"  # 'normal' or 'follow_up'
     subject: str

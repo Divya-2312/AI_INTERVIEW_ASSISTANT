@@ -225,7 +225,7 @@ class AIGenerationUnavailableError(RuntimeError):
 
 class BaseAIModel(ABC):
     @abstractmethod
-    def generate_question(self, subject: str, difficulty: str, context: list, previous: list, question_format: str = "theory", interview_type: str = "technical") -> dict:
+    def generate_question(self, subject: str, difficulty: str, context: list, previous: list, question_format: str = "theory", interview_type: str = "technical", previous_categories: list = None, **kwargs) -> dict:
         pass
 
     @abstractmethod
@@ -2211,9 +2211,9 @@ class LlamaModel(BaseAIModel):
     # coding generator (which itself further routes Java vs SQL) based on
     # question_format.
     # -----------------------------------------------------------------
-    def generate_question(self, subject: str, difficulty: str, context: list, previous: list, question_format: str = "theory", interview_type: str = "technical") -> dict:
+    def generate_question(self, subject: str, difficulty: str, context: list, previous: list, question_format: str = "theory", interview_type: str = "technical", previous_categories: list = None, **kwargs) -> dict:
         if (interview_type or "").lower() == "hr":
-            return self._generate_hr_question(difficulty, context, previous)
+            return self._generate_hr_question(difficulty, context, previous, previous_categories=previous_categories)
 
         question_format = (question_format or "theory").lower()
 
@@ -2341,20 +2341,45 @@ class LlamaModel(BaseAIModel):
             "modelUsed": model_used,
         }
 
-    def _generate_hr_question(self, difficulty: str, context: list, previous: list) -> dict:
+    def _generate_hr_question(self, difficulty: str, context: list, previous: list, previous_categories: list = None) -> dict:
         try:
             from app.utils.hr_gate import items_list
             hr_pool = items_list()
             if hr_pool:
                 prev_normalized = {str(p).strip().lower() for p in (previous or []) if str(p).strip()}
+
+                # Track category usage from previous_categories
+                cat_counts = {}
+                for c in (previous_categories or []):
+                    if c:
+                        norm_c = str(c).strip().lower()
+                        cat_counts[norm_c] = cat_counts.get(norm_c, 0) + 1
+
+                # Filter candidates:
+                # 1. No repeat question text or question id
+                # 2. At most 2 questions from any single category
                 candidates = [
                     q for q in hr_pool
-                    if q.get("question", "").strip().lower() not in prev_normalized
+                    if q.get("id", "").strip().lower() not in prev_normalized
+                    and q.get("question", "").strip().lower() not in prev_normalized
                     and not any(q.get("question", "").strip().lower() in p or p in q.get("question", "").strip().lower() for p in prev_normalized if len(p) > 10)
+                    and cat_counts.get(q.get("category", "").strip().lower(), 0) < 2
                 ]
+
+                # Fallback if strict category cap exhausted: ensure at least uniqueness
+                if not candidates:
+                    candidates = [
+                        q for q in hr_pool
+                        if q.get("id", "").strip().lower() not in prev_normalized
+                        and q.get("question", "").strip().lower() not in prev_normalized
+                        and not any(q.get("question", "").strip().lower() in p or p in q.get("question", "").strip().lower() for p in prev_normalized if len(p) > 10)
+                    ]
+
                 if candidates:
                     chosen = random.choice(candidates)
                     return {
+                        "id": chosen.get("id"),
+                        "questionId": chosen.get("id"),
                         "questionText": chosen["question"],
                         "questionType": "normal",
                         "subject": "N/A",
@@ -2366,6 +2391,7 @@ class LlamaModel(BaseAIModel):
                         "expectedOutput": None,
                         "explanation": chosen.get("guidance"),
                         "reference_solution": chosen.get("guidance"),
+                        "referenceSolution": chosen.get("guidance"),
                         "modelUsed": "curated_hr100_benchmark",
                     }
         except Exception as e:
@@ -4279,7 +4305,7 @@ class DevFallbackModel(BaseAIModel):
     LLaMA is unavailable.
     """
 
-    def generate_question(self, subject: str, difficulty: str, context: list, previous: list, question_format: str = "theory", interview_type: str = "technical") -> dict:
+    def generate_question(self, subject: str, difficulty: str, context: list, previous: list, question_format: str = "theory", interview_type: str = "technical", previous_categories: list = None, **kwargs) -> dict:
         raise AIGenerationUnavailableError(
             "Question generation requires the fine-tuned LLaMA model and no static "
             "question bank is used as a substitute. Make sure Ollama is running "
@@ -4733,9 +4759,9 @@ class ResilientAIModel(BaseAIModel):
         self.llama = LlamaModel()
         self.fallback = DevFallbackModel()
 
-    def generate_question(self, subject: str, difficulty: str, context: list, previous: list, question_format: str = "theory", interview_type: str = "technical") -> dict:
+    def generate_question(self, subject: str, difficulty: str, context: list, previous: list, question_format: str = "theory", interview_type: str = "technical", previous_categories: list = None, **kwargs) -> dict:
         try:
-            return self.llama.generate_question(subject, difficulty, context, previous, question_format, interview_type)
+            return self.llama.generate_question(subject, difficulty, context, previous, question_format, interview_type, previous_categories=previous_categories, **kwargs)
         except Exception as e:
             logger.error(f"[LLaMA] generate_question failed: {e}")
             raise AIGenerationUnavailableError(
