@@ -3622,6 +3622,13 @@ class LlamaModel(BaseAIModel):
             or llm_relevance < 0.20
             or (not addresses_question and llm_relevance < 0.30)
         )
+        # Reject verbatim copied question as answer
+        if norm_ans in (norm_q, norm_q.rstrip("?").strip()):
+            res = _not_related_hr_evaluation()
+            self._eval_cache[cache_key] = res
+            _THEORY_EVAL_CACHE[cache_key] = res
+            return res
+
         if irrelevant_signal and semantic_relevance < 0.45:
             res = _not_related_hr_evaluation()
             self._eval_cache[cache_key] = res
@@ -3630,9 +3637,11 @@ class LlamaModel(BaseAIModel):
 
         correctness = _bounded_score(data.get("correctness"), 0.0)
         if "accuracy" not in data or data.get("accuracy") in (0.0, None):
-            accuracy = round(max(correctness * 0.95, min(1.0, semantic_relevance)), 2)
+            accuracy = 0.0 if correctness == 0.0 else round(max(correctness * 0.95, min(1.0, semantic_relevance)), 2)
         else:
             accuracy = _bounded_score(data.get("accuracy"), 0.0)
+        if correctness == 0.0:
+            accuracy = 0.0
 
         communication = _bounded_score(data.get("communication"), 0.75)
         if _is_fragmentary_answer(answer):

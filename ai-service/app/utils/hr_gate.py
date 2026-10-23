@@ -62,14 +62,27 @@ def items_map():
 def find_hr_item(question_or_id: str):
     if not question_or_id:
         return None
-    key = str(question_or_id).strip().lower()
+    raw_key = str(question_or_id).strip().lower()
     m = items_map()
-    if key in m:
-        return m[key]
+    if raw_key in m:
+        return m[raw_key]
     # Check normalized substring match
     for q_text, item in m.items():
-        if key in q_text or q_text in key:
+        if raw_key in q_text or q_text in raw_key:
             return item
+    # Token-based match with questions from catalog
+    key_tokens = content(raw_key) - _GENERIC_Q
+    if key_tokens:
+        best_item = None
+        best_overlap = 0
+        for item in items_list():
+            item_tokens = content(item.get("question", "")) - _GENERIC_Q
+            overlap = len(key_tokens & item_tokens)
+            if overlap > best_overlap and (overlap >= len(item_tokens) * 0.5 or overlap >= 2):
+                best_overlap = overlap
+                best_item = item
+        if best_item and best_overlap >= 1:
+            return best_item
     return None
 
 def topic_hits(question: str, answer: str) -> int:
