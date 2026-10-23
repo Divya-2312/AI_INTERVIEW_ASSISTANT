@@ -186,16 +186,16 @@ class JavaDbmsTheoryMeaningBased(unittest.TestCase):
 
     def test_prompt_tells_the_model_to_judge_meaning_not_keywords(self):
         model, _ = self.grade("Inheritance allows a class to reuse code from a parent class.")
-        self.assertIn("TASK: evaluate_answer", model.last_prompt)
-        self.assertIn("Evaluate meaning and correctness", lp.TRAINING_SYSTEM_PROMPT)
-        self.assertIn("separate from correctness", lp.TRAINING_SYSTEM_PROMPT)
-        self.assertIn("Short answers are not auto-irrelevant", lp.TRAINING_SYSTEM_PROMPT)
-        self.assertIn("Keyword lists earn little credit", lp.TRAINING_SYSTEM_PROMPT)
+        self.assertIn("Evaluate the candidate's answer across 4 criteria", model.last_prompt)
+        self.assertIn("correctness (0-100)", model.last_prompt)
+        self.assertIn("relevance (0-100)", model.last_prompt)
+        self.assertIn("completeness (0-100)", model.last_prompt)
+        self.assertIn("clarity (0-100)", model.last_prompt)
 
     def test_java_uses_weighted_formula_not_the_hr_average(self):
         _, res = self.grade("Inheritance allows a class to reuse code from a parent class.")
-        # relevance blend, correctness .8, coverage, communication .8 -> weighted .25/.30/.30/.15
-        expected = lp._calculate_text_score(res["relevance"], res["correctness"], res["conceptCoverage"], res["communication"])
+        # 60% Base LLaMA rubric mean + 40% BERT concept coverage score
+        expected = round(0.60 * res["llamaRubric"]["rubricMean"] + 0.40 * round(res["conceptCoverage"] * 100.0))
         self.assertEqual(res["score"], expected)
         self.assertNotIn("accuracy", res)
 

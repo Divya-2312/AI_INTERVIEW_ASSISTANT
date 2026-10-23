@@ -3277,12 +3277,16 @@ class LlamaModel(BaseAIModel):
 
         # Off-topic zero check: semantic relevance < 0.15 and no concept mentioned
         mentions_any_concept = any(c.lower() in answer.lower() for c in (concepts or []))
-        if not mentions_any_concept and hasattr(embedding_service, "SYNONYM_MAP"):
+        syn_map = getattr(embedding_service, "SYNONYM_MAP", None) or SYNONYM_MAP
+        if not mentions_any_concept and syn_map:
             for c in (concepts or []):
-                for syn in embedding_service.SYNONYM_MAP.get(c.lower(), []):
+                for syn in syn_map.get(c.lower(), []):
                     if syn.lower() in answer.lower():
                         mentions_any_concept = True
                         break
+        if _question_asks_for_list(question) or bool(re.search(r'\b(?:class|void|public|extends|implements|SELECT|FROM|WHERE)\b', answer)):
+            mentions_any_concept = True
+
         if semantic_relevance < 0.15 and not mentions_any_concept:
             res = _irrelevant_text_evaluation()
             res["evidence"] = None
@@ -3336,10 +3340,22 @@ class LlamaModel(BaseAIModel):
                 model_override=base_model,
             )
             data = _extract_json(raw_text)
-            c_score = max(0.0, min(100.0, float(data.get("correctness", 0))))
-            r_score = max(0.0, min(100.0, float(data.get("relevance", 0))))
-            comp_score = max(0.0, min(100.0, float(data.get("completeness", 0))))
-            clar_score = max(0.0, min(100.0, float(data.get("clarity", 0))))
+            raw_c = float(data.get("correctness", 0))
+            raw_r = float(data.get("relevance", 0))
+            raw_comp = float(data.get("completeness", data.get("conceptCoverage", 0)))
+            raw_clar = float(data.get("clarity", data.get("communication", 0)))
+            if 0.0 < raw_c <= 1.0 and 0.0 < raw_r <= 1.0:
+                raw_c *= 100.0
+                raw_r *= 100.0
+            if 0.0 < raw_comp <= 1.0:
+                raw_comp *= 100.0
+            if 0.0 < raw_clar <= 1.0:
+                raw_clar *= 100.0
+
+            c_score = max(0.0, min(100.0, raw_c))
+            r_score = max(0.0, min(100.0, raw_r))
+            comp_score = max(0.0, min(100.0, raw_comp))
+            clar_score = max(0.0, min(100.0, raw_clar))
             llama_rubric_mean = (c_score + r_score + comp_score + clar_score) / 4.0
             llama_rubric = {
                 "correctness": round(c_score),
@@ -3399,7 +3415,8 @@ class LlamaModel(BaseAIModel):
 
         final_score = max(0, min(100, final_score))
 
-        if is_keyword_dump:
+        if is_keyword_dump or data.get("demonstratesUnderstanding") is False:
+            c_score = min(c_score, 30.0)
             final_score = min(20, final_score)
             feedback = "This lists relevant terms but does not explain what any of them mean or how they relate to the question."
             weaknesses = ["Answer is a list of terms, not an explanation"]
