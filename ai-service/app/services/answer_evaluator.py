@@ -1,7 +1,7 @@
 from app.models.schemas import AnswerEvaluationRequest, EvaluationResponse
 from app.models.llama_provider import get_ai_model_provider
 from app.services.rag_service import rag_service
-from app.utils.hr_scoring import calculate_hr_overall
+from app.utils.hr_scoring import calculate_hr_overall, build_hr_evaluation_summary
 
 class AnswerEvaluator:
     def __init__(self):
@@ -111,11 +111,29 @@ class AnswerEvaluator:
                 eval_data.get("correctness"), eval_data.get("relevance"),
                 eval_data.get("accuracy"), eval_data["communication"],
             )
+            if eval_data["score"] == 0 and not eval_data.get("isIrrelevant"):
+                eval_data["score"] = 1
+            hr_weaknesses = list(eval_data.get("weaknesses") or []) + observations
+            summary, why_not_100 = build_hr_evaluation_summary(
+                score=eval_data["score"],
+                correctness=eval_data.get("correctness", 0.0),
+                relevance=eval_data.get("relevance", 0.0),
+                accuracy=eval_data.get("accuracy", 0.0),
+                communication=eval_data["communication"],
+                answer=eval_data.get("answerText") or eval_data.get("answer") or "",
+                weaknesses=hr_weaknesses[:2],
+                improvement_suggestion=eval_data.get("improvementSuggestion"),
+                delivery_metrics=metrics,
+                is_irrelevant=eval_data.get("isIrrelevant", False),
+            )
+            eval_data["scoreReason"] = summary
+            eval_data["whyNot100"] = why_not_100
+            eval_data["weaknesses"] = hr_weaknesses[:2]
         else:
             eval_data["score"] = max(0, int(eval_data.get("score", 0)) - penalty)
+            eval_data["scoreReason"] = (eval_data.get("scoreReason", "").rstrip() + " Delivery also affected the score: " + " ".join(observations)).strip()
+            eval_data["weaknesses"] = list(eval_data.get("weaknesses") or []) + observations
         eval_data["feedback"] = (eval_data.get("feedback", "").rstrip() + " Delivery observations: " + " ".join(observations)).strip()
-        eval_data["scoreReason"] = (eval_data.get("scoreReason", "").rstrip() + " Delivery also affected the score: " + " ".join(observations)).strip()
-        eval_data["weaknesses"] = list(eval_data.get("weaknesses") or []) + observations
         eval_data["deliveryMetrics"] = {
             "fillerWordCount": filler_count,
             "fillerFrequencyPer100Words": filler_frequency,

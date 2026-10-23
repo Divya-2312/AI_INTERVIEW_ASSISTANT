@@ -156,7 +156,9 @@ export const Result = () => {
       <div className="breakdown-section">
         <h2>Detailed Question Breakdown ({answers.length})</h2>
         <p className="subtitle" style={{ marginBottom: '1.5rem' }}>
-          Individual question evaluations with a breakdown of why each score wasn't 100%.
+          {interview?.type === 'hr'
+            ? 'Individual question evaluations with detailed sub-score analysis.'
+            : "Individual question evaluations with a breakdown of why each score wasn't 100%."}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -237,12 +239,26 @@ export const Result = () => {
               </div>
 
               {ans.improvementSuggestion && (
-                <p style={{ margin: '0.75rem 0 0', fontSize: '0.9rem', color: 'var(--text-main)' }}>{ans.improvementSuggestion}</p>
+                <div style={{ marginTop: '0.6rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                    {(interview?.type === 'hr' || ans.subject === 'hr') ? 'HOW TO IMPROVE' : 'IMPROVEMENT TIP'}
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)' }}>{ans.improvementSuggestion}</p>
+                </div>
               )}
 
               {(ans.scoreReason || ans.feedback || ans.whyNot100) && (
                 <div className="feedback-review-box" style={{ marginTop: '0.75rem' }}>
-                  {ans.score < 100 ? (
+                  {(interview?.type === 'hr' || ans.subject === 'hr') ? (
+                    <>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: ans.score >= 95 ? 'var(--primary)' : '#92400e', marginBottom: '0.25rem' }}>
+                        EVALUATION SUMMARY
+                      </div>
+                      <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                        {ans.scoreReason || ans.whyNot100 || ans.feedback}
+                      </p>
+                    </>
+                  ) : ans.score < 100 ? (
                     <>
                       <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#92400e', marginBottom: '0.25rem' }}>
                         WHY NOT 100%
@@ -264,7 +280,7 @@ export const Result = () => {
                 </div>
               )}
 
-              {ans.score < 98 && (ans.weaknesses || []).length > 0 && (
+              {interview?.type !== 'hr' && ans.subject !== 'hr' && ans.score < 98 && (ans.weaknesses || []).length > 0 && (
                 <div style={{ marginTop: '0.6rem' }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
                     TOPIC(S) TO REVIEW

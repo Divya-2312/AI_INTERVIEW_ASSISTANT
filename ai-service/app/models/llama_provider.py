@@ -6,7 +6,7 @@ import re
 import random
 import logging
 from app.config import settings
-from app.utils.hr_scoring import calculate_hr_overall
+from app.utils.hr_scoring import calculate_hr_overall, build_hr_evaluation_summary
 from app.models.prompt_templates import build_training_style_prompt, TRAINING_SYSTEM_PROMPT
 
 logger = logging.getLogger("ai_service")
@@ -1328,6 +1328,7 @@ def _not_related_hr_evaluation() -> dict:
         "deeperConcepts": [],
         "improvementSuggestion": "Answer the question that was asked, using a specific example from your experience.",
         "scoreReason": _HR_NOT_RELATED_MESSAGE,
+        "whyNot100": _HR_NOT_RELATED_MESSAGE,
         "modelUsed": "fallback_rules",
         "usedFallback": True,
         "scoringSources": ["rules"],
@@ -3497,10 +3498,24 @@ class LlamaModel(BaseAIModel):
     def _evaluate_hr_answer(self, question: str, answer: str, concepts: list, context: list,
                             hr_delivery_metrics: dict = None) -> dict:
         """
-        HR / behavioral grading with enhanced deterministic off-topic gating and calibrated scoring.
+        HR / behavioral grading with enhanced deterministic off-topic gating,
+        strict rounded average scoring, temperature 0, and plain-English summary.
         """
+        import hashlib
+
         if not (answer or "").strip():
             return _not_related_hr_evaluation()
+
+        # 0. Cache check for idempotency
+        norm_ans = " ".join((answer or "").strip().lower().split())
+        norm_q = " ".join((question or "").strip().lower().split())
+        metrics_key = str(sorted(hr_delivery_metrics.items())) if hr_delivery_metrics else ""
+        cache_raw = f"hr::{norm_q}::{norm_ans}::{metrics_key}"
+        cache_key = hashlib.sha256(cache_raw.encode("utf-8")).hexdigest()
+        if not hasattr(self, "_eval_cache"):
+            self._eval_cache = {}
+        if cache_key in self._eval_cache:
+            return dict(self._eval_cache[cache_key])
 
         from app.utils.hr_gate import is_off_topic, find_hr_item
         hr_item = find_hr_item(question)
@@ -3508,7 +3523,7 @@ class LlamaModel(BaseAIModel):
         # 1. Deterministic Off-Topic Gate (0 score for completely irrelevant answers)
         if is_off_topic(question, answer):
             missing = list(hr_item["concepts"]) if hr_item and "concepts" in hr_item else (concepts or ["Context and situation for the question", "Concrete personal actions taken", "Quantifiable or tangible outcome", "Professional self-reflection and ownership"])
-            return {
+            res = {
                 "score": 0,
                 "conceptCoverage": 0.0,
                 "correctness": 0.0,
@@ -3521,17 +3536,24 @@ class LlamaModel(BaseAIModel):
                 "weaknesses": ["The answer does not relate to the question that was asked"],
                 "coveredConcepts": [],
                 "partiallyCoveredConcepts": [],
-                "missingConcepts": missing,
+                "missingConcepts": missing[:2],
                 "deeperConcepts": [],
                 "improvementSuggestion": "Answer the question that was asked, using a specific example from your own experience.",
                 "scoreReason": _HR_NOT_RELATED_MESSAGE,
+                "whyNot100": _HR_NOT_RELATED_MESSAGE,
                 "modelUsed": "hr_gate_filter",
                 "usedFallback": False,
                 "scoringSources": ["hr_gate", "rubric"],
             }
+            self._eval_cache[cache_key] = res
+            _THEORY_EVAL_CACHE[cache_key] = res
+            return res
 
         if _should_reject_term_list(question, answer):
-            return _not_related_hr_evaluation()
+            res = _not_related_hr_evaluation()
+            self._eval_cache[cache_key] = res
+            _THEORY_EVAL_CACHE[cache_key] = res
+            return res
 
         from app.services.embedding_service import embedding_service
 
@@ -3562,6 +3584,7 @@ class LlamaModel(BaseAIModel):
             prompt,
             timeout=90,
             num_predict=1024,
+            temperature=0.0,
             system=TRAINING_SYSTEM_PROMPT,
             model_override=chosen_model
         )
@@ -3600,7 +3623,10 @@ class LlamaModel(BaseAIModel):
             or (not addresses_question and llm_relevance < 0.30)
         )
         if irrelevant_signal and semantic_relevance < 0.45:
-            return _not_related_hr_evaluation()
+            res = _not_related_hr_evaluation()
+            self._eval_cache[cache_key] = res
+            _THEORY_EVAL_CACHE[cache_key] = res
+            return res
 
         correctness = _bounded_score(data.get("correctness"), 0.0)
         if "accuracy" not in data or data.get("accuracy") in (0.0, None):
@@ -3621,21 +3647,33 @@ class LlamaModel(BaseAIModel):
             round(v, 2) for v in (correctness, relevance, accuracy, communication)
         )
         
-        # Use model score if provided and valid, otherwise compute via calculate_hr_overall
-        model_score = data.get("score")
-        if model_score is not None and isinstance(model_score, (int, float)) and 0 <= float(model_score) <= 100:
-            score = int(round(float(model_score)))
-        else:
-            score = calculate_hr_overall(correctness, relevance, accuracy, communication)
+        # Overall score strictly equals the rounded mean of the 4 displayed sub-scores
+        score = calculate_hr_overall(correctness, relevance, accuracy, communication)
+        # Relevant answers score at least 1
+        if score == 0:
+            score = 1
 
-        pct = lambda v: int(v * 100 + 0.5)
-        breakdown = (
-            f"Overall score is the average of correctness {pct(correctness)}%, relevance {pct(relevance)}%, "
-            f"accuracy {pct(accuracy)}% and communication {pct(communication)}%."
+        # Strengths and weaknesses come from this question's answer only (at most 2 each)
+        raw_strengths = [str(x) for x in (data.get("strengths") or data.get("coveredConcepts") or []) if x]
+        raw_weaknesses = [str(x) for x in (data.get("weaknesses") or []) if x]
+        filter_concepts = effective_concepts if effective_concepts else [question]
+        strengths = _filter_to_current_question(raw_strengths, filter_concepts)[:2]
+        weaknesses = _filter_to_current_question(raw_weaknesses, filter_concepts)[:2]
+
+        summary, why_not_100 = build_hr_evaluation_summary(
+            score=score,
+            correctness=correctness,
+            relevance=relevance,
+            accuracy=accuracy,
+            communication=communication,
+            answer=answer,
+            weaknesses=weaknesses,
+            improvement_suggestion=data.get("improvementSuggestion"),
+            delivery_metrics=hr_delivery_metrics,
+            is_irrelevant=False,
         )
-        llm_reason = str(data.get("scoreReason") or "").strip()
 
-        return {
+        res = {
             "score": score,
             "conceptCoverage": accuracy,
             "correctness": correctness,
@@ -3644,18 +3682,22 @@ class LlamaModel(BaseAIModel):
             "communication": communication,
             "isIrrelevant": False,
             "feedback": feedback_str or "Evaluation completed.",
-            "strengths": [str(x) for x in (data.get("strengths") or data.get("coveredConcepts") or []) if x][:4],
-            "weaknesses": [str(x) for x in (data.get("weaknesses") or []) if x][:4],
-            "coveredConcepts": [str(x) for x in (data.get("coveredConcepts") or []) if x][:4],
+            "strengths": strengths,
+            "weaknesses": weaknesses,
+            "coveredConcepts": [str(x) for x in (data.get("coveredConcepts") or []) if x][:2],
             "partiallyCoveredConcepts": [],
-            "missingConcepts": [str(x) for x in (data.get("missingConcepts") or []) if x][:4],
+            "missingConcepts": [str(x) for x in (data.get("missingConcepts") or []) if x][:2],
             "deeperConcepts": [],
             "improvementSuggestion": str(data.get("improvementSuggestion") or "").strip() or None,
-            "scoreReason": f"{llm_reason} {breakdown}".strip(),
+            "scoreReason": summary,
+            "whyNot100": why_not_100,
             "modelUsed": model_used,
             "usedFallback": False,
             "scoringSources": ["fine_tuned_llama", "bert", "rubric"],
         }
+        self._eval_cache[cache_key] = res
+        _THEORY_EVAL_CACHE[cache_key] = res
+        return res
 
     def _evaluate_output_prediction(self, question: str, answer: str, concepts: list, expected_output: str, explanation: str = None, code_snippet: str = None, subject: str = "java") -> dict:
         import hashlib
@@ -4487,7 +4529,22 @@ class DevFallbackModel(BaseAIModel):
         accuracy = clamp(overall_sim)
         communication = 0.8 if len(text) > 50 else 0.6
         score = calculate_hr_overall(correctness, relevance, accuracy, communication)
-        pct = lambda v: int(v * 100 + 0.5)
+        if score == 0:
+            score = 1
+
+        weaknesses = [f"Did not cover: {c}" for c in missing[:2]]
+        summary, why_not_100 = build_hr_evaluation_summary(
+            score=score,
+            correctness=correctness,
+            relevance=relevance,
+            accuracy=accuracy,
+            communication=communication,
+            answer=text,
+            weaknesses=weaknesses,
+            improvement_suggestion="Structure your answer using the STAR method with situation, actions, and quantifiable results.",
+            delivery_metrics=None,
+            is_irrelevant=False,
+        )
 
         return {
             "score": score,
@@ -4499,14 +4556,13 @@ class DevFallbackModel(BaseAIModel):
             "isIrrelevant": False,
             "feedback": "Answer assessed with the offline grader.",
             "strengths": [f"Covered: {c}" for c in matched[:2]] or ["Attempted the question"],
-            "weaknesses": [f"Did not cover: {c}" for c in missing[:2]],
-            "coveredConcepts": matched,
-            "partiallyCoveredConcepts": partially_covered,
-            "missingConcepts": missing,
-            "scoreReason": (
-                f"Overall score is the average of correctness {pct(correctness)}%, relevance {pct(relevance)}%, "
-                f"accuracy {pct(accuracy)}% and communication {pct(communication)}%."
-            ),
+            "weaknesses": weaknesses,
+            "coveredConcepts": matched[:2],
+            "partiallyCoveredConcepts": partially_covered[:2],
+            "missingConcepts": missing[:2],
+            "improvementSuggestion": "Structure your answer using the STAR method with situation, actions, and quantifiable results.",
+            "scoreReason": summary,
+            "whyNot100": why_not_100,
         }
 
     def _evaluate_output_prediction_fallback(self, answer: str, concepts: list, expected_output: str, explanation: str = None, code_snippet: str = None, subject: str = "java") -> dict:

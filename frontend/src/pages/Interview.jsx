@@ -663,7 +663,16 @@ export const Interview = () => {
                 <div style={{ marginTop: '0.2rem', fontSize: '0.85rem', fontWeight: 500 }}>Your response does not address the question asked.</div>
               </div>
             )}
-            {lastEvalFeedback.score < 100 ? (
+            {interview?.type === 'hr' ? (
+              <>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: lastEvalFeedback.score >= 95 ? 'var(--primary)' : 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                  Evaluation Summary
+                </div>
+                <p style={{ fontSize: '0.9rem', color: lastEvalFeedback.score >= 95 ? 'var(--success)' : 'var(--text-main)', margin: 0, fontWeight: lastEvalFeedback.score >= 95 ? 500 : 400 }}>
+                  {lastEvalFeedback.scoreReason || lastEvalFeedback.whyNot100 || lastEvalFeedback.feedback}
+                </p>
+              </>
+            ) : lastEvalFeedback.score < 100 ? (
               <>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
                   Why not 100%
@@ -689,7 +698,7 @@ export const Interview = () => {
               }}
             />
 
-            {(lastEvalFeedback.score < 98 || lastEvalFeedback.isIrrelevant) &&
+            {interview?.type !== 'hr' && (lastEvalFeedback.score < 98 || lastEvalFeedback.isIrrelevant) &&
               ((lastEvalFeedback.weaknesses || []).length > 0 || (lastEvalFeedback.missingConcepts || []).length > 0) && (
               <div style={{ marginTop: '0.75rem' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
@@ -706,7 +715,7 @@ export const Interview = () => {
             {lastEvalFeedback.improvementSuggestion && (
               <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-                  {(lastEvalFeedback.deeperConcepts || []).length > 0 ? `Go further: ${lastEvalFeedback.deeperConcepts.join(', ')}` : 'How to improve'}
+                  {interview?.type === 'hr' ? 'How to improve' : (lastEvalFeedback.deeperConcepts || []).length > 0 ? `Go further: ${lastEvalFeedback.deeperConcepts.join(', ')}` : 'How to improve'}
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', margin: 0, whiteSpace: 'pre-wrap' }}>
                   {lastEvalFeedback.improvementSuggestion}
