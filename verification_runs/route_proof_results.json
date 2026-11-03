@@ -1,0 +1,34 @@
+[
+  {
+    "route": "DBMS Theory Question",
+    "http_status": 200,
+    "elapsed_sec": 7.23,
+    "source": "model",
+    "modelUsed": "llama3.2:3b",
+    "title": "What is the primary consequence of violating the A"
+  },
+  {
+    "route": "Output Prediction Question",
+    "http_status": 200,
+    "elapsed_sec": 11.94,
+    "source": "model",
+    "modelUsed": "llama3.2:3b",
+    "title": "What is the exact output of the following code?"
+  },
+  {
+    "route": "Java Coding Question",
+    "http_status": 200,
+    "elapsed_sec": 27.78,
+    "source": "catalogue_fallback",
+    "modelUsed": "catalogue_fallback",
+    "title": "Valid Parentheses Matcher"
+  },
+  {
+    "route": "SQL Question",
+    "http_status": 200,
+    "elapsed_sec": 28.08,
+    "source": "catalogue_fallback",
+    "modelUsed": "catalogue_fallback",
+    "title": "Department Average Salary with Name"
+  }
+]

@@ -9,9 +9,12 @@ export const Navbar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      navigate('/login');
+    }
   };
 
   const isActive = (path) => location.pathname === path;

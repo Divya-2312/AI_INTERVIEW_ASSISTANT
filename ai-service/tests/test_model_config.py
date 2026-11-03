@@ -14,7 +14,7 @@ FT_BASE = settings.FINE_TUNED_MODEL_NAME.split(":")[0]
 class ModelConfigTests(unittest.TestCase):
     def test_configured_model_is_used_strictly(self):
         self.assertEqual(settings.MODEL_NAME, os.getenv("MODEL_NAME", "llama3.2:3b").strip())
-        self.assertEqual(settings.FINE_TUNED_MODEL_NAME, os.getenv("FINE_TUNED_MODEL_NAME", "mockmate-llama-ft").strip())
+        self.assertEqual(settings.FINE_TUNED_MODEL_NAME, os.getenv("FINE_TUNED_MODEL_NAME", "mockmate-hr100").strip())
         self.assertTrue(settings.USE_FT_HR)
         self.assertTrue(settings.USE_FT_COMPLEXITY)
 

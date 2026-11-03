@@ -1,0 +1,21 @@
+================================================================================
+       MOCKMATE AI: CATALOGUE NEAR-DUPLICATE AUDIT (Cosine Similarity >= 0.88)
+================================================================================
+
+Model: SentenceTransformer
+Threshold: 0.88 cosine similarity (Sentence-BERT all-MiniLM-L6-v2)
+
+--- Java Theory Catalogue (0 near-duplicate pairs found) ---
+No pairs found with cosine similarity >= 0.88.
+
+
+--- DBMS Theory Catalogue (1 near-duplicate pairs found) ---
+Pair #1 | Cosine Similarity: 0.8858
+  [Q1] ID: dbms-theory-032 (medium, SQL): What is the difference between INNER JOIN and LEFT JOIN?
+  [Q2] ID: dbms-theory-033 (medium, SQL): What is the difference between LEFT JOIN and RIGHT JOIN?
+
+================================================================================
+Total Catalogue Near-Duplicate Pairs Identified: 1
+Note: Catalogue content was NOT edited or deleted (preserved per specification).
+Selection logic MUST avoid serving both questions of any pair in the same session.
+================================================================================

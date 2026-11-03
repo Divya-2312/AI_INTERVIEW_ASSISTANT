@@ -206,7 +206,7 @@
     "subject": "dbms",
     "difficulty": "easy",
     "category": "Normalization",
-    "questionText": "What is normalization and why is it done?",
+    "questionText": "What is database normalization?",
     "expectedConcepts": [
       "normalization",
       "redundancy",
@@ -779,7 +779,7 @@
     "subject": "dbms",
     "difficulty": "easy",
     "category": "Indexing",
-    "questionText": "What is an index in a database, and why is it useful?",
+    "questionText": "What is a database index?",
     "expectedConcepts": [
       "index",
       "query performance"

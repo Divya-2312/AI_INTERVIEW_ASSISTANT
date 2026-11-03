@@ -1,6 +1,7 @@
 import { Interview } from '../models/Interview.js';
 import { Answer } from '../models/Answer.js';
 import { Result } from '../models/Result.js';
+import { generatePerformanceReport } from '../services/performanceReport.js';
 
 // @desc    Get result report for an interview session
 // @route   GET /api/results/:interviewId
@@ -101,11 +102,14 @@ export const getInterviewResult = async (req, res, next) => {
       }
     }
 
+    const performance = generatePerformanceReport(interview, answers);
+
     res.json({
       success: true,
       interview,
       answers,
       result,
+      performance,
     });
   } catch (error) {
     next(error);

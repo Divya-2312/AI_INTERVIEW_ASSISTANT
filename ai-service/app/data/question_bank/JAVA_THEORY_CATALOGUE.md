@@ -4,7 +4,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 
 | ID | Difficulty | Category | Question | Expected Concepts |
 |---|---|---|---|---|
-| java-theory-001 | Easy | OOP | What is encapsulation in Java and why is it useful? | encapsulation, access modifiers, data hiding |
+| java-theory-001 | Medium | OOP | What is encapsulation in Java and why is it useful? | encapsulation, access modifiers, data hiding |
 | java-theory-002 | Easy | OOP | What is the difference between a class and an object? | class, object, instantiation |
 | java-theory-003 | Easy | OOP | What is inheritance in Java? | inheritance, extends, code reuse |
 | java-theory-004 | Medium | OOP | What is polymorphism, and what are its two types in Java? | polymorphism, overloading, overriding, dynamic dispatch |
@@ -14,7 +14,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 | java-theory-008 | Medium | OOP | What is the difference between `this` and `super` keywords? | this keyword, super keyword |
 | java-theory-009 | Medium | OOP | What is the difference between an abstract class and an interface? | abstract class, interface, multiple inheritance |
 | java-theory-010 | Hard | OOP | Why doesn't Java support multiple inheritance of classes, and how do interfaces work around this? | diamond problem, multiple inheritance, interfaces |
-| java-theory-011 | Easy | OOP | What are access modifiers in Java and what are the four types? | access modifiers, private, protected, public, default |
+| java-theory-011 | Easy | OOP | What are access modifiers in Java? | access modifiers, private, protected, public, default |
 | java-theory-012 | Medium | OOP | What does the `final` keyword mean when applied to a class, method, and variable? | final keyword, immutability |
 | java-theory-013 | Medium | OOP | What is composition, and why is 'favor composition over inheritance' good advice? | composition, inheritance, coupling |
 | java-theory-014 | Hard | OOP | What are default methods in interfaces, and why were they introduced in Java 8? | default methods, interface evolution, Java 8 |
@@ -27,7 +27,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 | java-theory-021 | Hard | Collections | What is the difference between fail-fast and fail-safe iterators? | fail-fast, fail-safe, iterator |
 | java-theory-022 | Hard | Collections | How does HashMap work internally in Java? | hashCode, buckets, collision resolution |
 | java-theory-023 | Medium | Collections | Why must a class override both equals() and hashCode() together? | equals contract, hashCode contract |
-| java-theory-024 | Easy | Collections | What is an Iterator and how is it used? | Iterator, hasNext, next |
+| java-theory-024 | Easy | Collections | What is an Iterator in Java? | Iterator, hasNext, next |
 | java-theory-025 | Medium | Collections | What is a Deque and what makes it useful? | Deque, double-ended queue |
 | java-theory-026 | Medium | Collections | What is a PriorityQueue and how does it order elements? | PriorityQueue, heap, natural ordering |
 | java-theory-027 | Easy | Collections | What is the difference between the Collection and Collections types? | Collection interface, Collections utility class |
@@ -84,7 +84,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 | java-theory-078 | Medium | Generics | What is a generic method, and how do you write one? | generic method, type parameter |
 | java-theory-079 | Hard | Generics | Why are raw types (using a generic class without a type argument) discouraged? | raw types, unchecked warnings |
 | java-theory-080 | Medium | Generics | Can you create an array of a generic type in Java? Why or why not? | generic array creation, type erasure |
-| java-theory-081 | Easy | Generics | What is the benefit of using generics instead of raw Object types in collections? | generics, type safety |
+| java-theory-081 | Medium | Generics | What is the benefit of using generics instead of raw Object types in collections? | generics, type safety |
 | java-theory-082 | Medium | Functional | What is a lambda expression in Java? | lambda expression, functional interface |
 | java-theory-083 | Medium | Functional | What is a functional interface? | functional interface, @FunctionalInterface |
 | java-theory-084 | Medium | Functional | What is the Stream API used for? | Stream API, functional-style operations |
@@ -209,7 +209,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 **Reference Answer:**
 > Multiple class inheritance can cause the 'diamond problem', ambiguity about which superclass's state/method to use when two parents define the same member. Java avoids this for classes but allows implementing multiple interfaces, since interfaces (until default methods) had no state; even with default methods, Java forces the implementing class to explicitly resolve any conflicting default method.
 
-### 11. [java-theory-011] What are access modifiers in Java and what are the four types?
+### 11. [java-theory-011] What are access modifiers in Java?
 - **Subject**: JAVA
 - **Difficulty**: Easy
 - **Category**: OOP
@@ -339,7 +339,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 **Reference Answer:**
 > Hash-based collections (HashMap, HashSet) use hashCode() to locate the bucket and equals() to confirm the exact match. If two equal objects have different hashCodes, they can land in different buckets and the collection will fail to find/deduplicate them correctly, violating the equals/hashCode contract.
 
-### 24. [java-theory-024] What is an Iterator and how is it used?
+### 24. [java-theory-024] What is an Iterator in Java?
 - **Subject**: JAVA
 - **Difficulty**: Easy
 - **Category**: Collections
@@ -1108,4 +1108,3 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 
 **Reference Answer:**
 > Autoboxing automatically converts a primitive to its wrapper class (int to Integer) and unboxing does the reverse, happening implicitly in many contexts. A common pitfall: comparing boxed Integers with == outside the cached range (-128 to 127) compares references, not values, so `Integer a = 200; Integer b = 200; a == b` can unexpectedly be false.
-

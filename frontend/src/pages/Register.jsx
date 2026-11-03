@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
-import { Bot, UserPlus, Eye, EyeOff, AlertCircle, Check, X, Mail, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Bot, UserPlus, Eye, EyeOff, AlertCircle, Check, X, Mail, RefreshCw, ArrowLeft, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
 import '../styles/auth.css';
 
 export const Register = () => {
-  const { register } = useAuth();
+  const { register, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -26,11 +33,27 @@ export const Register = () => {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
 
-  // Post-registration "Check your email" screen state
+  // Post-registration "Enter Verification Code" / "Delivery Pending" screen state
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [emailSentState, setEmailSentState] = useState(false);
+  const [codeCountdown, setCodeCountdown] = useState(60);
+  const [codeExpired, setCodeExpired] = useState(false);
+  const [digits, setDigits] = useState(['', '', '', '', '', '']);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [codeError, setCodeError] = useState('');
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendStatus, setResendStatus] = useState(''); // 'success' | 'error' | ''
   const [resendMessage, setResendMessage] = useState('');
+
+  const digitRefs = [
+    useRef(null),
+    useRef(null),
+    useRef(null),
+    useRef(null),
+    useRef(null),
+    useRef(null),
+  ];
 
   // 30-second cooldown timer
   useEffect(() => {
@@ -42,6 +65,29 @@ export const Register = () => {
     }
     return () => clearInterval(timer);
   }, [resendCooldown]);
+
+  // 60-second code expiration countdown timer
+  useEffect(() => {
+    let timer;
+    if (emailSentState && codeCountdown > 0) {
+      timer = setInterval(() => {
+        setCodeCountdown((prev) => {
+          if (prev <= 1) {
+            setCodeExpired(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [emailSentState, codeCountdown]);
+
+  const formatCountdown = (secs) => {
+    const mins = Math.floor(secs / 60);
+    const remSecs = secs % 60;
+    return `${mins}:${remSecs < 10 ? '0' : ''}${remSecs}`;
+  };
 
   // Real-time password rules evaluation
   const password = formData.password;
@@ -105,25 +151,95 @@ export const Register = () => {
     e.preventDefault();
     setServerError('');
     setResendMessage('');
+    setResendStatus('');
 
     if (!validate()) return;
 
     setSubmitting(true);
-    const result = await register(
-      formData.name.trim(),
-      formData.email.trim(),
-      formData.password,
-      formData.degree,
-      formData.university,
-      formData.targetRole
-    );
-    setSubmitting(false);
+    try {
+      const result = await apiService.register(
+        formData.name.trim(),
+        formData.email.trim(),
+        formData.password,
+        formData.degree,
+        formData.university,
+        formData.targetRole
+      );
+      if (result.success) {
+        setRegisteredEmail(formData.email.trim());
+        const mailAccepted = result.emailSent === true;
+        setEmailSentState(mailAccepted);
+        const ttl = result.expiresInSeconds || 60;
+        setCodeCountdown(ttl);
+        setCodeExpired(false);
+        setResendCooldown(30);
+      } else {
+        setServerError(result.message || 'Registration failed. Please check your information.');
+      }
+    } catch (err) {
+      setServerError(err.message || 'Registration failed. Please check your information.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    if (result.success) {
-      setRegisteredEmail(formData.email.trim());
-      setResendCooldown(30);
-    } else {
-      setServerError(result.message || 'Registration failed. Please check your information.');
+  const handleDigitChange = (index, value) => {
+    const numericChar = value.replace(/[^0-9]/g, '');
+    const newDigits = [...digits];
+    newDigits[index] = numericChar ? numericChar.slice(-1) : '';
+    setDigits(newDigits);
+    setCodeError('');
+
+    if (numericChar && index < 5 && digitRefs[index + 1]?.current) {
+      digitRefs[index + 1].current.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !digits[index] && index > 0 && digitRefs[index - 1]?.current) {
+      digitRefs[index - 1].current.focus();
+    }
+  };
+
+  const handleDigitPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+    if (!pasted) return;
+
+    const newDigits = [...digits];
+    for (let i = 0; i < 6; i++) {
+      newDigits[i] = pasted[i] || '';
+    }
+    setDigits(newDigits);
+    setCodeError('');
+
+    const nextIndex = Math.min(pasted.length, 5);
+    if (digitRefs[nextIndex]?.current) {
+      digitRefs[nextIndex].current.focus();
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    if (e) e.preventDefault();
+    const code = digits.join('').trim();
+    if (code.length !== 6 || !registeredEmail || verifyingCode || codeExpired) return;
+
+    setVerifyingCode(true);
+    setCodeError('');
+    try {
+      const res = await apiService.verifyEmailCode(registeredEmail, code);
+      if (res.success) {
+        navigate('/login', {
+          state: { emailVerified: true, email: registeredEmail },
+          replace: true,
+        });
+      } else {
+        setCodeError(res.message || 'Invalid or expired verification code.');
+      }
+    } catch (err) {
+      setCodeError(err.message || 'Invalid or expired verification code.');
+    } finally {
+      setVerifyingCode(false);
     }
   };
 
@@ -131,18 +247,37 @@ export const Register = () => {
     if (resendCooldown > 0 || resending || !registeredEmail) return;
 
     setResending(true);
+    setResendMessage('');
+    setResendStatus('');
     try {
-      await apiService.resendVerification(registeredEmail);
-      setResendMessage('A new verification email has been sent!');
-      setResendCooldown(30);
+      const res = await apiService.resendVerification(registeredEmail);
+      if (res.success && res.emailSent) {
+        setEmailSentState(true);
+        setResendStatus('success');
+        setResendMessage(res.message || 'A new 6-digit verification code has been sent!');
+        const ttl = res.expiresInSeconds || 60;
+        setCodeCountdown(ttl);
+        setCodeExpired(false);
+        setCodeError('');
+        setDigits(['', '', '', '', '', '']);
+        setResendCooldown(30);
+      } else {
+        setResendStatus('error');
+        setResendMessage(res.message || 'Could not send verification email. Please try again later.');
+      }
     } catch (err) {
-      setResendMessage(err.message || 'Failed to resend verification email.');
+      setResendStatus('error');
+      setResendMessage(err.message || 'Could not send verification email. Please try again later.');
+      if (err.status === 429) {
+        const remaining = err.retryAfter || 30;
+        setResendCooldown(remaining);
+      }
     } finally {
       setResending(false);
     }
   };
 
-  // SCREEN 2: "Check your email" after successful registration
+  // SCREEN 2: Post-registration screen (Honest 6-digit code or Delivery Pending)
   if (registeredEmail) {
     return (
       <div className="auth-page container">
@@ -150,31 +285,133 @@ export const Register = () => {
           <div className="auth-card">
             <div className="auth-email-check-screen">
               <div className="auth-email-icon-wrapper">
-                <Mail size={36} />
+                {emailSentState ? <Mail size={36} /> : <AlertCircle size={36} color="#d97706" />}
               </div>
-              <h2>Check Your Email</h2>
-              <p className="subtitle">
-                We sent a secure verification link to activate your AI Interview Assistant account:
-              </p>
-              <div className="auth-email-badge">{registeredEmail}</div>
-              <p style={{ fontSize: '0.875rem', color: '#64748b', lineHeight: 1.6, margin: '1rem 0' }}>
-                Please check your inbox (and spam folder) and click the link to verify your account.
-                The link is valid for <strong>24 hours</strong>.
-              </p>
+
+              <h2>{emailSentState ? 'Enter Verification Code' : 'Email Delivery Pending'}</h2>
+
+              {emailSentState ? (
+                <>
+                  <p className="subtitle">
+                    We sent a 6-digit code to <strong>{registeredEmail}</strong>
+                  </p>
+                  <p className="subtitle" style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.5rem' }}>
+                    The code is valid for 1 minute
+                  </p>
+                  {!codeExpired ? (
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        margin: '0.25rem auto 1rem',
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '9999px',
+                        background: codeCountdown <= 15 ? '#fef2f2' : '#f0f9ff',
+                        border: codeCountdown <= 15 ? '1px solid #fecaca' : '1px solid #bae6fd',
+                        color: codeCountdown <= 15 ? '#b91c1c' : '#0369a1',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                      }}
+                      id="code-countdown-badge"
+                    >
+                      <Clock size={15} />
+                      <span>Expires in {formatCountdown(codeCountdown)}</span>
+                    </div>
+                  ) : (
+                    <div className="auth-alert auth-alert-danger" style={{ textAlign: 'left', marginTop: '0.5rem', marginBottom: '1rem' }} id="code-expired-notice">
+                      <AlertCircle size={16} style={{ flexShrink: 0 }} /> <span>Code expired - request a new code</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleVerifyCode} style={{ marginTop: '1rem', textAlign: 'left' }}>
+                    <div className="auth-form-group">
+                      <label className="auth-form-label" style={{ textAlign: 'center', display: 'block' }}>
+                        Enter 6-Digit Code
+                      </label>
+                      <div className="auth-digit-inputs" onPaste={handleDigitPaste}>
+                        {digits.map((digit, idx) => (
+                          <input
+                            key={idx}
+                            ref={digitRefs[idx]}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleDigitChange(idx, e.target.value)}
+                            onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                            className={`auth-digit-box ${digit ? 'filled' : ''}`}
+                            disabled={verifyingCode}
+                            aria-label={`Digit ${idx + 1}`}
+                            autoFocus={idx === 0}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {codeError && (
+                      <div className="auth-alert auth-alert-danger" style={{ textAlign: 'left', marginTop: '1rem' }}>
+                        <AlertCircle size={16} style={{ flexShrink: 0 }} /> <span>{codeError}</span>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={verifyingCode || digits.join('').length !== 6 || codeExpired}
+                      className="auth-submit-btn"
+                      style={{ marginTop: '1rem' }}
+                      id="verify-code-btn"
+                    >
+                      {verifyingCode ? (
+                        <>
+                          <RefreshCw size={16} className="spin" /> Verifying Code...
+                        </>
+                      ) : (
+                        <>
+                          <Check size={18} /> Verify &amp; Activate Account
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <div className="auth-alert auth-alert-warning" style={{ marginTop: '1rem', textAlign: 'left' }}>
+                    <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <strong>Your account was created but the email could not be sent.</strong>
+                      <div style={{ marginTop: '4px', fontSize: '0.85rem' }}>
+                        Please use the Resend button below to try dispatching your 6-digit verification code.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="auth-email-badge" style={{ marginTop: '1rem' }}>{registeredEmail}</div>
+                </>
+              )}
 
               {resendMessage && (
-                <div className="auth-alert auth-alert-success" style={{ marginTop: '1rem', textAlign: 'left' }}>
-                  {resendMessage}
+                <div
+                  className={`auth-alert ${resendStatus === 'error' ? 'auth-alert-danger' : 'auth-alert-success'}`}
+                  style={{ marginTop: '1rem', textAlign: 'left' }}
+                >
+                  {resendStatus === 'error' ? (
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  ) : (
+                    <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+                  )}
+                  <span>{resendMessage}</span>
                 </div>
               )}
 
-              <div className="auth-resend-row">
-                <span>Didn't receive the email?</span>
+              <div className="auth-resend-row" style={{ marginTop: '1.5rem', justifyContent: 'center' }}>
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={resendCooldown > 0 || resending}
                   className="auth-secondary-btn"
+                  id="resend-verification-btn"
                 >
                   {resending ? (
                     <>
@@ -183,14 +420,14 @@ export const Register = () => {
                   ) : resendCooldown > 0 ? (
                     `Resend in ${resendCooldown}s`
                   ) : (
-                    'Resend Email'
+                    'Resend Verification Code'
                   )}
                 </button>
               </div>
 
-              <div style={{ marginTop: '2rem' }}>
+              <div style={{ marginTop: '1.75rem' }}>
                 <Link to="/login" state={{ email: registeredEmail }} className="auth-link">
-                  Continue to Login &rarr;
+                  Back to Login &rarr;
                 </Link>
               </div>
             </div>

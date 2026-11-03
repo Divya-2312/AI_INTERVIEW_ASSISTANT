@@ -48,6 +48,10 @@ const questionSchema = new mongoose.Schema(
         type: String,
       },
     ],
+    referenceAnswer: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

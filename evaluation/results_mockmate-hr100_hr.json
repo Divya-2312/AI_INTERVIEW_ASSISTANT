@@ -1,0 +1,11 @@
+{
+  "model": "mockmate-hr100",
+  "task": "hr",
+  "rows": 100,
+  "valid_json": 99,
+  "seconds_per_row_median": 7.808916330337524,
+  "total_minutes": 12.8,
+  "score_mae": 6.86,
+  "irrelevant_scored_0": "13/13",
+  "relevant_wrongly_0": "3/86"
+}

@@ -5,9 +5,10 @@ export const notFound = (req, res, next) => {
 };
 
 export const errorHandler = (err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  const statusCode = err.statusCode || err.status || (res.statusCode === 200 ? 500 : res.statusCode);
   res.status(statusCode).json({
     success: false,
+    code: err.code || undefined,
     message: err.message || 'Internal Server Error',
     // Set only when an answer was successfully graded but a later step
     // (e.g. generating the next question) failed -- lets the frontend show

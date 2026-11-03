@@ -2,7 +2,7 @@
   {
     "id": "java-theory-001",
     "subject": "java",
-    "difficulty": "easy",
+    "difficulty": "medium",
     "category": "OOP",
     "questionText": "What is encapsulation in Java and why is it useful?",
     "expectedConcepts": [
@@ -143,7 +143,7 @@
     "subject": "java",
     "difficulty": "easy",
     "category": "OOP",
-    "questionText": "What are access modifiers in Java and what are the four types?",
+    "questionText": "What are access modifiers in Java?",
     "expectedConcepts": [
       "access modifiers",
       "private",
@@ -324,7 +324,7 @@
     "subject": "java",
     "difficulty": "easy",
     "category": "Collections",
-    "questionText": "What is an Iterator and how is it used?",
+    "questionText": "What is an Iterator in Java?",
     "expectedConcepts": [
       "Iterator",
       "hasNext",
@@ -1082,7 +1082,7 @@
   {
     "id": "java-theory-081",
     "subject": "java",
-    "difficulty": "easy",
+    "difficulty": "medium",
     "category": "Generics",
     "questionText": "What is the benefit of using generics instead of raw Object types in collections?",
     "expectedConcepts": [

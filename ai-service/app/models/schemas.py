@@ -16,6 +16,10 @@ class QuestionGenerationRequest(BaseModel):
     # to compute the factorial of a number") plus test cases, and must
     # submit working code -- generated and graded by LLaMA, not executed.
     questionFormat: str = Field(default="theory", description="theory, output_prediction, or coding")
+    excludeQuestionIds: List[str] = Field(default_factory=list, description="IDs of questions from recent sessions to exclude")
+    excludeQuestionTexts: List[str] = Field(default_factory=list, description="Texts/signatures of questions from recent sessions to exclude")
+    questionHistory: Optional[List[dict]] = Field(default_factory=list, description="Compact history of questions asked to this user (questionId, timesAsked, lastAskedSessionIndex)")
+    sessionId: Optional[str] = Field(default=None, description="Optional session/interview ID used to seed randomization")
 
 class FollowUpRequest(BaseModel):
     interviewType: str
@@ -31,6 +35,7 @@ class FollowUpRequest(BaseModel):
     # earlier follow-ups, which is why follow-ups could come out looking
     # repetitive across a session.
     previousQuestions: Optional[List[str]] = []
+    previousScore: Optional[int] = None
 
 class TestCase(BaseModel):
     input: str = ""
@@ -83,6 +88,7 @@ class AnswerEvaluationRequest(BaseModel):
     language: Optional[str] = None
     starterCode: Optional[str] = None
     referenceSolution: Optional[str] = None
+    referenceAnswer: Optional[str] = None
     schema_: Optional[str] = Field(default=None, alias="schema")
     sampleData: Optional[str] = None
     hrDeliveryMetrics: Optional[HRDeliveryMetrics] = None
@@ -108,13 +114,15 @@ class QuestionResponse(BaseModel):
     sampleData: Optional[str] = None
     starterCode: Optional[str] = None
     referenceSolution: Optional[str] = None
+    referenceAnswer: Optional[str] = None
     testCases: Optional[List[TestCase]] = None
     modelUsed: str = Field(default="llama3.2:3b", description="The measured model used for generation")
+    source: str = Field(default="model", description="Question source: model, bank, or catalogue_fallback")
 
     model_config = {"populate_by_name": True}
 
 class EvaluationResponse(BaseModel):
-    score: int
+    score: Optional[int] = None
     conceptCoverage: Optional[float] = None
     correctness: Optional[float] = None
     relevance: Optional[float] = None
@@ -144,11 +152,17 @@ class EvaluationResponse(BaseModel):
     timeComplexity: Optional[str] = None
     spaceComplexity: Optional[str] = None
     timeComplexityExplanation: Optional[str] = None
+    complexitySource: Optional[str] = None
+    complexityError: Optional[str] = None
+    complexityDetails: Optional[dict] = None
     modelUsed: str = Field(default="llama3.2:3b", description="The measured model used for evaluation")
     evaluatedBy: Optional[str] = Field(default="base_llama", description="Evaluator entity: base_llama, fine_tuned_llama, or executor")
     llamaRubric: Optional[dict] = Field(default=None, description="Detailed rubric criteria scored by Base LLaMA")
     evidence: Optional[dict] = Field(default=None, description="Deterministic execution or test evidence from sandbox")
     formulaVersion: Optional[str] = Field(default="v2", description="Scoring formula version")
+    formula: Optional[dict] = Field(default=None, description="Canonical formula object with parameters, rule, score")
+    source: Optional[str] = Field(default="model", description="Evaluation source: model, rule, or error")
+    error: Optional[str] = Field(default=None, description="Error message if evaluation engine unavailable")
     llamaEvaluation: Optional[str] = Field(default="ok", description="'ok' if base LLaMA judged, 'unavailable' if fallback/execution only")
     usedFallback: bool = Field(default=False, description="True if any non-LLM fallback path produced the content")
     parseFailed: bool = Field(default=False, description="True if JSON extraction failed or required keys were missing")

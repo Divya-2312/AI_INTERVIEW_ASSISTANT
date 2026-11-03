@@ -78,10 +78,10 @@ def find_hr_item(question_or_id: str):
         for item in items_list():
             item_tokens = content(item.get("question", "")) - _GENERIC_Q
             overlap = len(key_tokens & item_tokens)
-            if overlap > best_overlap and (overlap >= len(item_tokens) * 0.5 or overlap >= 2):
+            if overlap > best_overlap and overlap >= len(item_tokens) * 0.7 and overlap >= 2:
                 best_overlap = overlap
                 best_item = item
-        if best_item and best_overlap >= 1:
+        if best_item and best_overlap >= 2:
             return best_item
     return None
 
@@ -100,4 +100,15 @@ def is_off_topic(question: str, answer: str) -> bool:
     """Return True if answer does not contain any relevant topic tokens."""
     if not (answer or "").strip():
         return True
-    return topic_hits(question, answer) == 0
+    it = find_hr_item(question)
+    if it is not None:
+        return topic_hits(question, answer) == 0
+
+    # Non-bank question fallback branch:
+    # Irrelevant ONLY when BOTH keyword overlap AND Sentence-BERT similarity are low (< 0.25)
+    hits = topic_hits(question, answer)
+    if hits > 0:
+        return False
+    from app.services.embedding_service import embedding_service
+    sim = embedding_service.compute_similarity(question, answer)
+    return sim < 0.25

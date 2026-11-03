@@ -217,10 +217,18 @@ async function runTests() {
         postCheckWithKey.status === 200,
         `After submission (with questionKey): HTTP 200 OK`
       );
-      assert(
-        postCheckWithKey.data?.success === true && postCheckWithKey.data?.solution !== null,
-        `After submission (with questionKey): Solution data returned successfully`
-      );
+      if (mod.format === 'theory') {
+        // Reference solutions exist only for Java output prediction, Java coding and SQL.
+        assert(
+          postCheckWithKey.data?.success === true && (postCheckWithKey.data?.solution ?? null) === null,
+          `After submission (theory): no reference solution is returned`
+        );
+      } else {
+        assert(
+          postCheckWithKey.data?.success === true && postCheckWithKey.data?.solution !== null,
+          `After submission (with questionKey): Solution data returned successfully`
+        );
+      }
 
       // 6. CHECK: Solution endpoint without questionKey while next question is active must remain LOCKED (403)
       const postCheckNoKey = await request(

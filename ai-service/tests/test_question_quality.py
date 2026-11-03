@@ -660,10 +660,10 @@ class TestQuestionQualityRules(unittest.TestCase):
         ]
         self.assertEqual(len(eligible_without_guard), 3, "Without guard, 3 items would have been accepted")
 
-    def test_coding_guard_100_percent_pass_gives_at_least_90(self):
-        """Proof: 100% pass gives at least 90, even if LLaMA rubric scores 0.
+    def test_coding_guard_100_percent_pass_gives_100(self):
+        """A fully passing submission scores exactly 100, regardless of the model rubric.
         Without the guard, 0.80*100 + 0.20*0 = 80 (<90).
-        With the guard, max(90, 80) = 90.
+        The deterministic pass rate is the final score.
         """
         import json
         from unittest.mock import patch
@@ -685,17 +685,15 @@ class TestQuestionQualityRules(unittest.TestCase):
         with patch.object(provider, "_call_llama", return_value=(zero_rubric, "llama3.2:3b")):
             res = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
             
-            # Guard ensures score is at least 90
-            self.assertGreaterEqual(res["score"], 90, "100% pass must score >= 90")
-            self.assertEqual(res["score"], 90)
+            # Agreed rule: score equals the test-case pass rate, so 100% pass = 100
+            self.assertEqual(res["score"], 100, "100% pass must score 100")
             
             # Negative proof: Without the guard, score would have been 80
             ungarded_score = round(0.80 * 100.0 + 0.20 * 0.0)
-            self.assertLess(ungarded_score, 90, "Proves unguarded formula produces 80 < 90")
+            self.assertLess(ungarded_score, 100, "Proves the rubric blend would miss the required 100")
 
-    def test_coding_guard_0_percent_pass_gives_at_most_20(self):
-        """Proof: 0% pass gives at most 20, even if LLaMA rubric scores 100.
-        Guard ensures min(20, formula_score) <= 20.
+    def test_coding_guard_0_percent_pass_gives_0(self):
+        """A submission that fails every deterministic test scores exactly 0.
         """
         import json
         from unittest.mock import patch
@@ -716,13 +714,13 @@ class TestQuestionQualityRules(unittest.TestCase):
         
         with patch.object(provider, "_call_llama", return_value=(perfect_rubric, "llama3.2:3b")):
             res = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
-            self.assertLessEqual(res["score"], 20, "0% pass must score <= 20")
-            self.assertEqual(res["score"], 20)
+            # Agreed rule: score equals the test-case pass rate, so 0% pass = 0
+            self.assertEqual(res["score"], 0, "0% pass must score 0")
 
-    def test_coding_guard_compile_error_gives_at_most_10(self):
-        """Proof: Compile error gives at most 10, even if LLaMA rubric scores 90.
+    def test_coding_guard_compile_error_gives_0(self):
+        """A compilation failure scores exactly 0, regardless of the model rubric.
         Without the guard, 0.80*0 + 0.20*90 = 18 (>10).
-        With the guard, min(10, 18) = 10.
+        The compile failure is a hard zero.
         """
         import json
         from unittest.mock import patch
@@ -743,8 +741,8 @@ class TestQuestionQualityRules(unittest.TestCase):
         
         with patch.object(provider, "_call_llama", return_value=(high_rubric, "llama3.2:3b")):
             res = provider._evaluate_coding_answer("Add numbers", code, ["math"], tc, language="java")
-            self.assertLessEqual(res["score"], 10, "Compile error must score <= 10")
-            self.assertEqual(res["score"], 10)
+            # Agreed rule: a compile error passes no test case, so it scores 0
+            self.assertEqual(res["score"], 0, "Compile error must score 0")
             
             # Negative proof: Without the guard, score would have been 18
             ungarded_score = round(0.80 * 0.0 + 0.20 * 90.0)
@@ -866,8 +864,8 @@ class TestQuestionQualityRules(unittest.TestCase):
             ungarded_score = min(30, round(0.30 * 100))
             self.assertGreater(ungarded_score, 0, "Proves unguarded score would have been 30 > 0")
 
-    def test_predict_output_partial_credit_with_explanation(self):
-        """Proof: Wrong output WITH explanation receives partial credit capped at 30."""
+    def test_predict_output_wrong_value_with_explanation_gives_0(self):
+        """An incorrect predicted value scores 0 even when accompanied by an explanation."""
         import json
         from unittest.mock import patch
         from app.models.llama_provider import LlamaModel
@@ -894,8 +892,9 @@ class TestQuestionQualityRules(unittest.TestCase):
                 code_snippet="for (int i = 0; i <= 10; i++) {}",
                 subject="java",
             )
-            self.assertEqual(res["score"], 24, "80 reasoningScore * 0.30 = 24 partial score")
-            self.assertLessEqual(res["score"], 30, "Partial score must never exceed 30")
+            # Agreed rule: a wrong predicted output scores 0 on all four parameters (no partial credit)
+            self.assertEqual(res["score"], 0, "Wrong output scores 0 even with an explanation")
+            self.assertEqual(res["formula"]["parameters"], {"accuracy": 0, "correctness": 0, "relevance": 0, "concept_coverage": 0})
             self.assertEqual(res["evaluatedBy"], "base_llama")
             self.assertEqual(res["llamaEvaluation"], "ok")
 
@@ -1162,6 +1161,5 @@ class TestQuestionQualityRules(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
 
 

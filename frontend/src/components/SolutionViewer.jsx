@@ -17,6 +17,9 @@ export const SolutionViewer = ({
   buttonText = 'Solution',
   disabled = false,
   disabledTooltip = 'Submit your answer first to view the solution',
+  emptyMessage,
+  panelTitle,
+  preferFetch = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [solution, setSolution] = useState(preloadedSolution);
@@ -43,8 +46,11 @@ export const SolutionViewer = ({
 
     setIsOpen(true);
 
-    // If solution is already cached or preloaded, do not fetch again
-    if (solution || preloadedSolution) {
+    // If solution is already fetched, or preloaded without preferFetch, do not fetch again
+    if (solution && solution !== preloadedSolution) {
+      return;
+    }
+    if (!preferFetch && (solution || preloadedSolution)) {
       return;
     }
 
@@ -131,7 +137,7 @@ export const SolutionViewer = ({
 
           {!loading && !error && !displaySolution && (
             <div className="mm-solution-empty">
-              Solution not available for this question.
+              {emptyMessage || 'Solution not available for this question.'}
             </div>
           )}
 
@@ -139,7 +145,7 @@ export const SolutionViewer = ({
             <div className="mm-solution-content">
               <div className="mm-solution-header">
                 <span className="mm-solution-title">
-                  {isOutputPrediction ? 'Expected Output' : isTheory ? 'Reference Explanation' : 'Correct Solution'}
+                  {panelTitle || (isOutputPrediction ? 'Expected Output' : isTheory ? 'Reference Explanation' : 'Correct Solution')}
                 </span>
                 <button
                   type="button"

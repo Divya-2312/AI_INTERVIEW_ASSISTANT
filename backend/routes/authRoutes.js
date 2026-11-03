@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import {
   registerUser,
   verifyEmail,
+  verifyEmailCode,
   resendVerification,
   loginUser,
   refreshToken,
@@ -11,6 +12,7 @@ import {
   verifyResetCode,
   resetPassword,
   getMe,
+  deleteAccount,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -34,6 +36,7 @@ const authRateLimiter = rateLimit({
 
 // Registration & Email Verification
 router.post('/register', authRateLimiter, registerUser);
+router.post('/verify-email-code', authRateLimiter, verifyEmailCode);
 router.get('/verify-email', verifyEmail);
 router.post('/verify-email', verifyEmail);
 router.post('/resend-verification', authRateLimiter, resendVerification);
@@ -48,7 +51,9 @@ router.post('/forgot-password', authRateLimiter, forgotPassword);
 router.post('/verify-reset-code', authRateLimiter, verifyResetCode);
 router.post('/reset-password', resetPassword);
 
-// Current User Profile
+// Current User Profile & Permanent Account Deletion
 router.get('/me', protect, getMe);
+router.delete('/delete-account', protect, deleteAccount);
+router.delete('/me', protect, deleteAccount);
 
 export default router;

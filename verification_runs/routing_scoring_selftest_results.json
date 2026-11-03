@@ -1,0 +1,827 @@
+[
+  {
+    "module": "java_theory",
+    "name": "Java Theory: Good (OOP principles)",
+    "score": 95,
+    "acc": 90,
+    "cor": 90,
+    "rel": 100,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[75-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 90,
+        "correctness": 90,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 95
+    }
+  },
+  {
+    "module": "java_theory",
+    "name": "Java Theory: Good (HashMap vs ConcurrentHashMap)",
+    "score": 95,
+    "acc": 90,
+    "cor": 90,
+    "rel": 100,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[75-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 90,
+        "correctness": 90,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 95
+    }
+  },
+  {
+    "module": "java_theory",
+    "name": "Java Theory: Half-Correct (Garbage Collection)",
+    "score": 69,
+    "acc": 60,
+    "cor": 60,
+    "rel": 80,
+    "cov": 75,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[40-65]",
+    "within_band": false,
+    "expected_pass": false,
+    "actual_pass": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 60,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 75
+      },
+      "rule": "mean of 4",
+      "score": 69
+    }
+  },
+  {
+    "module": "java_theory",
+    "name": "Java Theory: Empty Answer",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Good (ACID properties)",
+    "score": 95,
+    "acc": 90,
+    "cor": 90,
+    "rel": 100,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[75-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 90,
+        "correctness": 90,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 95
+    }
+  },
+  {
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Good (Indexing & B-Trees)",
+    "score": 84,
+    "acc": 90,
+    "cor": 90,
+    "rel": 80,
+    "cov": 75,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[75-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 90,
+        "correctness": 90,
+        "relevance": 80,
+        "concept_coverage": 75
+      },
+      "rule": "mean of 4",
+      "score": 84
+    }
+  },
+  {
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Half-Correct (Normalization)",
+    "score": 75,
+    "acc": 60,
+    "cor": 60,
+    "rel": 80,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[40-65]",
+    "within_band": false,
+    "expected_pass": false,
+    "actual_pass": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 60,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 75
+    }
+  },
+  {
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Different-Topic (Irrelevant answer)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-35]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Empty Answer",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "hr",
+    "name": "HR: Good (Conflict Resolution with STAR)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "hr_gate_filter",
+    "expected_band": "[70-100]",
+    "within_band": false,
+    "expected_pass": true,
+    "actual_pass": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "hr",
+    "name": "HR: Good (Handling Failure)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "hr_gate_filter",
+    "expected_band": "[70-100]",
+    "within_band": false,
+    "expected_pass": true,
+    "actual_pass": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "hr",
+    "name": "HR: Half-Correct (Brief / Minimal)",
+    "score": 23,
+    "acc": 0,
+    "cor": 0,
+    "rel": 90,
+    "cov": 0,
+    "modelUsed": "mockmate-hr100:latest",
+    "expected_band": "[40-65]",
+    "within_band": false,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 90,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 23
+    }
+  },
+  {
+    "module": "hr",
+    "name": "HR: Different-Topic (Irrelevant answer)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "hr_gate_filter",
+    "expected_band": "[0-35]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "hr",
+    "name": "HR: Empty Answer",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "output_prediction",
+    "name": "Output Prediction: Correct (Exact match)",
+    "score": 100,
+    "acc": 100,
+    "cor": 100,
+    "rel": 100,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[100-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    }
+  },
+  {
+    "module": "output_prediction",
+    "name": "Output Prediction: Correct (With reasoning)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[100-100]",
+    "within_band": false,
+    "expected_pass": true,
+    "actual_pass": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "output_prediction",
+    "name": "Output Prediction: Correct (Multi-line exact match)",
+    "score": 100,
+    "acc": 100,
+    "cor": 100,
+    "rel": 100,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[100-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    }
+  },
+  {
+    "module": "output_prediction",
+    "name": "Output Prediction: Wrong without explanation",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "output_prediction",
+    "name": "Output Prediction: Wrong (Off-by-one with flawed logic)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-35]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "output_prediction",
+    "name": "Output Prediction: Empty Answer",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "java_coding",
+    "name": "Java Coding: All Test Cases Pass (3 of 3)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[100-100]",
+    "within_band": false,
+    "expected_pass": true,
+    "actual_pass": false,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "java_coding",
+    "name": "Java Coding: All Test Cases Pass (2 of 2)",
+    "score": 100,
+    "acc": 100,
+    "cor": 100,
+    "rel": 100,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[100-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    }
+  },
+  {
+    "module": "java_coding",
+    "name": "Java Coding: 0 of N Pass (Wrong Output)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "java_coding",
+    "name": "Java Coding: Compilation Error (Syntax Error)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "java_coding",
+    "name": "Java Coding: Partial (2 of 3 Pass => Exactly 67%)",
+    "score": 67,
+    "acc": 67,
+    "cor": 67,
+    "rel": 67,
+    "cov": 67,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[67-67]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 67,
+        "correctness": 67,
+        "relevance": 67,
+        "concept_coverage": 67
+      },
+      "rule": "mean of 4",
+      "score": 67
+    }
+  },
+  {
+    "module": "sql",
+    "name": "SQL: All Test Cases Pass (2 of 2)",
+    "score": 100,
+    "acc": 100,
+    "cor": 100,
+    "rel": 100,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[100-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    }
+  },
+  {
+    "module": "sql",
+    "name": "SQL: All Test Cases Pass (Count Query)",
+    "score": 100,
+    "acc": 100,
+    "cor": 100,
+    "rel": 100,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[100-100]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    }
+  },
+  {
+    "module": "sql",
+    "name": "SQL: 0 of N Pass (Wrong Query)",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "sql",
+    "name": "SQL: Syntax Error",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-0]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "sql",
+    "name": "SQL: Partial (2 of 3 Pass => Exactly 67%)",
+    "score": 67,
+    "acc": 67,
+    "cor": 67,
+    "rel": 67,
+    "cov": 67,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[67-67]",
+    "within_band": true,
+    "expected_pass": true,
+    "actual_pass": true,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 67,
+        "correctness": 67,
+        "relevance": 67,
+        "concept_coverage": 67
+      },
+      "rule": "mean of 4",
+      "score": 67
+    }
+  },
+  {
+    "module": "contradiction_guard",
+    "name": "Contradiction 1: Java pass-by-reference myth",
+    "score": 25,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 100,
+    "modelUsed": "llama3.2:3b",
+    "expected_band": "[0-35]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 25
+    }
+  },
+  {
+    "module": "contradiction_guard",
+    "name": "Contradiction 4: HR anti-teamwork response",
+    "score": 0,
+    "acc": 0,
+    "cor": 0,
+    "rel": 0,
+    "cov": 0,
+    "modelUsed": "hr_gate_filter",
+    "expected_band": "[0-35]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    }
+  },
+  {
+    "module": "contradiction_guard",
+    "name": "Contradiction 5: HR deadline abandonment response",
+    "score": 4,
+    "acc": 0,
+    "cor": 0,
+    "rel": 17,
+    "cov": 0,
+    "modelUsed": "mockmate-hr100:latest",
+    "expected_band": "[0-35]",
+    "within_band": true,
+    "expected_pass": false,
+    "actual_pass": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 17,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 4
+    }
+  }
+]

@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { ScoreCard } from '../components/ScoreCard';
 import { ScoreBreakdown, SolutionReveal, SolutionViewer } from '../components/CodeWorkspace';
+import { EnhancedComplexityPanel } from '../components/EnhancedComplexityPanel';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { CheckCircle2, AlertTriangle, Lightbulb, PlayCircle, LayoutDashboard, Sparkles, Clock } from 'lucide-react';
@@ -49,7 +50,7 @@ export const Result = () => {
     );
   }
 
-  const { interview, answers = [], result = {} } = data;
+  const { interview, answers = [], result = {}, performance = data.performance } = data;
 
   const totalQuestions = interview.questionsCount || result.totalQuestions || 10;
 
@@ -141,7 +142,7 @@ export const Result = () => {
       </div>
 
       {/* Recommendations Card */}
-      <Card className="recommendation-card" style={{ marginBottom: '2.5rem' }}>
+      <Card className="recommendation-card" style={{ marginBottom: '2rem' }}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', color: 'var(--primary)' }}>
           <Lightbulb size={20} /> Recommendations for Next Session
         </h3>
@@ -151,6 +152,84 @@ export const Result = () => {
           ))}
         </ul>
       </Card>
+
+      {/* Performance Summary Card */}
+      {performance && (
+        <Card className="performance-summary-card" style={{ marginBottom: '2.5rem', padding: '1.25rem' }}>
+          <div className="flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--text-main)' }}>
+                <Sparkles size={18} style={{ color: 'var(--primary)' }} /> Performance Summary
+              </h3>
+              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                Session Score: <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>{performance.sessionScore}%</strong>
+                {' • '}
+                Level: <span className="badge badge-tech" style={{ fontWeight: 700 }}>{performance.level}</span>
+                {' • '}
+                Pass mark: 50% ({performance.counts?.correct ?? 0}/{performance.counts?.totalQuestions ?? totalQuestions} passed)
+              </p>
+            </div>
+            {performance.parameterProfile?.strongestArea && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span className="badge" style={{ background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                  Strongest: {performance.parameterProfile.strongestArea}
+                </span>
+                {performance.parameterProfile.weakestArea && (
+                  <span className="badge" style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a' }}>
+                    Weakest: {performance.parameterProfile.weakestArea}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+            {/* Module Scores */}
+            {performance.moduleScores && Object.keys(performance.moduleScores).length > 0 && (
+              <div style={{ padding: '0.75rem', background: 'var(--bg-subtle, #f8fafc)', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                  Module Scores
+                </div>
+                {Object.entries(performance.moduleScores).map(([mod, score]) => (
+                  <div key={mod} className="flex-between" style={{ fontSize: '0.88rem', marginBottom: '0.25rem' }}>
+                    <span style={{ textTransform: 'capitalize' }}>{mod.replace('_', ' ')}</span>
+                    <strong style={{ color: score >= 50 ? 'var(--text-main)' : 'var(--danger)' }}>{score}%</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Parameter Profile */}
+            {performance.parameterProfile && (
+              <div style={{ padding: '0.75rem', background: 'var(--bg-subtle, #f8fafc)', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                  Evaluation Parameters
+                </div>
+                {[
+                  { key: 'accuracy', label: 'Accuracy' },
+                  { key: 'correctness', label: 'Correctness' },
+                  { key: 'relevance', label: 'Relevance' },
+                  { key: 'concept_coverage', label: 'Concept Coverage' },
+                ].map(({ key, label }) => {
+                  const val = performance.parameterProfile[key];
+                  if (typeof val !== 'number') return null;
+                  return (
+                    <div key={key} className="flex-between" style={{ fontSize: '0.88rem', marginBottom: '0.25rem' }}>
+                      <span>{label}</span>
+                      <strong style={{ color: val >= 50 ? 'var(--text-main)' : 'var(--danger)' }}>{val}%</strong>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {performance.levelBandsNote && (
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem', fontStyle: 'italic' }}>
+              {performance.levelBandsNote}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Question-by-Question Breakdown */}
       <div className="breakdown-section">
@@ -177,6 +256,62 @@ export const Result = () => {
               </div>
 
               <h4 style={{ marginBottom: '0.75rem', fontSize: '1.1rem' }}>{ans.questionText}</h4>
+              {ans.questionFormat === 'output_prediction' && typeof ans.codeSnippet === 'string' && ans.codeSnippet.trim() !== '' && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                    CODE
+                  </div>
+                  <pre
+                    style={{
+                      margin: 0,
+                      padding: '0.75rem 1rem',
+                      background: 'var(--bg-subtle, #f8fafc)',
+                      border: '1px solid var(--border-color, #e2e8f0)',
+                      borderRadius: 'var(--radius-md, 6px)',
+                      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                      fontSize: '0.88rem',
+                      lineHeight: 1.5,
+                      color: 'var(--text-main)',
+                      whiteSpace: 'pre',
+                      overflowX: 'auto',
+                    }}
+                  >
+                    {ans.codeSnippet}
+                  </pre>
+                </div>
+              )}
+              {(ans.formula || (typeof ans.score === 'number' && (ans.accuracy !== undefined || ans.formula))) && (
+                <div
+                  style={{
+                    margin: '0.2rem 0 0.75rem',
+                    padding: '0.45rem 0.75rem',
+                    background: 'var(--bg-subtle, #f8fafc)',
+                    border: '1px dashed var(--border-color, #cbd5e1)',
+                    borderRadius: '6px',
+                    fontSize: '0.82rem',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <strong style={{ color: 'var(--text-main)' }}>How this score is calculated: </strong>
+                  {ans.formula ? (
+                    <>
+                      Score = {ans.formula.score}% ({ans.formula.rule || 'mean of 4'}: Accuracy{' '}
+                      {ans.formula.parameters?.accuracy}%, Correctness{' '}
+                      {ans.formula.parameters?.correctness}%, Relevance{' '}
+                      {ans.formula.parameters?.relevance}%, Concept Coverage{' '}
+                      {ans.formula.parameters?.concept_coverage}%)
+                    </>
+                  ) : (
+                    <>
+                      Score = {ans.score}% (mean of parameters: Accuracy{' '}
+                      {typeof ans.accuracy === 'number' ? Math.round(ans.accuracy <= 1.0 ? ans.accuracy * 100 : ans.accuracy) : 0}%, Correctness{' '}
+                      {typeof ans.correctness === 'number' ? Math.round(ans.correctness <= 1.0 ? ans.correctness * 100 : ans.correctness) : 0}%, Relevance{' '}
+                      {typeof ans.relevance === 'number' ? Math.round(ans.relevance <= 1.0 ? ans.relevance * 100 : ans.relevance) : 0}%, Concept Coverage{' '}
+                      {typeof (ans.conceptCoverage ?? ans.concept_coverage) === 'number' ? Math.round((ans.conceptCoverage ?? ans.concept_coverage) <= 1.0 ? (ans.conceptCoverage ?? ans.concept_coverage) * 100 : (ans.conceptCoverage ?? ans.concept_coverage)) : 0}%)
+                    </>
+                  )}
+                </div>
+              )}
               <ScoreBreakdown
                 evaluation={{
                   ...ans,
@@ -187,7 +322,9 @@ export const Result = () => {
                 }}
               />
 
-              {ans.timeComplexity && (
+              {ans.complexityDetails && (ans.language || interview?.subject || 'java').toLowerCase().includes('java') ? (
+                <EnhancedComplexityPanel complexity={ans.complexityDetails} />
+              ) : ans.timeComplexity ? (
                 <div
                   style={{
                     margin: '0.6rem 0',
@@ -220,7 +357,7 @@ export const Result = () => {
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {ans.isIrrelevant && (
                 <div role="alert" style={{ marginBottom: '0.75rem', padding: '0.65rem 0.75rem', border: '1px solid var(--danger)', borderRadius: '6px', color: 'var(--danger)', fontWeight: 700 }}>
@@ -293,7 +430,59 @@ export const Result = () => {
                 </div>
               )}
 
-              {interview.type === 'hr' && ans.deliveryMetrics && (
+              {interview.type === 'hr' && ans.speechFeedback?.source === 'audio' && (
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                    SPEECH DELIVERY
+                  </div>
+                  {ans.speechFeedback.rating && (
+                    <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.35rem' }}>
+                      Delivery summary: <span style={{ color: ans.speechFeedback.rating === 'Clear' ? 'var(--success, #10b981)' : ans.speechFeedback.rating === 'Fair' ? 'var(--warning, #f59e0b)' : 'var(--danger, #ef4444)' }}>{ans.speechFeedback.rating}</span>
+                    </p>
+                  )}
+                  {ans.speechFeedback.metrics && (
+                    <>
+                      <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', margin: '0 0 0.35rem' }}>
+                        Filler words: {ans.speechFeedback.metrics.fillerWordCount ?? 0} ({(ans.speechFeedback.metrics.fillerFrequencyPer100Words ?? 0)} per 100 words)
+                        {' · '}Long pauses: {ans.speechFeedback.metrics.noticeablePauseCount ?? 0}
+                        {' · '}Repeated words or phrases: {ans.speechFeedback.metrics.repetitionCount ?? 0}
+                        {ans.speechFeedback.metrics.stammerCount !== undefined && ans.speechFeedback.metrics.stammerCount !== null && (
+                          <span>{' · '}Stammers or restarts: {ans.speechFeedback.metrics.stammerCount}</span>
+                        )}
+                      </p>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+                        Hesitation sounds (um/uh): {ans.speechFeedback.metrics.hesitationSoundCount ?? 0}
+                        {' · '}Stretched words: {ans.speechFeedback.metrics.stretchedWordCount ?? 0}
+                      </p>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+                        Sentence completeness: {ans.speechFeedback.metrics.sentenceCompleteness === 'likely_complete' ? 'likely complete' : 'possible fragment'}
+                        {ans.speechFeedback.approximateWpm !== null && ans.speechFeedback.approximateWpm !== undefined ? ` · Speaking pace (approximate): ${ans.speechFeedback.approximateWpm} wpm` : ''}
+                      </p>
+                    </>
+                  )}
+                  {Array.isArray(ans.speechFeedback.tips) && ans.speechFeedback.tips.length > 0 ? (
+                    <ul className="analysis-list">
+                      {ans.speechFeedback.tips.map((tip, tipIdx) => (
+                        <li key={tipIdx}>{tip}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                      Delivery was clear.
+                    </p>
+                  )}
+                  {ans.speechFeedback.transcript && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', margin: '0.35rem 0', fontStyle: 'italic' }}>
+                      Heard in your recording: {ans.speechFeedback.transcript.slice(0, 300)}
+                    </p>
+                  )}
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                    Analysed from your recording; approximate
+                  </p>
+                </div>
+              )}
+
+              {interview.type === 'hr' && ans.speechFeedback?.source !== 'audio' && ans.deliveryMetrics && (
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
                     SPEECH DELIVERY
@@ -323,17 +512,121 @@ export const Result = () => {
                 </div>
               )}
 
-              {ans.questionFormat === 'coding' && (
+              {interview?.type === 'technical' && (ans.questionFormat || 'theory') === 'theory' && ans.speechFeedback && (
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                    SPEECH EVALUATION
+                  </div>
+                  {ans.speechFeedback.rating && (
+                    <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.35rem' }}>
+                      Delivery summary: <span style={{ color: ans.speechFeedback.rating === 'Clear' ? 'var(--success, #10b981)' : ans.speechFeedback.rating === 'Fair' ? 'var(--warning, #f59e0b)' : 'var(--danger, #ef4444)' }}>{ans.speechFeedback.rating}</span>
+                    </p>
+                  )}
+                  {ans.speechFeedback.metrics && (
+                    <>
+                      <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', margin: '0 0 0.35rem' }}>
+                        Filler words: {ans.speechFeedback.metrics.fillerWordCount ?? 0} ({ans.speechFeedback.metrics.fillerFrequencyPer100Words ?? 0} per 100 words)
+                        {' · '}Long pauses: {ans.speechFeedback.metrics.noticeablePauseCount ?? 0}
+                        {' · '}Repeated words or phrases: {ans.speechFeedback.metrics.repetitionCount ?? 0}
+                        {ans.speechFeedback.metrics.stammerCount !== undefined && ans.speechFeedback.metrics.stammerCount !== null && (
+                          <span>{' · '}Stammers or restarts: {ans.speechFeedback.metrics.stammerCount}</span>
+                        )}
+                      </p>
+                      {ans.speechFeedback.metrics.hesitationSoundCount !== undefined && (
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+                          Hesitation sounds (um/uh): {ans.speechFeedback.metrics.hesitationSoundCount ?? 0}
+                          {' · '}Stretched words: {ans.speechFeedback.metrics.stretchedWordCount ?? 0}
+                        </p>
+                      )}
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+                        Sentence completeness: {ans.speechFeedback.metrics.sentenceCompleteness === 'likely_complete' ? 'likely complete' : 'possible fragment'}
+                        {ans.speechFeedback.approximateWpm !== null && ans.speechFeedback.approximateWpm !== undefined ? ` · Speaking pace (approximate): ${ans.speechFeedback.approximateWpm} wpm` : ''}
+                      </p>
+                    </>
+                  )}
+                  {Array.isArray(ans.speechFeedback.tips) && ans.speechFeedback.tips.length > 0 ? (
+                    <ul className="analysis-list">
+                      {ans.speechFeedback.tips.map((tip, tipIdx) => (
+                        <li key={tipIdx}>{tip}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                      Delivery was clear.
+                    </p>
+                  )}
+                  {ans.speechFeedback.transcript && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', margin: '0.35rem 0', fontStyle: 'italic' }}>
+                      Heard in your recording: {ans.speechFeedback.transcript.slice(0, 300)}
+                    </p>
+                  )}
+                  {ans.speechFeedback.source === 'audio' ? (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0', fontWeight: 500 }}>
+                      Analysed from your recording
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                      Approximate findings from browser-recognized text and callback timing, not audio analysis.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {interview?.type === 'technical' && (ans.questionFormat || 'theory') === 'theory' && (
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                  {ans.generatedReferenceAnswer ? (
+                    <div className="mm-solution-wrapper">
+                      <div className="mm-solution-panel" style={{ marginTop: 0 }}>
+                        <div className="mm-solution-content">
+                          <div className="mm-solution-header">
+                            <span className="mm-solution-title">Reference Answer</span>
+                          </div>
+                          <pre className="mm-solution-pre mm-theory-pre">
+                            <code>{ans.generatedReferenceAnswer}</code>
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <SolutionViewer
+                      interviewId={interview?._id || interview?.id || id}
+                      preloadedSolution={ans.generatedReferenceAnswer || null}
+                      format="theory"
+                      buttonText="Reference Answer"
+                      panelTitle="Reference Answer"
+                      preferFetch={!ans.generatedReferenceAnswer}
+                      questionKey={ans._id || ans.questionId}
+                      emptyMessage="Reference answer is not available for this question."
+                    />
+                  )}
+                </div>
+              )}
+
+              {interview?.type === 'hr' && (ans.referenceSolution || ans.explanation || ans.guidance) && (
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
                   <SolutionViewer
-                    preloadedSolution={ans.referenceSolution || ans.correctedCode || null}
+                    interviewId={interview?._id || interview?.id || id}
+                    preloadedSolution={ans.referenceSolution || ans.explanation || ans.guidance || null}
+                    format="theory"
+                    buttonText="Answer Guide"
+                    panelTitle="Answer Guide"
+                    questionKey={ans._id || ans.questionId}
+                    emptyMessage="Answer guide is not available for this question."
+                  />
+                </div>
+              )}
+
+              {ans.questionFormat === 'coding' && (ans.referenceSolution || ans.correctedCode || ans.correctedQuery) && (
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                  <SolutionViewer
+                    preloadedSolution={ans.referenceSolution || ans.correctedCode || ans.correctedQuery || null}
                     format="coding"
                     language={ans.language || (interview?.category?.toLowerCase().includes('sql') ? 'sql' : 'java')}
                     questionKey={ans._id || ans.questionId}
                   />
                 </div>
               )}
-              {ans.questionFormat === 'output_prediction' && (
+              {ans.questionFormat === 'output_prediction' && ans.expectedOutput && (
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
                   <SolutionViewer
                     preloadedSolution={ans.expectedOutput || null}
@@ -342,31 +635,6 @@ export const Result = () => {
                   />
                 </div>
               )}
-              {ans.questionFormat === 'theory' &&
-                (interview?.subject === 'java' ||
-                  interview?.subject === 'dbms' ||
-                  interview?.category?.toLowerCase().includes('java') ||
-                  interview?.category?.toLowerCase().includes('dbms') ||
-                  interview?.category?.toLowerCase().includes('sql')) && (
-                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
-                    <SolutionViewer
-                      preloadedSolution={
-                        ans.referenceSolution ||
-                        ans.idealAnswer ||
-                        (ans.expectedConcepts?.length
-                          ? `Key Expected Concepts:\n• ${ans.expectedConcepts.join('\n• ')}${
-                              ans.improvementSuggestion || ans.feedback
-                                ? `\n\nReference Explanation:\n${ans.improvementSuggestion || ans.feedback}`
-                                : ''
-                            }`
-                          : null)
-                      }
-                      format="theory"
-                      buttonText="Reference Solution"
-                      questionKey={ans._id || ans.questionId}
-                    />
-                  </div>
-                )}
               {ans.stepByStepExplanation && ans.questionFormat !== 'coding' && ans.questionFormat !== 'output_prediction' && (
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>

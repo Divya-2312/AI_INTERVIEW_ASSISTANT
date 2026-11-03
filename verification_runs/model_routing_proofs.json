@@ -1,0 +1,48 @@
+{
+  "hr_eval": {
+    "status": "PASS",
+    "modelUsed": "mockmate-hr100:latest",
+    "score": 44,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 45,
+        "correctness": 45,
+        "relevance": 85,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 44
+    }
+  },
+  "java_complexity": {
+    "status": "PASS",
+    "modelUsed": "mockmate-hr100:latest",
+    "timeComplexity": "O(N)",
+    "spaceComplexity": "O(1)"
+  },
+  "java_theory": {
+    "q_model": "llama3.2:3b",
+    "q_source": "model",
+    "eval_model": "llama3.2:3b",
+    "eval_score": 70,
+    "status": "PASS"
+  },
+  "dbms_theory": {
+    "q_model": "llama3.2:3b",
+    "eval_model": "llama3.2:3b",
+    "status": "PASS"
+  },
+  "output_prediction_q": {
+    "q_model": "llama3.2:3b",
+    "status": "PASS"
+  },
+  "java_coding_q": {
+    "status": "ERROR",
+    "error": "HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=60)"
+  },
+  "sql_q": {
+    "q_model": "verified_adaptive_catalog",
+    "status": "FAIL"
+  }
+}

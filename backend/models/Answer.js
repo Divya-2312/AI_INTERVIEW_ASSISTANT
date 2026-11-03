@@ -64,10 +64,15 @@ const answerSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
-    // HR only: 4th factor of the HR average (correctness, relevance, accuracy, communication).
+    // Accuracy: 1st of the four common parameters (accuracy, correctness, relevance, concept coverage).
     accuracy: {
       type: Number,
       default: null,
+    },
+    // Common formula object returned by the AI service: { module, parameters:{accuracy,correctness,relevance,concept_coverage}, rule, score }
+    formula: {
+      type: mongoose.Schema.Types.Mixed,
+      default: undefined,
     },
     isIrrelevant: {
       type: Boolean,
@@ -175,8 +180,20 @@ const answerSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    complexityDetails: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
     referenceSolution: {
       type: String,
+      default: null,
+    },
+    generatedReferenceAnswer: {
+      type: String,
+      default: null,
+    },
+    speechFeedback: {
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
     expectedOutput: {

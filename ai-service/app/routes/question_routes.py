@@ -21,7 +21,21 @@ router = APIRouter(prefix="/api/ai", tags=["Question Engine"])
 @router.post("/generate-question", response_model=QuestionResponse)
 def generate_question(req: QuestionGenerationRequest):
     try:
-        return question_generator.generate(req)
+        resp = question_generator.generate(req)
+        try:
+            from app.services.reference_answer_service import reference_answer_service
+            reference_answer_service.schedule_generation(
+                question=getattr(resp, "questionText", None),
+                subject=getattr(resp, "subject", getattr(req, "subject", "java")),
+                interview_type=getattr(req, "interviewType", "technical"),
+                question_format=getattr(resp, "questionFormat", getattr(req, "questionFormat", "theory")),
+                difficulty=getattr(resp, "difficulty", getattr(req, "difficulty", "medium")),
+                expected_concepts=getattr(resp, "expectedConcepts", None),
+                reference_answer=getattr(resp, "referenceAnswer", None),
+            )
+        except Exception:
+            pass
+        return resp
     except AIGenerationUnavailableError as e:
         raise HTTPException(status_code=503, detail=str(e))
 

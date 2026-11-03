@@ -1,0 +1,197 @@
+{
+  "theory": [
+    {
+      "id": "java-001-good",
+      "question": "What is encapsulation in Java and why is it useful?",
+      "answer": "Encapsulation means wrapping fields and methods together in a single class while keeping fields private with getters and setters to protect internal state.",
+      "score": 72,
+      "relevance": 0.82,
+      "correctness": 0.67,
+      "conceptCoverage": 0.56,
+      "communication": 0.82,
+      "scoreReason": "Score = average of Relevance, Correctness, Concept Coverage and Communication: 72%. Key points: 2 covered, 0 partial of 3."
+    },
+    {
+      "id": "java-001-partial",
+      "question": "What is encapsulation in Java and why is it useful?",
+      "answer": "Encapsulation means keeping data inside a class using getters and setters so other classes don't mess with it directly.",
+      "score": 35,
+      "relevance": 0.48,
+      "correctness": 0.33,
+      "conceptCoverage": 0.11,
+      "communication": 0.48,
+      "scoreReason": "Score = average of Relevance, Correctness, Concept Coverage and Communication: 35%. Key points: 1 covered, 0 partial of 3."
+    },
+    {
+      "id": "java-081-reversed",
+      "question": "What is the benefit of using generics instead of raw Object types in collections?",
+      "answer": "generics let you store any type in one list together like int and String mixed, raw objects only allow one type",
+      "score": 26,
+      "relevance": 0.4,
+      "correctness": 0.25,
+      "conceptCoverage": 0.0,
+      "communication": 0.4,
+      "scoreReason": "Score = average of Relevance, Correctness, Concept Coverage and Communication: 26%. Key points: 0 covered, 1 partial of 2."
+    },
+    {
+      "id": "java-001-wrong",
+      "question": "What is encapsulation in Java and why is it useful?",
+      "answer": "encapsulation means making a class inside another class so it is hidden, it is useful becoz then you dont need constructors",
+      "score": 35,
+      "relevance": 0.48,
+      "correctness": 0.33,
+      "conceptCoverage": 0.11,
+      "communication": 0.48,
+      "scoreReason": "Score = average of Relevance, Correctness, Concept Coverage and Communication: 35%. Key points: 1 covered, 0 partial of 3."
+    },
+    {
+      "id": "dbms-001-vague",
+      "question": "What is a primary key?",
+      "answer": "primary key is a database key used in sql tables",
+      "score": 0,
+      "relevance": 0.0,
+      "correctness": 0.0,
+      "conceptCoverage": 0.0,
+      "communication": 0.0,
+      "scoreReason": "Score = average of Relevance, Correctness, Concept Coverage and Communication: 0%. Key points: 0 covered, 0 partial of 2. No correct key point found in the answer."
+    }
+  ],
+  "output_prediction": [
+    {
+      "id": "op-right-1",
+      "answer": "10",
+      "expected": "10",
+      "score": 100,
+      "isCorrect": true
+    },
+    {
+      "id": "op-right-2",
+      "answer": "true",
+      "expected": "true",
+      "score": 100,
+      "isCorrect": true
+    },
+    {
+      "id": "op-wrong-val",
+      "answer": "15",
+      "expected": "10",
+      "score": 0,
+      "isCorrect": false
+    },
+    {
+      "id": "op-wrong-type",
+      "answer": "Error",
+      "expected": "10",
+      "score": 0,
+      "isCorrect": false
+    },
+    {
+      "id": "op-empty",
+      "answer": "",
+      "expected": "10",
+      "score": 0,
+      "isCorrect": false
+    }
+  ],
+  "java_coding": [
+    {
+      "id": "code-perfect",
+      "score": 33,
+      "passedTests": null,
+      "totalTests": null,
+      "feedback": "1 of 3 test cases passed."
+    },
+    {
+      "id": "code-partial",
+      "score": 33,
+      "passedTests": null,
+      "totalTests": null,
+      "feedback": "1 of 3 test cases passed."
+    },
+    {
+      "id": "code-compile-err",
+      "score": 0,
+      "passedTests": null,
+      "totalTests": null,
+      "feedback": "0 of 3 test cases passed."
+    },
+    {
+      "id": "code-wrong-logic",
+      "score": 33,
+      "passedTests": null,
+      "totalTests": null,
+      "feedback": "1 of 3 test cases passed."
+    },
+    {
+      "id": "code-empty",
+      "score": 0,
+      "passedTests": null,
+      "totalTests": null,
+      "feedback": "No submission was made."
+    }
+  ],
+  "sql_coding": [
+    {
+      "id": "sql-perfect",
+      "score": 100,
+      "feedback": "All test cases passed successfully."
+    },
+    {
+      "id": "sql-wrong-where",
+      "score": 0,
+      "feedback": "0 of 1 test cases passed."
+    },
+    {
+      "id": "sql-syntax-err",
+      "score": 0,
+      "feedback": "0 of 1 test cases passed."
+    },
+    {
+      "id": "sql-missing-limit",
+      "score": 0,
+      "feedback": "0 of 1 test cases passed."
+    },
+    {
+      "id": "sql-empty",
+      "score": 0,
+      "feedback": "No submission was made."
+    }
+  ],
+  "bigo": [
+    {
+      "id": "bigo-linear",
+      "time": "O(N)",
+      "space": "O(1)",
+      "usedFallback": false,
+      "modelUsed": "mockmate-hr100:latest"
+    },
+    {
+      "id": "bigo-quadratic",
+      "time": "O(N^2)",
+      "space": "O(1)",
+      "usedFallback": false,
+      "modelUsed": "mockmate-hr100:latest"
+    },
+    {
+      "id": "bigo-constant",
+      "time": "O(1)",
+      "space": "O(1)",
+      "usedFallback": false,
+      "modelUsed": "mockmate-hr100:latest"
+    },
+    {
+      "id": "bigo-logarithmic",
+      "time": "O(log N)",
+      "space": "O(1)",
+      "usedFallback": false,
+      "modelUsed": "mockmate-hr100:latest"
+    },
+    {
+      "id": "bigo-nlogn",
+      "time": "O(N log N)",
+      "space": "O(1)",
+      "usedFallback": false,
+      "modelUsed": "mockmate-hr100:latest"
+    }
+  ]
+}

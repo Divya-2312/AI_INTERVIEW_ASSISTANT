@@ -8,26 +8,35 @@ This is deliberately NOT used for Java theory, DBMS theory, predict-the-output
 or coding questions -- those keep their own scoring.
 """
 
-HR_SCORE_FACTORS = ("correctness", "relevance", "accuracy", "communication")
+from app.utils.scoring_formulas import PARAMETERS, question_score, round_half_up
+
+HR_SCORE_FACTORS = tuple(PARAMETERS)
 
 
 def _percent(value) -> int:
-    """0..1 float -> whole percent, matching what the UI displays (Math.round(v * 100))."""
+    """0..1 float -> whole percent, matching what the UI displays."""
     try:
         numeric = float(value)
     except (TypeError, ValueError):
         numeric = 0.0
-    numeric = max(0.0, min(1.0, numeric))
-    return int(numeric * 100 + 0.5)
+    if 0.0 < numeric <= 1.0:
+        return round_half_up(numeric * 100.0)
+    return max(0, min(100, round_half_up(numeric)))
 
 
-def calculate_hr_overall(correctness, relevance, accuracy, communication) -> int:
+def calculate_hr_overall(correctness, relevance, accuracy, concept_coverage=None, communication=None) -> int:
     """
-    Average of the four factors as shown to the candidate, so the overall score
-    always equals the average of the four displayed percentages.
+    Average of the four parameters (accuracy, correctness, relevance, concept_coverage).
+    Communication is kept as feedback text only, NOT in the average.
     """
-    percents = [_percent(v) for v in (correctness, relevance, accuracy, communication)]
-    return int(sum(percents) / len(percents) + 0.5)
+    cov = concept_coverage if concept_coverage is not None else accuracy
+    params = {
+        "accuracy": _percent(accuracy),
+        "correctness": _percent(correctness),
+        "relevance": _percent(relevance),
+        "concept_coverage": _percent(cov),
+    }
+    return question_score(params)
 
 
 def build_hr_evaluation_summary(

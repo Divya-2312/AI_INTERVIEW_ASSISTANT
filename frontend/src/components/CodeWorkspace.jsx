@@ -11,6 +11,7 @@ import {
   Clock,
 } from "lucide-react";
 import { SolutionViewer } from "./SolutionViewer";
+import { EnhancedComplexityPanel } from "./EnhancedComplexityPanel";
 
 const SECTION_LABELS = ["Input:", "Output:", "Constraints:", "Example:"];
 
@@ -263,8 +264,10 @@ export const ScoreBreakdown = ({ evaluation }) => {
     return null;
   }
 
-  const pct = (v) =>
-    typeof v === "number" ? Math.round(v * 100) : null;
+  const pct = (v) => {
+    if (typeof v !== "number") return null;
+    return v <= 1.0 ? Math.round(v * 100) : Math.round(v);
+  };
 
   // Technical items (Java output prediction, Java coding, DBMS SQL queries) do not evaluate Communication
   const isNoComm =
@@ -275,14 +278,45 @@ export const ScoreBreakdown = ({ evaluation }) => {
     evaluation.language === "sql" ||
     (evaluation.subject === "dbms" && (evaluation.language === "sql" || evaluation.questionFormat === "coding" || evaluation.format === "coding" || /^\s*(?:--[^\n]*\n\s*)*SELECT\b/i.test(evaluation.answerText || evaluation.answer || '')));
 
-  const items = [
-    { label: "Relevance", value: pct(evaluation.relevance) },
-    { label: "Correctness", value: pct(evaluation.correctness) },
-    typeof evaluation.accuracy === "number"
-      ? { label: "Accuracy", value: pct(evaluation.accuracy) }
-      : { label: "Concept Coverage", value: pct(evaluation.conceptCoverage) },
-    ...(isNoComm ? [] : [{ label: "Communication", value: pct(evaluation.communication) }]),
-  ].filter((i) => i.value !== null);
+  const isHR =
+    evaluation.interviewType === "hr" ||
+    evaluation.type === "hr" ||
+    evaluation.subject === "hr" ||
+    evaluation.subject === "N/A" ||
+    Boolean(evaluation.hrDeliveryMetrics) ||
+    Boolean(evaluation.deliveryMetrics);
+
+  const isTechnicalTheory =
+    !isNoComm &&
+    !isHR &&
+    (evaluation.questionFormat === "theory" || !evaluation.questionFormat || evaluation.format === "theory");
+
+  let items = [];
+  if (isTechnicalTheory) {
+    const fp = evaluation.formula?.parameters;
+    const relVal = typeof fp?.relevance === "number" ? fp.relevance : pct(evaluation.relevance);
+    const corrVal = typeof fp?.correctness === "number" ? fp.correctness : pct(evaluation.correctness);
+    const accVal = typeof fp?.accuracy === "number" ? fp.accuracy : pct(evaluation.accuracy);
+    const covVal = typeof fp?.concept_coverage === "number" ? fp.concept_coverage : pct(evaluation.conceptCoverage ?? evaluation.concept_coverage);
+    const commVal = typeof fp?.communication === "number" ? fp.communication : pct(evaluation.communication);
+
+    items = [
+      { label: "Relevance", value: relVal },
+      { label: "Correctness", value: corrVal },
+      { label: "Accuracy", value: accVal },
+      { label: "Concept Coverage", value: covVal },
+      ...(commVal !== null && commVal !== undefined ? [{ label: "Communication (feedback only, not in score)", value: commVal }] : []),
+    ].filter((i) => i.value !== null && i.value !== undefined);
+  } else {
+    items = [
+      { label: "Relevance", value: pct(evaluation.relevance) },
+      { label: "Correctness", value: pct(evaluation.correctness) },
+      typeof evaluation.accuracy === "number"
+        ? { label: "Accuracy", value: pct(evaluation.accuracy) }
+        : { label: "Concept Coverage", value: pct(evaluation.conceptCoverage) },
+      ...(isNoComm ? [] : [{ label: "Communication", value: pct(evaluation.communication) }]),
+    ].filter((i) => i.value !== null);
+  }
 
   if (!items.length) return null;
 
@@ -634,7 +668,11 @@ export const JudgeResultPanel = ({
         )}
       </div>
 
-      {evaluation.timeComplexity && (
+      {evaluation.complexityDetails && (language || "java").toLowerCase() === "java" ? (
+        <div style={{ margin: "0.75rem 1rem" }}>
+          <EnhancedComplexityPanel complexity={evaluation.complexityDetails} />
+        </div>
+      ) : evaluation.timeComplexity ? (
         <div
           className="judge-complexity-banner"
           style={{
@@ -679,7 +717,7 @@ export const JudgeResultPanel = ({
             )}
           </div>
         </div>
-      )}
+      ) : null}
 
       {evaluation.compileError && (
         <div className="judge-compile-error">

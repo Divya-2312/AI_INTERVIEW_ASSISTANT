@@ -2,12 +2,16 @@ import { createHash, randomBytes, randomInt } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
+import { Interview } from '../models/Interview.js';
+import { Answer } from '../models/Answer.js';
+import { Result } from '../models/Result.js';
 import { emailService } from '../services/emailService.js';
 
 const JWT_ACCESS_EXPIRY = '15m';
 const REFRESH_TOKEN_DAYS = 7;
 const REMEMBER_ME_DAYS = 30;
 const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+export const VERIFY_CODE_TTL_MS = 60 * 1000; // 1 minute (60 seconds)
 const VERIFY_EMAIL_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const LOCKOUT_TIME_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -115,9 +119,11 @@ export const registerUser = async (req, res, next) => {
       });
     }
 
-    // Generate random 32-byte verification token
+    // Generate random 32-byte verification token and 6-digit code
     const verificationToken = randomBytes(32).toString('hex');
+    const verificationCode = String(randomInt(100000, 1000000));
     const verificationTokenHash = sha256(verificationToken);
+    const verificationCodeHash = sha256(verificationCode);
 
     const user = await User.create({
       name: trimmedName,
@@ -128,17 +134,45 @@ export const registerUser = async (req, res, next) => {
       targetRole: targetRole || 'Software Development Engineer (SDE)',
       emailVerified: false,
       emailVerificationTokenHash: verificationTokenHash,
+      emailVerificationCodeHash: verificationCodeHash,
+      emailVerificationCodeExpiresAt: new Date(Date.now() + VERIFY_CODE_TTL_MS), // 1 minute
+      emailVerificationCodeAttempts: 0,
       emailVerificationExpiresAt: new Date(Date.now() + VERIFY_EMAIL_TTL_MS),
       lastEmailVerificationSentAt: new Date(),
     });
 
-    // Send verification email
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    // Send 6-digit verification code email and report honest outcome
+    let emailResult;
+    try {
+      emailResult = await emailService.sendVerificationCodeEmail(user.email, user.name, verificationCode);
+    } catch (mailError) {
+      console.error(`[Auth] Verification code email error for ${user.email}:`, mailError.message);
+      emailResult = { success: false, code: 'EMAIL_SEND_FAILED', error: mailError.message };
+    }
+    const emailSent = !!(emailResult && emailResult.success);
+
+    let registerMessage = 'Registration successful! A 6-digit verification code has been sent to your email address.';
+    if (!emailSent) {
+      if (emailResult?.code === 'ETHEREAL_SANDBOX') {
+        registerMessage =
+          'Your account was created, but the email service is a test sandbox (Ethereal) and emails will not reach real inboxes.';
+      } else {
+        const reason = emailResult?.code === 'SMTP_NOT_CONFIGURED'
+          ? 'SMTP is not configured on the server'
+          : (emailResult?.error || 'email delivery failed');
+        console.error(`[Auth] Verification code email NOT delivered to ${user.email} (${reason}).`);
+        registerMessage =
+          'Your account was created, but we could not send the verification email. Please use the Resend button to try again.';
+      }
+    }
 
     return res.status(201).json({
       success: true,
       requiresVerification: true,
-      message: 'Registration successful! We have sent a verification link to your email address.',
+      emailSent,
+      expiresAt: user.emailVerificationCodeExpiresAt.toISOString(),
+      expiresInSeconds: Math.floor(VERIFY_CODE_TTL_MS / 1000),
+      message: registerMessage,
       email: user.email,
       user: {
         id: user._id,
@@ -155,25 +189,125 @@ export const registerUser = async (req, res, next) => {
   }
 };
 
-// @desc    Verify email address via token
+// @desc    Verify email address via 6-digit code
+// @route   POST /api/auth/verify-email-code
+// @access  Public (Rate-limited)
+export const verifyEmailCode = async (req, res, next) => {
+  try {
+    const { email, code } = req.body;
+    const rawEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const rawCode = typeof code === 'string' || typeof code === 'number' ? String(code).trim() : '';
+
+    if (!rawEmail || !rawCode) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_PARAMETERS',
+        message: 'Please provide both email address and 6-digit verification code.',
+      });
+    }
+
+    const user = await User.findOne({ email: rawEmail }).select(
+      '+emailVerificationCodeHash +emailVerificationCodeExpiresAt +emailVerificationCodeAttempts'
+    );
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        code: 'USER_NOT_FOUND',
+        message: 'Invalid verification request or user does not exist.',
+      });
+    }
+
+    if (user.emailVerified === true) {
+      return res.status(200).json({
+        success: true,
+        alreadyVerified: true,
+        message: 'Your email address is already verified. You can log in now.',
+      });
+    }
+
+    // 1. Check if locked out due to >= 5 failed attempts
+    if ((user.emailVerificationCodeAttempts || 0) >= 5) {
+      return res.status(400).json({
+        success: false,
+        code: 'TOO_MANY_ATTEMPTS',
+        message: 'Too many incorrect attempts. This code has been invalidated. Please request a new verification code.',
+      });
+    }
+
+    // 2. Check expiration FIRST (now > expiresAt)
+    const now = Date.now();
+    if (!user.emailVerificationCodeExpiresAt || now > user.emailVerificationCodeExpiresAt.getTime() || !user.emailVerificationCodeHash) {
+      // Clear stored code so it can never be accepted later; do NOT count as a wrong attempt
+      user.emailVerificationCodeHash = undefined;
+      user.emailVerificationCodeExpiresAt = undefined;
+      await user.save();
+      return res.status(400).json({
+        success: false,
+        code: 'CODE_EXPIRED',
+        message: 'This code has expired (codes are valid for 1 minute). Please request a new one.',
+      });
+    }
+
+    const incomingHash = sha256(rawCode);
+    if (incomingHash !== user.emailVerificationCodeHash) {
+      user.emailVerificationCodeAttempts = (user.emailVerificationCodeAttempts || 0) + 1;
+      if (user.emailVerificationCodeAttempts >= 5) {
+        user.emailVerificationCodeHash = undefined;
+        user.emailVerificationCodeExpiresAt = undefined;
+        await user.save();
+        return res.status(400).json({
+          success: false,
+          code: 'TOO_MANY_ATTEMPTS',
+          message: 'Too many incorrect attempts. This code has been invalidated. Please request a new verification code.',
+        });
+      }
+      await user.save();
+      const remaining = 5 - user.emailVerificationCodeAttempts;
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_CODE',
+        message: `Invalid verification code. You have ${remaining} attempt(s) remaining.`,
+      });
+    }
+
+    // Success! Clear code fields and mark emailVerified = true
+    user.emailVerified = true;
+    user.emailVerificationCodeHash = undefined;
+    user.emailVerificationCodeExpiresAt = undefined;
+    user.emailVerificationCodeAttempts = 0;
+    user.emailVerificationTokenHash = undefined;
+    user.emailVerificationExpiresAt = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! You can now log in.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify email address via token or legacy link
 // @route   GET or POST /api/auth/verify-email
 // @access  Public
 export const verifyEmail = async (req, res, next) => {
   try {
-    const token = req.query.token || req.body.token;
+    const tokenOrCode = req.query.token || req.body.token || req.body.code || req.query.code;
     const rawEmail = req.query.email || req.body.email;
 
-    if (!token || !rawEmail) {
+    if (!tokenOrCode || !rawEmail) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_PARAMETERS',
-        message: 'Verification token and email are required.',
+        message: 'Verification code or token and email are required.',
       });
     }
 
     const normalizedEmail = String(rawEmail).trim().toLowerCase();
     const user = await User.findOne({ email: normalizedEmail }).select(
-      '+emailVerificationTokenHash +emailVerificationExpiresAt'
+      '+emailVerificationTokenHash +emailVerificationCodeHash +emailVerificationExpiresAt +emailVerificationCodeExpiresAt'
     );
 
     if (!user) {
@@ -192,25 +326,37 @@ export const verifyEmail = async (req, res, next) => {
       });
     }
 
-    const incomingHash = sha256(token.trim());
+    const incomingHash = sha256(String(tokenOrCode).trim());
 
-    if (
-      !user.emailVerificationTokenHash ||
-      user.emailVerificationTokenHash !== incomingHash ||
-      !user.emailVerificationExpiresAt ||
-      user.emailVerificationExpiresAt.getTime() < Date.now()
-    ) {
+    const isTokenMatch = user.emailVerificationTokenHash && user.emailVerificationTokenHash === incomingHash;
+    const isCodeMatch = user.emailVerificationCodeHash && user.emailVerificationCodeHash === incomingHash;
+
+    const tokenExpired = user.emailVerificationExpiresAt && user.emailVerificationExpiresAt.getTime() < Date.now();
+    const codeExpired = user.emailVerificationCodeExpiresAt && user.emailVerificationCodeExpiresAt.getTime() < Date.now();
+
+    if (!isTokenMatch && !isCodeMatch) {
       return res.status(400).json({
         success: false,
         code: 'TOKEN_EXPIRED',
-        message: 'The email verification link has expired or is invalid. Please request a new verification link.',
+        message: 'The email verification code or link has expired or is invalid. Please request a new verification code.',
       });
     }
 
-    // Mark email as verified and clear token fields
+    if ((isTokenMatch && tokenExpired) || (isCodeMatch && codeExpired)) {
+      return res.status(400).json({
+        success: false,
+        code: 'TOKEN_EXPIRED',
+        message: 'The email verification code or link has expired or is invalid. Please request a new verification code.',
+      });
+    }
+
+    // Mark email as verified and clear token/code fields
     user.emailVerified = true;
     user.emailVerificationTokenHash = undefined;
+    user.emailVerificationCodeHash = undefined;
     user.emailVerificationExpiresAt = undefined;
+    user.emailVerificationCodeExpiresAt = undefined;
+    user.emailVerificationCodeAttempts = 0;
     await user.save();
 
     return res.status(200).json({
@@ -222,7 +368,7 @@ export const verifyEmail = async (req, res, next) => {
   }
 };
 
-// @desc    Resend email verification link
+// @desc    Resend email verification code
 // @route   POST /api/auth/resend-verification
 // @access  Public (Rate-limited)
 export const resendVerification = async (req, res, next) => {
@@ -230,42 +376,108 @@ export const resendVerification = async (req, res, next) => {
     const rawEmail = req.body.email;
     const normalizedEmail = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
 
-    // Always return generic success to avoid account enumeration
-    const genericResponse = {
-      success: true,
-      message: 'If an unverified account exists with that email address, a new verification link has been sent.',
-    };
-
     if (!normalizedEmail) {
-      return res.status(200).json(genericResponse);
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_PARAMETERS',
+        message: 'Please provide an email address.',
+      });
     }
 
     const user = await User.findOne({ email: normalizedEmail }).select(
-      '+emailVerificationTokenHash +emailVerificationExpiresAt +lastEmailVerificationSentAt'
+      '+emailVerificationCodeHash +emailVerificationCodeExpiresAt +emailVerificationCodeAttempts +lastEmailVerificationSentAt'
     );
 
-    if (!user || user.emailVerified === true) {
-      return res.status(200).json(genericResponse);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        code: 'USER_NOT_FOUND',
+        message: 'No account found with this email address.',
+      });
+    }
+
+    if (user.emailVerified === true) {
+      return res.status(400).json({
+        success: false,
+        code: 'ALREADY_VERIFIED',
+        message: 'Your email address is already verified. You can log in directly.',
+      });
     }
 
     // Cooldown check (30 seconds)
     if (user.lastEmailVerificationSentAt) {
       const elapsedSeconds = (Date.now() - user.lastEmailVerificationSentAt.getTime()) / 1000;
       if (elapsedSeconds < COOLDOWN_SECONDS) {
-        return res.status(200).json(genericResponse);
+        const secondsLeft = Math.ceil(COOLDOWN_SECONDS - elapsedSeconds);
+        return res.status(429).json({
+          success: false,
+          code: 'COOLDOWN_ACTIVE',
+          message: `Please wait ${secondsLeft} second(s) before requesting a new verification code.`,
+          retryAfter: secondsLeft,
+        });
       }
     }
 
-    // Generate new token
+    // Check if SMTP is configured before attempting delivery
+    if (!emailService.isSmtpConfigured()) {
+      // In DEV, also log the code to console so developer can test
+      if (process.env.NODE_ENV !== 'production') {
+        const devCode = String(randomInt(100000, 1000000));
+        user.emailVerificationCodeHash = sha256(devCode);
+        user.emailVerificationCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        user.emailVerificationCodeAttempts = 0;
+        user.lastEmailVerificationSentAt = new Date();
+        await user.save();
+        await emailService.sendVerificationCodeEmail(user.email, user.name, devCode);
+      }
+      return res.status(503).json({
+        success: false,
+        code: 'SMTP_NOT_CONFIGURED',
+        message: 'Email service is not configured on this server. Please contact an administrator.',
+      });
+    }
+
+    // Generate new 6-digit code and reset attempts (fresh 1 minute validity)
+    const verificationCode = String(randomInt(100000, 1000000));
     const verificationToken = randomBytes(32).toString('hex');
+    user.emailVerificationCodeHash = sha256(verificationCode);
+    user.emailVerificationCodeExpiresAt = new Date(Date.now() + VERIFY_CODE_TTL_MS); // 1 minute
+    user.emailVerificationCodeAttempts = 0;
     user.emailVerificationTokenHash = sha256(verificationToken);
     user.emailVerificationExpiresAt = new Date(Date.now() + VERIFY_EMAIL_TTL_MS);
     user.lastEmailVerificationSentAt = new Date();
     await user.save();
 
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    let resendResult;
+    try {
+      resendResult = await emailService.sendVerificationCodeEmail(user.email, user.name, verificationCode);
+    } catch (mailError) {
+      console.error(`[Auth] Resend verification code email error for ${user.email}:`, mailError.message);
+      resendResult = { success: false, code: 'EMAIL_SEND_FAILED', error: mailError.message };
+    }
 
-    return res.status(200).json(genericResponse);
+    if (!resendResult || !resendResult.success) {
+      console.error(
+        `[Auth] Resend verification email NOT delivered to ${user.email} ` +
+        `(${resendResult?.error || 'delivery error'}).`
+      );
+      return res.status(502).json({
+        success: false,
+        emailSent: false,
+        code: resendResult?.code || 'EMAIL_SEND_FAILED',
+        message: resendResult?.code === 'ETHEREAL_SANDBOX'
+          ? 'The email service is a test sandbox and emails will not reach real inboxes.'
+          : 'could not send, try again later',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      emailSent: true,
+      expiresAt: user.emailVerificationCodeExpiresAt.toISOString(),
+      expiresInSeconds: Math.floor(VERIFY_CODE_TTL_MS / 1000),
+      message: 'A new 6-digit verification code has been sent to your email address.',
+    });
   } catch (error) {
     next(error);
   }
@@ -337,7 +549,7 @@ export const loginUser = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         code: 'EMAIL_NOT_VERIFIED',
-        message: 'Your email address is not verified. Please check your inbox for the verification link.',
+        message: 'Your email address is not verified. Please check your inbox for the 6-digit verification code.',
         email: user.email,
       });
     }
@@ -346,6 +558,7 @@ export const loginUser = async (req, res, next) => {
     const accessToken = generateAccessToken(user._id);
     const rawRefreshToken = generateRefreshTokenString();
     user.refreshTokenHash = sha256(rawRefreshToken);
+    user.rememberMe = !!rememberMe;
     await user.save();
 
     setRefreshTokenCookie(res, rawRefreshToken, !!rememberMe);
@@ -403,7 +616,7 @@ export const refreshToken = async (req, res, next) => {
     user.refreshTokenHash = sha256(newRawRefreshToken);
     await user.save();
 
-    setRefreshTokenCookie(res, newRawRefreshToken, false);
+    setRefreshTokenCookie(res, newRawRefreshToken, !!user.rememberMe);
     const newAccessToken = generateAccessToken(user._id);
 
     return res.json({
@@ -432,7 +645,7 @@ export const logoutUser = async (req, res, next) => {
     const rawRefreshToken = req.cookies?.refreshToken;
     if (rawRefreshToken) {
       const incomingHash = sha256(rawRefreshToken);
-      await User.updateOne({ refreshTokenHash: incomingHash }, { $unset: { refreshTokenHash: 1 } });
+      await User.updateOne({ refreshTokenHash: incomingHash }, { $unset: { refreshTokenHash: 1, rememberMe: 1 } });
     }
 
     clearRefreshTokenCookie(res);
@@ -440,6 +653,55 @@ export const logoutUser = async (req, res, next) => {
     return res.json({
       success: true,
       message: 'Logged out successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Permanently delete own user account and cascaded records from server
+// @route   DELETE /api/auth/delete-account
+// @access  Private (Authenticated)
+export const deleteAccount = async (req, res, next) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        code: 'UNAUTHORIZED',
+        message: 'You must be logged in to delete your account.',
+      });
+    }
+
+    // Cascade delete user's owned records from MongoDB
+    const [delResults, delAnswers, delInterviews] = await Promise.all([
+      Result.deleteMany({ userId }),
+      Answer.deleteMany({ userId }),
+      Interview.deleteMany({ userId }),
+    ]);
+
+    // Permanently remove user from MongoDB
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        code: 'USER_NOT_FOUND',
+        message: 'Account not found or already deleted.',
+      });
+    }
+
+    // Clear refresh session cookie
+    clearRefreshTokenCookie(res);
+
+    console.log(
+      `[Auth] User ${deletedUser.email} (ID: ${userId}) permanently deleted their account. ` +
+      `Purged ${delInterviews.deletedCount} interviews, ${delAnswers.deletedCount} answers, ${delResults.deletedCount} results.`
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your account and all associated data have been permanently deleted from the server.',
     });
   } catch (error) {
     next(error);

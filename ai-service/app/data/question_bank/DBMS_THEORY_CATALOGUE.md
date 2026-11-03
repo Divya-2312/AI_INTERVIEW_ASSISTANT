@@ -19,7 +19,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 | dbms-theory-013 | Hard | ER Model | What is generalization and specialization in ER modeling? | generalization, specialization, inheritance |
 | dbms-theory-014 | Easy | ER Model | What is a relationship in the ER model? | relationship, association |
 | dbms-theory-015 | Medium | Keys | What happens if you try to insert a duplicate value into a primary key column? | primary key constraint violation |
-| dbms-theory-016 | Easy | Normalization | What is normalization and why is it done? | normalization, redundancy, data anomalies |
+| dbms-theory-016 | Easy | Normalization | What is database normalization? | normalization, redundancy, data anomalies |
 | dbms-theory-017 | Medium | Normalization | What is First Normal Form (1NF)? | 1NF, atomic values |
 | dbms-theory-018 | Medium | Normalization | What is Second Normal Form (2NF)? | 2NF, partial dependency |
 | dbms-theory-019 | Medium | Normalization | What is Third Normal Form (3NF)? | 3NF, transitive dependency |
@@ -64,7 +64,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 | dbms-theory-058 | Medium | Transactions | What does 'consistency' mean in the ACID properties, specifically? | consistency, constraints |
 | dbms-theory-059 | Hard | Transactions | What is Multi-Version Concurrency Control (MVCC)? | MVCC |
 | dbms-theory-060 | Medium | Transactions | Why is durability important, and how is it typically implemented? | durability, write-ahead log |
-| dbms-theory-061 | Easy | Indexing | What is an index in a database, and why is it useful? | index, query performance |
+| dbms-theory-061 | Easy | Indexing | What is a database index? | index, query performance |
 | dbms-theory-062 | Medium | Indexing | What is the tradeoff of adding too many indexes to a table? | index overhead |
 | dbms-theory-063 | Hard | Indexing | How does a B-tree index generally work? | B-tree, balanced tree |
 | dbms-theory-064 | Medium | Indexing | What is a composite (multi-column) index, and when is it useful? | composite index, column order |
@@ -259,7 +259,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 **Reference Answer:**
 > The database rejects the insert (or update) with a constraint violation error, since the primary key constraint enforces that every value in that column (or column combination) must be unique across the table.
 
-### 16. [dbms-theory-016] What is normalization and why is it done?
+### 16. [dbms-theory-016] What is database normalization?
 - **Subject**: DBMS
 - **Difficulty**: Easy
 - **Category**: Normalization
@@ -709,7 +709,7 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 **Reference Answer:**
 > Durability guarantees that once a transaction commits, its changes survive even a power failure or crash. It's typically implemented via a write-ahead log (WAL): changes are written to a durable log before being applied, so the database can replay the log to recover committed changes after a crash.
 
-### 61. [dbms-theory-061] What is an index in a database, and why is it useful?
+### 61. [dbms-theory-061] What is a database index?
 - **Subject**: DBMS
 - **Difficulty**: Easy
 - **Category**: Indexing
@@ -1108,4 +1108,3 @@ Total Topics: 100 | Status: Needs Human Review (`needs_human_review: true`)
 
 **Reference Answer:**
 > The logical schema describes the structure of the data (tables, columns, relationships, constraints) independent of how it's stored. The physical schema describes how that data is actually stored on disk -- file organization, indexing structures, partitioning -- which can change without affecting the logical schema (data independence).
-

@@ -1,0 +1,632 @@
+[
+  {
+    "questionId": "java-theory-001",
+    "question": "What is encapsulation in Java and why is it useful?",
+    "answers": {
+      "good": "Encapsulation is wrapping the variables and the methods that work on them together into one single unit or class. We keep the variables private and give access through public getter and setter methods. This is useful because it protects the object's data from being directly messed with by outside code and allows us to validate or change how the data is handled behind the scenes.",
+      "partial": "Encapsulation means keeping our variables private and using getters and setters to access them.",
+      "wrong": "encapsulation means making a class inside another class so it is hidden, it is useful becoz then you dont need constructors",
+      "vague": "Encapsulation is an OOP feature used in Java classes.",
+      "reversed": "Encapsulation means making all class fields public and methods private so outside code can directly modify internal variables without getters or setters."
+    }
+  },
+  {
+    "questionId": "java-theory-002",
+    "question": "What is the difference between a class and an object?",
+    "answers": {
+      "good": "A class acts like a design plan or template that outlines what properties and actions something will have. An object is an actual instance created from that class using the new operator while the program is running, taking up real memory and holding its own state.",
+      "partial": "A class is just the code blueprint, while an object is created with new in the code.",
+      "wrong": "A class is an instance stored on the heap, whereas an object is a static keyword that compiles bytecodes.",
+      "vague": "Classes and objects are fundamental building blocks in Java.",
+      "reversed": "An object is the blueprint written in source code, while a class is the runtime instance created in heap memory using new."
+    }
+  },
+  {
+    "questionId": "java-theory-003",
+    "question": "What is inheritance in Java?",
+    "answers": {
+      "good": "Inheritance is an object oriented mechanism where one class derives properties and behaviors from another class using the extends keyword. It creates an IS-A relationship and promotes code reusability since common logic does not need to be written twice. In Java, a class can only extend a single parent class.",
+      "partial": "Inheritance allows a subclass to inherit methods and variables from a superclass using extends to reuse code.",
+      "wrong": "Inheritance is converting a primitive data type into an object wrapper type automatically during execution.",
+      "vague": "Inheritance is an OOP concept where classes extend each other.",
+      "reversed": "Inheritance allows a superclass to inherit all properties and methods from its child subclass using the implements keyword."
+    }
+  },
+  {
+    "questionId": "java-theory-004",
+    "question": "What is polymorphism, and what are its two types in Java?",
+    "answers": {
+      "good": "Polymorphism allows one interface or method call to have different implementations depending on which object is executing it. Java has compile time polymorphism which is method overloading where multiple methods have the same name but different arguments, and runtime polymorphism which is method overriding where a subclass overrides a parent method and Java picks it dynamically at runtime.",
+      "partial": "Polymorphism means many forms, and its two types are method overloading and method overriding.",
+      "wrong": "Polymorphism is how Java allocates memory between the stack and the heap during garbage collection.",
+      "vague": "Polymorphism allows methods to have many forms in Java.",
+      "reversed": "Method overloading is runtime polymorphism where a subclass overrides a parent method, while method overriding is compile time polymorphism within the same class."
+    }
+  },
+  {
+    "questionId": "java-theory-005",
+    "question": "What is abstraction, and how is it achieved in Java?",
+    "answers": {
+      "good": "Abstraction focuses on showing only the necessary features and hiding the background internal mechanics from the user. We achieve this in Java by using abstract classes which can provide partial code and instance fields, and interfaces which define standard contracts and method declarations that other classes must fulfill.",
+      "partial": "Abstraction means hiding implementation details from the user, and we do it using interfaces.",
+      "wrong": "Abstraction is when you declare variables as static final so they cannot be modified after compilation.",
+      "vague": "Abstraction is used to hide things in Java programming.",
+      "reversed": "Abstraction exposes the internal background implementation details to the user and hides the public interfaces."
+    }
+  },
+  {
+    "questionId": "java-theory-006",
+    "question": "What is the difference between method overloading and method overriding?",
+    "answers": {
+      "good": "Method overloading happens when methods in the same class share the same name but accept different parameters or types, and it is resolved by the compiler. Method overriding occurs when a child class provides a new implementation for a method already defined in its parent class with the exact same signature, and it is determined at runtime based on the actual object.",
+      "partial": "Overloading has the same method name with different arguments, whereas overriding replaces a parent method in a child class.",
+      "wrong": "Overloading creates new threads at runtime, while overriding deletes variables from memory when out of scope.",
+      "vague": "Overloading and overriding are two ways to write methods in Java.",
+      "reversed": "Overloading is resolved dynamically at runtime in subclasses with identical parameters, while overriding is resolved at compile time in the same class."
+    }
+  },
+  {
+    "questionId": "java-theory-007",
+    "question": "What is the purpose of a constructor in Java?",
+    "answers": {
+      "good": "A constructor is a special block of code used to initialize the fields and set up the starting state of a newly created object. It shares the exact name with its class, has no return type, and executes automatically whenever you instantiate an object with the new keyword. If you do not write one, Java gives you a default zero argument constructor.",
+      "partial": "A constructor is used to initialize an object when it is instantiated with new.",
+      "wrong": "A constructor is a background process that cleans up unreferenced heap memory when RAM gets low.",
+      "vague": "A constructor is a method that constructs things in Java.",
+      "reversed": "A constructor is called when an object is destroyed to clean up memory, and it must have a return type like void or int."
+    }
+  },
+  {
+    "questionId": "java-theory-008",
+    "question": "What is the difference between `this` and `super` keywords?",
+    "answers": {
+      "good": "The this keyword refers to the current instance of the class you are currently in, which is handy for disambiguating instance variables from method arguments or invoking another constructor in the same class. The super keyword points to the direct parent class, allowing a child to call parent constructors or access parent methods and variables that were overridden or shadowed.",
+      "partial": "The this keyword is for the current class object, and super is for calling the parent class.",
+      "wrong": "The this keyword starts a new thread, while super halts the Java virtual machine.",
+      "vague": "this and super are special keywords used in class methods.",
+      "reversed": "The this keyword refers to the parent superclass methods, while super refers to the current class instance variables."
+    }
+  },
+  {
+    "questionId": "java-theory-009",
+    "question": "What is the difference between an abstract class and an interface?",
+    "answers": {
+      "good": "An abstract class can maintain state with instance variables, contain constructors, and provide both implemented and abstract methods, but a class is restricted to extending only one abstract class. An interface mainly declares method contracts without instance fields, and a Java class can implement as many interfaces as needed, allowing multiple inheritance of type.",
+      "partial": "An abstract class can have concrete methods and instance variables, while interfaces only define methods and allow multiple inheritance.",
+      "wrong": "An abstract class cannot be extended, while an interface can only contain private variables.",
+      "vague": "Abstract classes and interfaces are both used for abstraction in Java.",
+      "reversed": "A class can extend multiple abstract classes, but can only implement a single interface, and interfaces contain constructors."
+    }
+  },
+  {
+    "questionId": "java-theory-010",
+    "question": "Why doesn't Java support multiple inheritance of classes, and how do interfaces work around this?",
+    "answers": {
+      "good": "Java avoids multiple inheritance of classes to prevent the diamond problem, where a subclass might inherit conflicting versions of methods or state from two different parent classes creating ambiguity. Interfaces bypass this issue because they do not carry mutable state, and if there are conflicting default methods from multiple interfaces, the compiler obligates the child class to explicitly override and resolve the collision.",
+      "partial": "Multiple inheritance is not allowed in Java to prevent the diamond problem, but classes can implement several interfaces instead.",
+      "wrong": "Java banned multiple inheritance because the CPU cannot run more than two classes at the same time.",
+      "vague": "Java uses interfaces because multiple class inheritance causes problems.",
+      "reversed": "Java allows multiple inheritance of classes because the diamond problem creates no ambiguity, while interfaces are banned because they carry mutable state."
+    }
+  },
+  {
+    "questionId": "java-theory-011",
+    "question": "What are access modifiers in Java and what are the four types?",
+    "answers": {
+      "good": "Access modifiers are keywords that set the visibility and accessibility of classes, variables, and methods. The four levels are private which restricts access to only within the declaring class, default package private which permits access only from files in the same package, protected which opens access to the package plus child classes elsewhere, and public which makes members accessible everywhere across all packages.",
+      "partial": "Access modifiers control who can see class members. The four types are private, default, protected, and public.",
+      "wrong": "Access modifiers are volatile, synchronized, transient, and native, which control thread execution speeds.",
+      "vague": "Access modifiers specify the scope of items in Java.",
+      "reversed": "Private is the most open modifier accessible everywhere, while public is strictly restricted to only within the declaring class."
+    }
+  },
+  {
+    "questionId": "java-theory-012",
+    "question": "What does the `final` keyword mean when applied to a class, method, and variable?",
+    "answers": {
+      "good": "When final is placed on a variable, its value or reference cannot be reassigned once initialized. When applied to a method, it stops subclasses from overriding that method. When put on a class, it completely blocks any other class from extending or inheriting from it.",
+      "partial": "The final keyword makes a variable constant so it cannot be reassigned, and prevents methods from being overridden.",
+      "wrong": "The final keyword is used in try catch blocks to clean up database connections before exiting.",
+      "vague": "final makes things unchangeable in Java.",
+      "reversed": "A final variable can be reassigned freely anywhere, a final method must be overridden by all subclasses, and a final class is designed to be inherited."
+    }
+  },
+  {
+    "questionId": "java-theory-013",
+    "question": "What is composition, and why is 'favor composition over inheritance' good advice?",
+    "answers": {
+      "good": "Composition is a structural design technique where a class contains an instance of another class to use its functionality, representing a HAS-A relationship. Favoring composition over inheritance is great advice because inheritance tightly couples classes together and makes the codebase brittle when parent classes change, whereas composition keeps modules loosely coupled and allows swapping implementations dynamically at runtime.",
+      "partial": "Composition means one class has an instance of another class instead of extending it, reducing tight coupling.",
+      "wrong": "Composition is when you pack binary bytecodes into a jar file to reduce compile time dependencies.",
+      "vague": "Composition is an alternative to inheritance in object oriented code.",
+      "reversed": "Inheritance provides weak loose coupling while composition tightly couples classes through fragile base class dependencies."
+    }
+  },
+  {
+    "questionId": "java-theory-014",
+    "question": "What are default methods in interfaces, and why were they introduced in Java 8?",
+    "answers": {
+      "good": "Default methods are methods declared inside interfaces that have a concrete implementation marked with the default keyword. They were brought into Java 8 to allow backward compatible interface evolution, letting language designers add new methods like stream and forEach to existing interfaces like Collection without breaking every third party class that already implemented those interfaces.",
+      "partial": "Default methods let interfaces provide a default method body with code, introduced in Java 8 so existing interfaces could be updated.",
+      "wrong": "Default methods are methods that automatically execute when a Java program starts if main is missing.",
+      "vague": "Default methods are a Java 8 feature added to interfaces.",
+      "reversed": "Default methods break backward compatibility by forcing all existing implementing classes to rewrite their code."
+    }
+  },
+  {
+    "questionId": "java-theory-015",
+    "question": "What is the difference between static and instance members?",
+    "answers": {
+      "good": "Static members belong to the class as a whole and have only one shared copy in memory regardless of how many objects are instantiated, meaning you can call them directly on the class name without building an object. Instance members belong specifically to a particular object, so each instance allocates its own individual copy of variables and executes methods in the context of its own internal state.",
+      "partial": "Static members belong to the whole class and are shared, while instance members belong to individual objects.",
+      "wrong": "Static members are stored on the hard drive, while instance members are deleted when the computer restarts.",
+      "vague": "Static belongs to classes and instance belongs to objects.",
+      "reversed": "Static members belong to individual object instances created with new, whereas instance members are shared globally by the class."
+    }
+  },
+  {
+    "questionId": "java-theory-016",
+    "question": "What is the difference between ArrayList and LinkedList?",
+    "answers": {
+      "good": "ArrayList is built using a resizable array under the hood, which makes fetching elements by index very fast in O(1) time, but inserting or removing items from the middle is slow in O(n) because subsequent elements must shift. LinkedList uses doubly connected nodes where adding or dropping nodes is quick O(1) once you have the node, but looking up elements by index takes linear O(n) time since it has to walk through the links.",
+      "partial": "ArrayList uses a dynamic array with fast O(1) index lookup, whereas LinkedList uses linked nodes where inserting is faster.",
+      "wrong": "ArrayList stores only primitive integers, whereas LinkedList can store strings and custom classes.",
+      "vague": "Both ArrayList and LinkedList are list collections in Java.",
+      "reversed": "ArrayList is backed by doubly linked node pointers, while LinkedList is backed by a contiguous fixed-size primitive array."
+    }
+  },
+  {
+    "questionId": "java-theory-017",
+    "question": "What is the difference between HashMap and Hashtable?",
+    "answers": {
+      "good": "HashMap is unsynchronized and not thread-safe, making it faster in single-threaded scenarios, and it permits one null key alongside null values. Hashtable is an older legacy collection that synchronizes its methods for thread safety at the expense of performance, and it strictly forbids any null keys or null values. For multi-threaded programs today, ConcurrentHashMap is normally used instead of Hashtable.",
+      "partial": "HashMap is not thread-safe and allows null keys, while Hashtable is synchronized and does not allow nulls.",
+      "wrong": "HashMap is a binary tree that sorts numbers, whereas Hashtable is an array that only takes floats.",
+      "vague": "HashMap and Hashtable are map collections used for key value storage.",
+      "reversed": "HashMap is synchronized and thread-safe forbidding null keys, while Hashtable is unsynchronized and allows null keys."
+    }
+  },
+  {
+    "questionId": "java-theory-018",
+    "question": "What is the difference between HashSet and TreeSet?",
+    "answers": {
+      "good": "HashSet is backed by a hash table and does not guarantee any specific iteration order for its elements, but provides constant time O(1) average speed for basic operations like add and contains. TreeSet is backed by a red-black tree data structure which keeps all elements sorted either naturally or through a comparator, with search and insert taking O(log n) time.",
+      "partial": "HashSet does not keep elements in order and has O(1) lookups, while TreeSet keeps all elements sorted with O(log n) operations.",
+      "wrong": "HashSet allows duplicate items whereas TreeSet throws a compilation error if duplicates exist.",
+      "vague": "HashSet and TreeSet are set implementations in Java.",
+      "reversed": "HashSet keeps elements in sorted natural order using red-black trees, while TreeSet uses hash buckets with no ordering guarantees."
+    }
+  },
+  {
+    "questionId": "java-theory-019",
+    "question": "What is the difference between Comparable and Comparator?",
+    "answers": {
+      "good": "Comparable is an interface implemented directly by the class whose objects you want to sort, defining their default natural order using compareTo(). Comparator is a separate standalone interface or lambda using compare(), which allows developers to build multiple different sorting strategies without having to alter the target class's source code.",
+      "partial": "Comparable is implemented in the class itself with compareTo, while Comparator is external and uses compare.",
+      "wrong": "Comparable is used to compare whether two threads are deadlocked, while Comparator allocates heap memory.",
+      "vague": "Comparable and Comparator are interfaces used for sorting in Java.",
+      "reversed": "Comparable defines external comparison logic with compare(o1, o2), whereas Comparator defines natural internal ordering inside the class with compareTo."
+    }
+  },
+  {
+    "questionId": "java-theory-081",
+    "question": "What is the benefit of using generics instead of raw Object types in collections?",
+    "answers": {
+      "good": "Generics allow you to specify the exact type of objects stored in a collection like List<String>, enabling the compiler to detect type mismatches at compile time rather than failing with ClassCastExceptions at runtime, and avoiding the need for manual type casting.",
+      "partial": "Generics provide compile time type safety so you don't need manual casting and avoid runtime ClassCastExceptions.",
+      "wrong": "Generics are used to compress collections into zip archives so they use less memory on disk.",
+      "reversed": "generics let you store any type in one list together like int and String mixed, raw objects only allow one type",
+      "vague": "Generics are used with Java collections."
+    }
+  },
+  {
+    "questionId": "dbms-theory-001",
+    "question": "What is a primary key?",
+    "answers": {
+      "good": "A primary key is an attribute or combination of attributes chosen to uniquely distinguish every single record in a database table. It enforces that every row has an identifier, so values must be strictly unique across the table and cannot be NULL.",
+      "partial": "A primary key is a column that uniquely identifies each record in a table.",
+      "wrong": "A primary key is an encryption key used by the database to hash passwords on disk.",
+      "vague": "A primary key is a key used in relational tables.",
+      "reversed": "A primary key allows multiple duplicate records and permits NULL values across every column in the table."
+    }
+  },
+  {
+    "questionId": "dbms-theory-002",
+    "question": "What is a foreign key?",
+    "answers": {
+      "good": "A foreign key is a field in a child table that points to the primary key in a parent table, establishing a connection between both tables. It guarantees referential integrity by preventing records from being saved with foreign key values that do not correspond to any valid row in the referenced table.",
+      "partial": "A foreign key connects two tables by referencing the primary key of another table.",
+      "wrong": "A foreign key is an API token used to query external databases in another country.",
+      "vague": "A foreign key links tables together in a database.",
+      "reversed": "A foreign key creates primary values in a child table that have no relation or reference to any parent table."
+    }
+  },
+  {
+    "questionId": "dbms-theory-003",
+    "question": "What is a candidate key?",
+    "answers": {
+      "good": "A candidate key is a minimal superkey capable of uniquely pinpointing any row in a table without containing any unnecessary extra columns. A table may contain several candidate keys, and the database designer selects one of them to serve as the official primary key, while the remaining ones are called alternate keys.",
+      "partial": "A candidate key is a minimal set of attributes that can uniquely identify a row in a table.",
+      "wrong": "A candidate key is a temporary password given to job applicants during an interview.",
+      "vague": "A candidate key is a possible key for a database table.",
+      "reversed": "A candidate key is a column that contains non-unique duplicate values and cannot be chosen as a primary key."
+    }
+  },
+  {
+    "questionId": "dbms-theory-004",
+    "question": "What is a composite key?",
+    "answers": {
+      "good": "A composite key is a primary key that consists of two or more columns combined together because no single attribute alone can guarantee unique identification of each record. An example is pairing student_id and course_id together in an enrollment table to uniquely track who is taking which class.",
+      "partial": "A composite key is a primary key that is formed by combining multiple columns together.",
+      "wrong": "A composite key is a compression technique used to store images inside SQL BLOB fields.",
+      "vague": "A composite key contains multiple attributes in a table.",
+      "reversed": "A composite key is strictly a single single-column key that cannot combine multiple attributes."
+    }
+  },
+  {
+    "questionId": "dbms-theory-005",
+    "question": "What is a super key?",
+    "answers": {
+      "good": "A super key is any group of one or more columns that uniquely identifies a record within a relation, even if it includes redundant or non-essential fields. Every candidate key is fundamentally a super key, but a super key is not necessarily minimal.",
+      "partial": "A super key is any combination of attributes that uniquely identifies a row in a table.",
+      "wrong": "A super key is the root master password that gives administrator permissions in MySQL.",
+      "vague": "A super key is a key with unique values in a table.",
+      "reversed": "A super key is a minimal set of attributes that cannot have any extra unnecessary columns added to it."
+    }
+  },
+  {
+    "questionId": "dbms-theory-006",
+    "question": "What is the difference between a primary key and a unique key?",
+    "answers": {
+      "good": "A table can only define a single primary key, and its columns are never allowed to hold NULL values. In contrast, you can configure multiple unique key constraints across different columns in the same table, and most relational systems allow unique key columns to store NULL values because NULLs are not treated as duplicates of each other.",
+      "partial": "A table only has one primary key which cannot have nulls, while it can have many unique keys that allow null.",
+      "wrong": "A primary key sorts numbers in ascending order, whereas a unique key sorts letters alphabetically.",
+      "vague": "Primary key and unique key both ensure uniqueness in columns.",
+      "reversed": "A primary key allows multiple NULL values per table, whereas a unique key can only exist once per database and permits no NULLs."
+    }
+  },
+  {
+    "questionId": "dbms-theory-007",
+    "question": "What is a NULL value in a database?",
+    "answers": {
+      "good": "In databases, NULL indicates that data is unknown, absent, or not applicable, which makes it completely distinct from a numerical zero or a blank text string. Since standard equality operators like = and != yield an UNKNOWN truth value when evaluated against NULL, SQL provides IS NULL and IS NOT NULL to check for it.",
+      "partial": "NULL means missing or unknown data in a database, and it is different from zero or blank text.",
+      "wrong": "NULL is a numeric variable set to negative one that causes an index to reset to zero.",
+      "vague": "NULL represents empty values in database fields.",
+      "reversed": "A NULL value in a database represents the number zero or an empty string, and equals another NULL with = operator."
+    }
+  },
+  {
+    "questionId": "dbms-theory-008",
+    "question": "What is an entity and an entity set in the ER model?",
+    "answers": {
+      "good": "An entity is an identifiable real-world thing or concept possessing descriptive attributes, like a specific individual customer or employee. An entity set is a gathering of all entities that share the same characteristics, like all customers in a store, which usually translates into a table when converting the design to relational schemas.",
+      "partial": "An entity is a distinct real world object with attributes, and an entity set is a group of similar entities.",
+      "wrong": "An entity is a database server node, and an entity set is the cluster of hard drives hosting backups.",
+      "vague": "Entity and entity set are components of ER diagrams.",
+      "reversed": "An entity set is a single real-world object, while an entity is a collection of all similar tables in a database."
+    }
+  },
+  {
+    "questionId": "dbms-theory-009",
+    "question": "What is the difference between a weak entity and a strong entity?",
+    "answers": {
+      "good": "A strong entity has sufficient attributes to form its own independent primary key and can exist on its own in the database. A weak entity cannot be uniquely distinguished by its own attributes alone and relies on an identifying relationship with a strong entity, combining the parent's primary key with its own partial discriminator or key, such as apartment units dependent on a specific building.",
+      "partial": "A strong entity has its own primary key, while a weak entity depends on a strong entity to be identified.",
+      "wrong": "A weak entity is a corrupted database record that will be cleaned up by the weekly cron job.",
+      "vague": "Weak entities depend on strong entities in ER models.",
+      "reversed": "A strong entity depends on a foreign owner table for its primary key, while a weak entity has its own independent primary key."
+    }
+  },
+  {
+    "questionId": "dbms-theory-010",
+    "question": "What are the types of relationships (cardinality) in an ER diagram?",
+    "answers": {
+      "good": "Relationship cardinalities describe how many instances of one entity can connect with instances of another. The three main types are one to one where a single record maps to at most one matching record on each side, one to many where one record can connect to multiple records in the other entity, and many to many where instances on both ends can link to multiple instances on the other, commonly resolved with a bridge table.",
+      "partial": "The types of cardinality are one-to-one, one-to-many, and many-to-many relationships.",
+      "wrong": "The cardinalities are inner joins, left outer joins, right outer joins, and cross product joins.",
+      "vague": "Cardinality shows how entities relate to each other in ER diagrams.",
+      "reversed": "A one-to-one relationship means one row in table A relates to infinite rows in table B and vice versa without restrictions."
+    }
+  },
+  {
+    "questionId": "dbms-theory-011",
+    "question": "How is a many-to-many relationship implemented in a relational schema?",
+    "answers": {
+      "good": "A many to many relationship cannot be stored directly in either original table, so it is realized using an intermediate junction or bridge table. This joining table holds foreign keys pointing back to the primary keys of both participating tables, and typically combines those foreign keys into a composite primary key, such as an Enrollment table linking student and course IDs.",
+      "partial": "It is implemented by creating a junction table that contains foreign keys referencing both tables.",
+      "wrong": "It is done by creating an infinite circular trigger between the two tables that fires on every update.",
+      "vague": "A many-to-many relationship uses an extra table in SQL.",
+      "reversed": "A many-to-many relationship is implemented by adding direct foreign keys between the two tables without using any junction table."
+    }
+  },
+  {
+    "questionId": "dbms-theory-012",
+    "question": "What is an attribute, and what types of attributes exist?",
+    "answers": {
+      "good": "An attribute is a characteristic or property that describes an entity, such as an employee's salary or name. The primary types are simple attributes that are atomic, composite attributes made of sub-components like an address, multivalued attributes that hold several entries like multiple phone numbers, and derived attributes that are calculated from other stored data like age derived from birth date.",
+      "partial": "An attribute is a property of an entity. Types include simple, composite, derived, and multivalued attributes.",
+      "wrong": "An attribute is a hardware driver setting that controls write caching on solid state drives.",
+      "vague": "Attributes are columns that describe entities in a database.",
+      "reversed": "A derived attribute is physically stored on disk, whereas a stored attribute is computed dynamically by queries at runtime."
+    }
+  },
+  {
+    "questionId": "dbms-theory-013",
+    "question": "What is generalization and specialization in ER modeling?",
+    "answers": {
+      "good": "Generalization is a bottom-up modeling approach that takes multiple lower-level entities with shared features and synthesizes them into a broader parent entity, like grouping cars and motorcycles into vehicles. Specialization is the top-down counterpart where a general entity is split into distinct specialized subtypes based on unique distinguishing attributes, representing class inheritance in ER diagrams.",
+      "partial": "Generalization is bottom-up combining entities into a higher level entity, while specialization is top-down breaking an entity into subtypes.",
+      "wrong": "Generalization is compressing tables into zip files, while specialization is unzipping them for read-only queries.",
+      "vague": "Generalization and specialization model entity hierarchies in DBMS.",
+      "reversed": "Generalization is a top-down process dividing entities into subclasses, while specialization is bottom-up combining entities into a superclass."
+    }
+  },
+  {
+    "questionId": "dbms-theory-014",
+    "question": "What is a relationship in the ER model?",
+    "answers": {
+      "good": "In the ER model, a relationship represents an association or meaningful connection between two or more distinct entities. For instance, a Teaches relationship connects a Professor entity with a Course entity, showing how data in one domain interacts with another.",
+      "partial": "A relationship is an association between two or more entities in an entity relationship model.",
+      "wrong": "A relationship is the physical fiber optic cable connecting two PostgreSQL database clusters.",
+      "vague": "A relationship connects entities in an ER diagram.",
+      "reversed": "A relationship in an ER model represents the data types of columns, not any association between entities."
+    }
+  },
+  {
+    "questionId": "dbms-theory-015",
+    "question": "What happens if you try to insert a duplicate value into a primary key column?",
+    "answers": {
+      "good": "The database management system will immediately fail and reject the operation with a primary key constraint violation error. Because the primary key constraint strictly enforces uniqueness across every single row, attempting to insert an already existing key value is blocked and the transaction will fail or roll back.",
+      "partial": "The database will reject the insert query and throw a primary key constraint violation error.",
+      "wrong": "The database overwrites all previous data on the disk and reboots the server in safe mode.",
+      "vague": "An error occurs if you put a duplicate in a primary key.",
+      "reversed": "Inserting duplicate values into a primary key succeeds silently and replaces existing rows without throwing any constraint errors."
+    }
+  },
+  {
+    "questionId": "dbms-theory-016",
+    "question": "What is normalization and why is it done?",
+    "answers": {
+      "good": "Normalization is a systematic technique of designing relational database schemas by splitting tables to minimize duplicate data and eliminate storage redundancies. It is done to prevent insertion, update, and deletion anomalies, ensuring that data modifications remain consistent and reliable across normal forms.",
+      "partial": "Normalization organizes database tables to minimize data redundancy and avoid anomalies.",
+      "wrong": "Normalization converts all numbers in SQL tables to floating point decimals between zero and one.",
+      "vague": "Normalization is organizing tables in a database system.",
+      "reversed": "Normalization increases data redundancy and duplication to maximize insertion and deletion anomalies in relational tables."
+    }
+  },
+  {
+    "questionId": "dbms-theory-017",
+    "question": "What is First Normal Form (1NF)?",
+    "answers": {
+      "good": "A table satisfies First Normal Form when every attribute contains only atomic and indivisible single values, meaning repeating groups and comma-separated lists inside cells are eliminated. In addition, each record must be uniquely identifiable, typically by defining an appropriate primary key.",
+      "partial": "First normal form requires every column to have atomic values with no repeating groups.",
+      "wrong": "First normal form requires every table to have at least one foreign key pointing to an external CSV file.",
+      "vague": "1NF is the first step in normalizing a database.",
+      "reversed": "First normal form allows composite attributes and repeating groups of comma-separated multiple values in a single column."
+    }
+  },
+  {
+    "questionId": "dbms-theory-018",
+    "question": "What is Second Normal Form (2NF)?",
+    "answers": {
+      "good": "A relation is in Second Normal Form if it meets 1NF criteria and contains no partial functional dependencies. This means every non-prime attribute must depend on the whole composite primary key rather than just a subset of it, which applies when a table uses a multi-column composite key.",
+      "partial": "2NF requires 1NF and ensures there are no partial dependencies on part of a composite key.",
+      "wrong": "2NF means a database table must have exactly two foreign keys linked to two parent tables.",
+      "vague": "2NF eliminates partial dependencies in relational tables.",
+      "reversed": "Second normal form permits partial dependencies where non-key attributes depend only on a subset of the candidate key."
+    }
+  },
+  {
+    "questionId": "dbms-theory-019",
+    "question": "What is Third Normal Form (3NF)?",
+    "answers": {
+      "good": "A relation is in Third Normal Form if it is already in 2NF and has no transitive dependencies among its attributes. In other words, non-key columns must not depend on any other non-key columns, so every piece of non-key data must depend directly and exclusively on the primary key.",
+      "partial": "3NF is in 2NF and eliminates transitive dependencies where a non-key depends on another non-key.",
+      "wrong": "3NF requires every database query to run three times to confirm accuracy before saving.",
+      "vague": "3NF removes transitive dependencies from a database table.",
+      "reversed": "Third normal form requires non-prime attributes to have transitive dependencies on the primary key through another non-key column."
+    }
+  },
+  {
+    "questionId": "dbms-theory-020",
+    "question": "What is Boyce-Codd Normal Form (BCNF), and how does it differ from 3NF?",
+    "answers": {
+      "good": "BCNF is a stricter refinement of 3NF requiring that for every non-trivial functional dependency X -> Y, the left side determinant X must be a super key. In regular 3NF, an exception is permitted where Y can be a prime attribute belonging to a candidate key even if X is not a super key, whereas BCNF eliminates this exception entirely to remove anomalies that 3NF might overlook.",
+      "partial": "BCNF is a stronger version of 3NF where for every X -> Y, X must be a super key without exceptions.",
+      "wrong": "BCNF is an algorithm used to balance B-trees when writing binary data to disk.",
+      "vague": "BCNF is a stricter normal form than 3NF in DBMS.",
+      "reversed": "BCNF is a weaker normal form than 3NF that allows functional dependencies where the left side is not a super key."
+    }
+  },
+  {
+    "questionId": "fu-01",
+    "subject": "java",
+    "question": "Can you provide an example of a checked exception that requires a try-catch block, and explain why it's necessary?",
+    "referenceAnswer": "An example of a checked exception is IOException, which occurs during file or network operations. The compiler enforces either catching it with a try-catch block or declaring it with throws to ensure the program gracefully handles external I/O failures.",
+    "expectedConcepts": [
+      "IOException",
+      "try-catch",
+      "compile time checking",
+      "graceful failure"
+    ],
+    "answers": {
+      "good": "A common checked exception in Java is IOException when reading a file from disk. The compiler requires us to wrap it in a try catch or put throws in the method signature because file reading can fail due to missing files or permissions outside our control.",
+      "partial": "An example is IOException when handling files in Java, which needs a try catch block.",
+      "wrong": "An example is ArithmeticException when dividing by zero, which is checked by the compiler so the computer adds numbers properly.",
+      "vague": "Checked exceptions are exceptions that Java forces you to handle.",
+      "reversed": "ArithmeticException is a checked exception that requires a mandatory try-catch block, while IOException is unchecked and ignored at compile time."
+    }
+  },
+  {
+    "questionId": "fu-02",
+    "subject": "java",
+    "question": "Why should you override the hashCode() method whenever you override equals()?",
+    "referenceAnswer": "The contract states that if two objects are equal according to equals(), they must produce the exact same integer hash code. Failing to do so causes hash-based collections like HashMap to store or search for the object in the wrong bucket, making equal objects unretrievable.",
+    "expectedConcepts": [
+      "equals contract",
+      "hash bucket",
+      "HashMap",
+      "same hashcode"
+    ],
+    "answers": {
+      "good": "Whenever two objects are deemed equal by equals(), Java requires that their hashCode() method returns the exact same number. If you forget to override hashCode, collections like HashMap will compute different bucket locations for equal objects and fail to find them when searching.",
+      "partial": "Because if two objects are equal, they should have the same hash code so HashMap works correctly.",
+      "wrong": "Because hashCode converts the object into a String so the compiler can print it out on the console.",
+      "vague": "Overriding hashCode and equals is needed for collections in Java.",
+      "reversed": "If two objects are equal according to equals(), their hashCode() values must be completely different to prevent hash collisions."
+    }
+  },
+  {
+    "questionId": "fu-03",
+    "subject": "java",
+    "question": "How does Java ensure thread safety when using ConcurrentHashMap instead of a synchronized Map?",
+    "referenceAnswer": "ConcurrentHashMap avoids locking the whole table by using fine-grained synchronization with lock-striping across hash buckets and non-blocking CAS operations. Multiple threads can read concurrently without any locking and write to separate buckets simultaneously.",
+    "expectedConcepts": [
+      "lock striping / bucket-level lock",
+      "CAS operations",
+      "lock-free reads",
+      "concurrent writes"
+    ],
+    "answers": {
+      "good": "Instead of locking the entire map like synchronized collections do, ConcurrentHashMap locks individual hash buckets or nodes using synchronized blocks and CAS operations. This lets multiple threads perform reads concurrently without blocking and allows writes to different segments at the same time.",
+      "partial": "ConcurrentHashMap locks only individual buckets instead of the entire map so multiple threads can access it.",
+      "wrong": "ConcurrentHashMap runs on the GPU so threads don't share any memory addresses and can never conflict.",
+      "vague": "ConcurrentHashMap uses concurrency mechanisms for multithreading.",
+      "reversed": "ConcurrentHashMap ensures thread safety by placing a single global synchronized lock over the entire table for all reads and writes."
+    }
+  },
+  {
+    "questionId": "fu-04",
+    "subject": "java",
+    "question": "What happens under the hood when a String is concatenated using the + operator inside a loop?",
+    "referenceAnswer": "Each iteration creates a new StringBuilder instance and allocates a new String object on the heap when converting back. In a loop, this leads to quadratic time complexity and excessive garbage collection overhead compared to reusing a single StringBuilder.",
+    "expectedConcepts": [
+      "StringBuilder creation",
+      "heap allocation",
+      "quadratic complexity",
+      "garbage collection overhead"
+    ],
+    "answers": {
+      "good": "Inside a loop, using the plus operator repeatedly constructs a new StringBuilder object for every iteration and copies characters into a new String on the heap. This causes massive memory churn for the garbage collector and slows down performance to quadratic time compared to keeping one StringBuilder.",
+      "partial": "It creates a new StringBuilder each time in the loop and allocates new string objects on the heap.",
+      "wrong": "String concatenation in loops modifies the original string in place on the call stack without creating any objects.",
+      "vague": "Concatenating strings in a loop affects memory allocation.",
+      "reversed": "Using the plus operator for string concatenation inside a loop modifies the string in-place on the stack with O(1) time and zero garbage collection."
+    }
+  },
+  {
+    "questionId": "fu-05",
+    "subject": "java",
+    "question": "Why is the volatile keyword not always sufficient to guarantee thread-safe increments on an integer?",
+    "referenceAnswer": "The volatile keyword only guarantees visibility of memory writes across threads, not atomicity. An increment operation consists of three separate steps (read, update, write), which can interleave between threads and cause race conditions unless atomic classes or synchronization are used.",
+    "expectedConcepts": [
+      "visibility vs atomicity",
+      "read-modify-write",
+      "race condition",
+      "AtomicInteger / synchronization"
+    ],
+    "answers": {
+      "good": "Volatile ensures that any thread immediately sees the freshest value written to main memory, but it does not make compound actions atomic. An increment like i++ involves reading the variable, adding one, and writing it back, so threads can still overwrite each other's changes without atomic classes or locks.",
+      "partial": "Volatile only guarantees memory visibility across threads, but the increment operation is not atomic.",
+      "wrong": "Volatile is not sufficient because it turns the integer into an immutable constant that cannot be reassigned.",
+      "vague": "Volatile has limitations with multithreaded integer increments.",
+      "reversed": "Volatile makes compound operations like i++ completely atomic and thread-safe without needing any synchronization."
+    }
+  },
+  {
+    "questionId": "fu-06",
+    "subject": "dbms",
+    "question": "How does a composite index behave when a query filters on the second column but omits the first column?",
+    "referenceAnswer": "Composite B-tree indexes follow the leftmost-prefix rule and are physically sorted primarily by the first indexed column. If a query filters only on the second column, the index cannot be traversed hierarchically, resulting in either a full index scan or a full table scan.",
+    "expectedConcepts": [
+      "leftmost prefix rule",
+      "hierarchical traversal",
+      "index scan vs table scan",
+      "sorted order"
+    ],
+    "answers": {
+      "good": "B-tree composite indexes are ordered by the leading column first, so queries must follow the leftmost prefix rule. If your query skips the first column and only filters on the second, the database engine cannot perform an efficient index lookup and will fall back to scanning the entire index or table.",
+      "partial": "The database cannot use the index effectively because composite indexes need the leading column first.",
+      "wrong": "The query will fail with a syntax error because database indexes strictly forbid accessing columns out of creation order.",
+      "vague": "Composite indexes work with multiple columns in SQL queries.",
+      "reversed": "A composite index ordered by column A then column B performs fastest when queries filter only on column B and omit column A."
+    }
+  },
+  {
+    "questionId": "fu-07",
+    "subject": "dbms",
+    "question": "What is the difference between a dirty read and a non-repeatable read in database transactions?",
+    "referenceAnswer": "A dirty read occurs when a transaction reads uncommitted modifications made by another concurrent transaction that might later roll back. A non-repeatable read happens when a transaction re-reads the same row and discovers that another transaction has committed changes to that data.",
+    "expectedConcepts": [
+      "uncommitted data",
+      "rollback risk",
+      "committed modifications",
+      "re-reading same row"
+    ],
+    "answers": {
+      "good": "A dirty read means a query views changes that another transaction made but hasn't committed yet, which might get rolled back. A non-repeatable read occurs when you read a row, and then another transaction commits an update to that row, causing your second read of the exact same row to show different values.",
+      "partial": "A dirty read is reading uncommitted data, while a non-repeatable read is when committed data changes between two reads.",
+      "wrong": "A dirty read deletes records with foreign key errors, while a non-repeatable read happens when primary keys are duplicated.",
+      "vague": "Dirty reads and non-repeatable reads are concurrency problems in transactions.",
+      "reversed": "A dirty read occurs when reading committed data, while a non-repeatable read happens when reading uncommitted changes that roll back."
+    }
+  },
+  {
+    "questionId": "fu-08",
+    "subject": "dbms",
+    "question": "Why would you choose a B+ tree over a standard binary search tree for database disk storage?",
+    "referenceAnswer": "B+ trees have a high branching factor, which keeps the tree shallow and minimizes expensive disk I/O operations per search. Furthermore, all records are stored in the leaf nodes, which are linked together sequentially for fast range scans.",
+    "expectedConcepts": [
+      "high fan-out / shallow tree",
+      "reduced disk I/O",
+      "leaves store data",
+      "linked leaves for range scans"
+    ],
+    "answers": {
+      "good": "B+ trees have a very large branching factor compared to binary trees, meaning each node holds many keys and the tree stays very short, requiring very few disk reads. Also, all the data values reside in the leaf layer which are connected in a linked list, making sequential range scans extremely fast.",
+      "partial": "B+ trees are flatter so they need fewer disk reads, and their leaf nodes are linked for range queries.",
+      "wrong": "B+ trees store all tables directly in CPU registers so they don't use any hard drives or SSD storage.",
+      "vague": "B+ trees are tree data structures used in databases.",
+      "reversed": "Binary search trees are better than B+ trees for disk storage because their deep tree structure maximizes the number of disk I/O operations."
+    }
+  },
+  {
+    "questionId": "fu-09",
+    "subject": "dbms",
+    "question": "What is the N+1 query problem in ORMs, and how do you resolve it?",
+    "referenceAnswer": "The N+1 problem occurs when an application executes 1 initial query to fetch parent records, followed by N additional individual queries to fetch child records for each parent. It is resolved using eager loading techniques like SQL JOINs or batch fetching.",
+    "expectedConcepts": [
+      "1 initial parent query",
+      "N separate child queries",
+      "eager loading",
+      "JOIN / batch fetching"
+    ],
+    "answers": {
+      "good": "The N+1 problem happens when an ORM issues one query to retrieve a list of records, and then issues a separate query for every single record to get its associated relations. You fix it by configuring eager fetching or writing a JOIN query so all parents and children are fetched together in one round trip.",
+      "partial": "It runs 1 query for the main list and then N queries for related data, and you fix it with eager loading or joins.",
+      "wrong": "The N+1 problem is when an integer column overflows because you added 1 to the maximum allowed 32-bit number.",
+      "vague": "N+1 query problem is an ORM database performance issue.",
+      "reversed": "The N+1 problem is solved by issuing N separate individual queries instead of joining tables or eager loading in one query."
+    }
+  },
+  {
+    "questionId": "fu-10",
+    "subject": "dbms",
+    "question": "Explain the Write-Ahead Logging (WAL) protocol and why it is critical for durability.",
+    "referenceAnswer": "Write-Ahead Logging dictates that any log record describing a change must be flushed to non-volatile disk before the corresponding database page is written to disk. This ensures atomicity and durability by allowing the database to redo committed transactions and undo uncommitted ones during crash recovery.",
+    "expectedConcepts": [
+      "log flushed before data page",
+      "non-volatile storage",
+      "crash recovery",
+      "redo committed / undo uncommitted"
+    ],
+    "answers": {
+      "good": "Write-Ahead Logging requires that changes are written and synced to the transaction log file on disk before the actual database table pages are updated. This guarantees durability and crash recovery, because if the server suddenly loses power, the engine can replay the log to redo committed work and roll back uncommitted changes.",
+      "partial": "Write ahead logging writes log records to disk before modifying database pages to ensure recovery after a crash.",
+      "wrong": "Write ahead logging is a backup script that emails the database schema to the administrator every morning.",
+      "vague": "WAL is a logging technique used by databases for durability.",
+      "reversed": "Write-ahead logging writes database data pages to disk first, and only writes log records if the server does not crash."
+    }
+  }
+]

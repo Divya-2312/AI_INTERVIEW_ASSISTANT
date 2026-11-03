@@ -1,0 +1,10 @@
+{
+  "model": "llama3.2:3b",
+  "task": "cx",
+  "rows": 50,
+  "valid_json": 0,
+  "seconds_per_row_median": 4.076739072799683,
+  "total_minutes": 3.5,
+  "time_exact": 0,
+  "space_exact": 0
+}

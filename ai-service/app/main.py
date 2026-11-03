@@ -1,8 +1,13 @@
+import os
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from app.routes.question_routes import router as question_router
 from app.routes.evaluation_routes import router as evaluation_router
+from app.routes.reference_routes import router as reference_router
+from app.routes.speech_delivery_routes import router as speech_delivery_router
 from app.config import settings
 
 app = FastAPI(
@@ -26,6 +31,24 @@ app.add_middleware(
 
 app.include_router(question_router)
 app.include_router(evaluation_router)
+app.include_router(reference_router)
+app.include_router(speech_delivery_router)
+
+@app.on_event("startup")
+async def startup_warmup():
+    """Warm up Sentence-BERT embedding and check LLaMA connection on service start."""
+    try:
+        from app.services.embedding_service import embedding_service
+        # Cold start warmup
+        _ = embedding_service.get_embedding("warmup")
+    except Exception as e:
+        print(f"[Startup Warmup] Note during embedding warmup: {e}")
+
+    try:
+        from app.services.speech_delivery_analyzer import warmup_speech_model
+        warmup_speech_model()
+    except Exception as e:
+        print(f"[Startup Warmup] Note during speech delivery warmup: {e}")
 
 @app.get("/health")
 def health_check():
@@ -73,6 +96,15 @@ def health_check():
         "javaRuntime": java_runtime_available,
         "is_fine_tuned_verified": is_verified,
         "base_model_used_for_inference": base_used,
+        "sbertLoaded": embedding_ok,
+        "ollamaReachable": llama_status.get("status") == "connected",
+        "models": {
+            "base": settings.BASE_MODEL_NAME,
+            "fine_tuned": settings.FINE_TUNED_MODEL_NAME,
+            "embedding": settings.EMBEDDING_MODEL,
+        },
+        "ready": all_active,
+
         "model_identity": model_identity,
         "model_status": model_identity,
         "ai_status": {

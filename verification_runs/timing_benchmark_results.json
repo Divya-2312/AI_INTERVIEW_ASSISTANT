@@ -1,0 +1,86 @@
+{
+  "java_coding": [
+    {
+      "index": 1,
+      "subject": "java",
+      "time_sec": 21.42,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Rotate Array by K Steps"
+    },
+    {
+      "index": 2,
+      "subject": "java",
+      "time_sec": 26.42,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Longest Substring Without Repeating Characters"
+    },
+    {
+      "index": 3,
+      "subject": "java",
+      "time_sec": 26.87,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Valid Parentheses Matcher"
+    },
+    {
+      "index": 4,
+      "subject": "java",
+      "time_sec": 26.88,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Product of Array Except Self"
+    },
+    {
+      "index": 5,
+      "subject": "java",
+      "time_sec": 26.74,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Two Sum Problem"
+    }
+  ],
+  "sql_coding": [
+    {
+      "index": 1,
+      "subject": "dbms (sql)",
+      "time_sec": 26.21,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Department Average Salary with Name"
+    },
+    {
+      "index": 2,
+      "subject": "dbms (sql)",
+      "time_sec": 26.1,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Customers with No Placed Orders"
+    },
+    {
+      "index": 3,
+      "subject": "dbms (sql)",
+      "time_sec": 26.73,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Second Highest Salary in Company"
+    },
+    {
+      "index": 4,
+      "subject": "dbms (sql)",
+      "time_sec": 12.4,
+      "source": "model",
+      "modelUsed": "llama3.2:3b",
+      "title": "Find Departments with Minimum Salary Above Threshold"
+    },
+    {
+      "index": 5,
+      "subject": "dbms (sql)",
+      "time_sec": 26.79,
+      "source": "catalogue_fallback",
+      "modelUsed": "catalogue_fallback",
+      "title": "Customers with No Placed Orders"
+    }
+  ]
+}

@@ -1,0 +1,1156 @@
+[
+  {
+    "id": "JAVA_TH_01",
+    "module": "java_theory",
+    "name": "Java Theory: OOP Principles (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Explain the four fundamental principles of Object-Oriented Programming in Java.",
+      "answer": "The four fundamental principles of OOP in Java are Encapsulation, Abstraction, Inheritance, and Polymorphism. Encapsulation binds data and methods together while hiding internal state using private fields and public accessors. Abstraction hides complex implementation details and exposes only essential interfaces. Inheritance enables classes to inherit fields and methods from a parent class for code reuse using extends. Polymorphism allows methods to perform different tasks based on the object, via compile-time overloading or runtime overriding.",
+      "expectedConcepts": [
+        "Encapsulation",
+        "Abstraction",
+        "Inheritance",
+        "Polymorphism"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_02",
+    "module": "java_theory",
+    "name": "Java Theory: OOP Principles (Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Explain the four fundamental principles of Object-Oriented Programming in Java.",
+      "answer": "OOP in Java has inheritance where one class gets code from another class. I remember there are other principles like objects and classes, but I cannot recall the exact other three names.",
+      "expectedConcepts": [
+        "Encapsulation",
+        "Abstraction",
+        "Inheritance",
+        "Polymorphism"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_03",
+    "module": "java_theory",
+    "name": "Java Theory: OOP Principles (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Explain the four fundamental principles of Object-Oriented Programming in Java.",
+      "answer": "Quantum superposition allows subatomic particles to exist in multiple states simultaneously until measured according to the Copenhagen interpretation.",
+      "expectedConcepts": [
+        "Encapsulation",
+        "Abstraction",
+        "Inheritance",
+        "Polymorphism"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_04",
+    "module": "java_theory",
+    "name": "Java Theory: OOP Principles (Empty Answer)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Explain the four fundamental principles of Object-Oriented Programming in Java.",
+      "answer": "",
+      "expectedConcepts": [
+        "Encapsulation",
+        "Abstraction",
+        "Inheritance",
+        "Polymorphism"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_05",
+    "module": "java_theory",
+    "name": "Java Theory: HashMap vs ConcurrentHashMap (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the difference between HashMap and ConcurrentHashMap in Java?",
+      "answer": "HashMap is not thread-safe and allows one null key and multiple null values; concurrent operations can cause race conditions. ConcurrentHashMap is thread-safe designed for concurrent environments using lock striping in Java 7 and CAS operations with synchronized bucket nodes in Java 8, and it strictly disallows null keys and null values.",
+      "expectedConcepts": [
+        "Thread safety difference",
+        "Locking mechanism: CAS / synchronized bucket vs unsynchronized",
+        "Null key and value handling"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_06",
+    "module": "java_theory",
+    "name": "Java Theory: HashMap vs ConcurrentHashMap (Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the difference between HashMap and ConcurrentHashMap in Java?",
+      "answer": "One map is faster for single threads and the other is used when you have multiple threads so they do not crash.",
+      "expectedConcepts": [
+        "Thread safety difference",
+        "Locking mechanism: CAS / synchronized bucket vs unsynchronized",
+        "Null key and value handling"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_07",
+    "module": "java_theory",
+    "name": "Java Theory: HashMap vs ConcurrentHashMap (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the difference between HashMap and ConcurrentHashMap in Java?",
+      "answer": "Traditional French ratatouille consists of stewed vegetables including eggplant, zucchini, bell peppers, tomatoes, and herbs de Provence.",
+      "expectedConcepts": [
+        "Thread safety difference",
+        "Locking mechanism: CAS / synchronized bucket vs unsynchronized",
+        "Null key and value handling"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_08",
+    "module": "java_theory",
+    "name": "Java Theory: Garbage Collection (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "How does Garbage Collection work in Java and what are Young and Old generations?",
+      "answer": "Java Garbage Collection automatically reclaims heap memory occupied by unreachable objects using generational hypothesis. The Young Generation holds newly created objects across Eden and Survivor spaces (S0/S1), collected frequently by Minor GC. Objects surviving multiple GC cycles are promoted to the Old (Tenured) Generation, which is collected less frequently by Major/Full GC collectors like G1 or ZGC.",
+      "expectedConcepts": [
+        "Generational heap: Young and Old generation",
+        "Eden and Survivor spaces (S0/S1)",
+        "Minor GC vs Major/Full GC"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_09",
+    "module": "java_theory",
+    "name": "Java Theory: Garbage Collection (Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "How does Garbage Collection work in Java and what are Young and Old generations?",
+      "answer": "Garbage collection in Java frees up RAM by deleting objects that your program stops using. There is a young part for fresh objects.",
+      "expectedConcepts": [
+        "Generational heap: Young and Old generation",
+        "Eden and Survivor spaces (S0/S1)",
+        "Minor GC vs Major/Full GC"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_10",
+    "module": "java_theory",
+    "name": "Java Theory: Garbage Collection (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "How does Garbage Collection work in Java and what are Young and Old generations?",
+      "answer": "Photosynthesis converts carbon dioxide and water into glucose and oxygen in the chloroplasts using solar energy absorbed by chlorophyll.",
+      "expectedConcepts": [
+        "Generational heap: Young and Old generation",
+        "Eden and Survivor spaces (S0/S1)",
+        "Minor GC vs Major/Full GC"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_11",
+    "module": "java_theory",
+    "name": "Java Theory: Pass by Value (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Is Java pass-by-value or pass-by-reference? Explain with examples.",
+      "answer": "Java is strictly pass-by-value, always. When an argument is passed to a method, a copy of the value is passed. For primitive types, the actual value (like int 5) is copied. For object references, the value of the reference (the memory address) is copied by value; mutating the object alters the heap instance, but reassigning the reference inside the method has no effect on the caller.",
+      "expectedConcepts": [
+        "Strictly pass-by-value",
+        "Copies primitive value directly",
+        "Copies reference address for objects"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_12",
+    "module": "java_theory",
+    "name": "Java Theory: Pass by Value (Myth Claim / Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Is Java pass-by-value or pass-by-reference? Explain with examples.",
+      "answer": "Java is pass by reference for all objects and pass by value for primitives because objects are passed by reference.",
+      "expectedConcepts": [
+        "Strictly pass-by-value",
+        "Copies primitive value directly",
+        "Copies reference address for objects"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_13",
+    "module": "java_theory",
+    "name": "Java Theory: Interface vs Abstract Class (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the difference between an Interface and an Abstract Class in Java?",
+      "answer": "An Abstract Class can have state with instance fields, constructors, and both abstract and concrete methods, but a class can only extend one abstract class. An Interface cannot have instance fields (only public static final constants) or constructors, but a class can implement multiple interfaces. Since Java 8, interfaces can define default and static methods, and Java 9 added private methods.",
+      "expectedConcepts": [
+        "Multiple inheritance of interfaces vs single inheritance of abstract class",
+        "State: instance fields/constructors in abstract class vs static final in interface",
+        "Default and static methods in interfaces"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_14",
+    "module": "java_theory",
+    "name": "Java Theory: Interface vs Abstract Class (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the difference between an Interface and an Abstract Class in Java?",
+      "answer": "Jupiter is the largest planet in our solar system and possesses a prominent Great Red Spot which is a persistent anticyclonic storm.",
+      "expectedConcepts": [
+        "Multiple inheritance of interfaces vs single inheritance of abstract class",
+        "State: instance fields/constructors in abstract class vs static final in interface",
+        "Default and static methods in interfaces"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_TH_15",
+    "module": "java_theory",
+    "name": "Java Theory: Interface vs Abstract Class (Empty Answer)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the difference between an Interface and an Abstract Class in Java?",
+      "answer": "",
+      "expectedConcepts": [
+        "Multiple inheritance of interfaces vs single inheritance of abstract class",
+        "State: instance fields/constructors in abstract class vs static final in interface",
+        "Default and static methods in interfaces"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_01",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: ACID Properties (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Explain ACID properties in database management systems.",
+      "answer": "ACID properties ensure reliable database transactions: Atomicity ensures that all operations in a transaction succeed or all are rolled back. Consistency guarantees that the database transitions only from one valid state to another satisfying all integrity constraints. Isolation ensures that concurrent transactions execute without interfering with one another. Durability guarantees that once a transaction commits, its updates persist permanently even in power loss.",
+      "expectedConcepts": [
+        "Atomicity: all or nothing",
+        "Consistency: valid state and integrity constraints",
+        "Isolation: concurrent execution independence",
+        "Durability: committed persistence"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_02",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: ACID Properties (Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Explain ACID properties in database management systems.",
+      "answer": "ACID stands for Atomicity, Consistency, Isolation, Durability. It means your queries run safely and do not lose information.",
+      "expectedConcepts": [
+        "Atomicity: all or nothing",
+        "Consistency: valid state and integrity constraints",
+        "Isolation: concurrent execution independence",
+        "Durability: committed persistence"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_03",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: ACID Properties (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Explain ACID properties in database management systems.",
+      "answer": "Julius Caesar crossed the Rubicon river in 49 BC, initiating a civil war that ultimately led to the demise of the Roman Republic.",
+      "expectedConcepts": [
+        "Atomicity: all or nothing",
+        "Consistency: valid state and integrity constraints",
+        "Isolation: concurrent execution independence",
+        "Durability: committed persistence"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_04",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: ACID Properties (Empty Answer)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Explain ACID properties in database management systems.",
+      "answer": "",
+      "expectedConcepts": [
+        "Atomicity: all or nothing",
+        "Consistency: valid state and integrity constraints",
+        "Isolation: concurrent execution independence",
+        "Durability: committed persistence"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_05",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Clustered vs Non-Clustered (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What is the difference between Clustered and Non-Clustered index in a relational database?",
+      "answer": "A Clustered Index alters the physical storage order of rows in the table to match the index order; therefore a table can have only one clustered index (typically on the primary key). A Non-Clustered Index is stored separately from data rows and holds sorted key values with pointers (RID or clustered key) to the actual data rows; a table can have multiple non-clustered indexes.",
+      "expectedConcepts": [
+        "Physical ordering of data rows in clustered index",
+        "Single clustered index per table vs multiple non-clustered",
+        "Non-clustered pointers to physical row locations"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_06",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Clustered vs Non-Clustered (Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What is the difference between Clustered and Non-Clustered index in a relational database?",
+      "answer": "Indexes make searches faster. Clustered index is the main index on the table, and non-clustered is other indexes you add later.",
+      "expectedConcepts": [
+        "Physical ordering of data rows in clustered index",
+        "Single clustered index per table vs multiple non-clustered",
+        "Non-clustered pointers to physical row locations"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_07",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Clustered vs Non-Clustered (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What is the difference between Clustered and Non-Clustered index in a relational database?",
+      "answer": "William Shakespeare wrote Hamlet around 1600, exploring themes of revenge, betrayal, moral corruption, and existential philosophy.",
+      "expectedConcepts": [
+        "Physical ordering of data rows in clustered index",
+        "Single clustered index per table vs multiple non-clustered",
+        "Non-clustered pointers to physical row locations"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_08",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Normalization 1NF to 3NF (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What are 1NF, 2NF, and 3NF database normalization forms?",
+      "answer": "1NF requires atomic values in every column and no repeating groups. 2NF requires 1NF and ensures all non-key attributes are fully functionally dependent on the entire primary key, eliminating partial dependencies. 3NF requires 2NF and removes transitive dependencies, ensuring every non-prime attribute depends solely on the candidate key and nothing else.",
+      "expectedConcepts": [
+        "1NF: atomic columns and no repeating groups",
+        "2NF: no partial dependency on composite keys",
+        "3NF: no transitive dependencies"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_09",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Normalization 1NF to 3NF (Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What are 1NF, 2NF, and 3NF database normalization forms?",
+      "answer": "Normalization splits big tables into smaller tables to reduce redundant data. 1NF means each cell has only one value.",
+      "expectedConcepts": [
+        "1NF: atomic columns and no repeating groups",
+        "2NF: no partial dependency on composite keys",
+        "3NF: no transitive dependencies"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_10",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Normalization 1NF to 3NF (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What are 1NF, 2NF, and 3NF database normalization forms?",
+      "answer": "Changing the motor oil and filter in an internal combustion engine every 5000 miles prevents sludge accumulation and excessive friction.",
+      "expectedConcepts": [
+        "1NF: atomic columns and no repeating groups",
+        "2NF: no partial dependency on composite keys",
+        "3NF: no transitive dependencies"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_11",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Primary Key vs Unique Key (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What is the difference between a Primary Key and a Unique Key constraint?",
+      "answer": "A Primary Key uniquely identifies each row in a table and strictly forbids NULL values; a table can only have one Primary Key, which creates a clustered index by default. A Unique Key constraint guarantees uniqueness across non-null rows but typically allows one NULL value (or multiple depending on DB); a table can have multiple Unique Key constraints, which default to non-clustered indexes.",
+      "expectedConcepts": [
+        "Primary key allows no nulls vs unique allows null",
+        "Single primary key per table vs multiple unique constraints",
+        "Default clustered index for primary key vs non-clustered for unique"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_12",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Primary Key vs Unique Key (Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What is the difference between a Primary Key and a Unique Key constraint?",
+      "answer": "Both keys make sure no duplicate values are inserted into the column. Primary key is the main one.",
+      "expectedConcepts": [
+        "Primary key allows no nulls vs unique allows null",
+        "Single primary key per table vs multiple unique constraints",
+        "Default clustered index for primary key vs non-clustered for unique"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_13",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Inner Join vs Left Join (Reference Answer)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What is the difference between an INNER JOIN and a LEFT OUTER JOIN in SQL?",
+      "answer": "INNER JOIN returns only rows that have matching values in both tables based on the join predicate. LEFT OUTER JOIN returns all rows from the left table, along with matching rows from the right table; if there is no match on the right side, NULL values are returned for all right table columns.",
+      "expectedConcepts": [
+        "INNER JOIN returns only intersecting matching rows",
+        "LEFT JOIN returns all rows from left table",
+        "NULL padding for unmatched right table rows"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_14",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Inner Join vs Left Join (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What is the difference between an INNER JOIN and a LEFT OUTER JOIN in SQL?",
+      "answer": "Benzene is an aromatic hydrocarbon with the chemical formula C6H6 consisting of six carbon atoms joined in a planar hexagonal ring.",
+      "expectedConcepts": [
+        "INNER JOIN returns only intersecting matching rows",
+        "LEFT JOIN returns all rows from left table",
+        "NULL padding for unmatched right table rows"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "DBMS_TH_15",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Inner Join vs Left Join (Empty Answer)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "What is the difference between an INNER JOIN and a LEFT OUTER JOIN in SQL?",
+      "answer": "",
+      "expectedConcepts": [
+        "INNER JOIN returns only intersecting matching rows",
+        "LEFT JOIN returns all rows from left table",
+        "NULL padding for unmatched right table rows"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_01",
+    "module": "hr",
+    "name": "HR: Tell Me About Yourself (Good STAR)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Tell me about yourself.",
+      "answer": "I graduated with a Computer Science degree where I focused on backend systems and databases. During my final year, I led a 4-person team to build an e-commerce platform using React and Node.js with MongoDB, successfully handling over 1,000 mock transactions with 99% uptime. I completed an internship where I automated API testing and cut regression cycle time by 30%. I am excited to apply my full-stack and collaboration skills to this software engineering position.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_02",
+    "module": "hr",
+    "name": "HR: Tell Me About Yourself (Minimal / Brief)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Tell me about yourself.",
+      "answer": "I am a fresh graduate who knows Java, JavaScript, and HTML. I like coding and want to get a job in IT.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_03",
+    "module": "hr",
+    "name": "HR: Tell Me About Yourself (Wrong-Topic: Everest)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Tell me about yourself.",
+      "answer": "Mount Everest is Earth's highest mountain above sea level, located in the Mahalangur Himal sub-range of the Himalayas.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_04",
+    "module": "hr",
+    "name": "HR: Tell Me About Yourself (Empty Answer)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Tell me about yourself.",
+      "answer": "",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_05",
+    "module": "hr",
+    "name": "HR: Greatest Strengths (Good STAR)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "What are your greatest strengths?",
+      "answer": "My greatest strength is my problem-solving persistence and ability to debug complex systems under pressure. In my internship, our team faced a memory leak right before a demo. I isolated the issue using memory heap profilers, identified an unclosed stream in our database connector, and resolved it within four hours, ensuring a smooth customer release.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_06",
+    "module": "hr",
+    "name": "HR: Greatest Strengths (Half-Correct / Clich\u00e9)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "What are your greatest strengths?",
+      "answer": "I am a hard worker, quick learner, and I never give up on any task given to me.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_07",
+    "module": "hr",
+    "name": "HR: Greatest Strengths (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "What are your greatest strengths?",
+      "answer": "Greenhouse gases like carbon dioxide and methane trap heat in the lower atmosphere, causing global surface temperatures to rise.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_08",
+    "module": "hr",
+    "name": "HR: Greatest Weakness (Good STAR)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "What is your greatest weakness?",
+      "answer": "Earlier in college, I tended to take on too many tasks simultaneously rather than delegating, which caused burnout near deadlines. I recognized this limitation and adopted Kanban boards with strict WIP limits and started delegating components according to teammates' strengths. In my capstone project, this improved our team velocity by 25% and delivered all milestones early.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_09",
+    "module": "hr",
+    "name": "HR: Greatest Weakness (Half-Correct / Disguised Strength)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "What is your greatest weakness?",
+      "answer": "My only weakness is that I am too much of a perfectionist and work too hard on everything.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_10",
+    "module": "hr",
+    "name": "HR: Greatest Weakness (Wrong-Topic)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "What is your greatest weakness?",
+      "answer": "The Indian cricket team won the World Cup in 1983 under Kapil Dev and again in 2011 under Mahendra Singh Dhoni.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_11",
+    "module": "hr",
+    "name": "HR: Challenging Project (Good STAR)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Describe a challenging project you worked on.",
+      "answer": "In our distributed systems course, our project was to build a fault-tolerant key-value store using Raft consensus. Halfway through, nodes were failing to maintain quorum during network partitions. I took responsibility for the leader election protocol, instrumented the RPC communication with logs, and fixed a heartbeat timing discrepancy. We achieved consensus under simulated 40% packet drops and earned top marks in class.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_12",
+    "module": "hr",
+    "name": "HR: Challenging Project (Half-Correct)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Describe a challenging project you worked on.",
+      "answer": "We made an Android application in final year. It was difficult because we had many bugs and the deadline was very short.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_13",
+    "module": "hr",
+    "name": "HR: Teamwork Experience (Good STAR)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Tell me about a time you worked in a team.",
+      "answer": "During a 36-hour hackathon, our 4-person team had conflicting opinions on which cloud backend to use. I organized a quick 15-minute evaluation matrix comparing setup time, free tier limits, and familiarities. We aligned on Firebase, divided the work into auth, database, and UI modules, and completed our MVP with two hours to spare, ultimately placing in the top 5.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_14",
+    "module": "hr",
+    "name": "HR: Teamwork Experience (Anti-Teamwork / Contradiction)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Tell me about a time you worked in a team.",
+      "answer": "I prefer to work completely alone. When I have team members, they are too slow and hold me back, so I just do everything myself and ignore their suggestions.",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "HR_15",
+    "module": "hr",
+    "name": "HR: Teamwork Experience (Empty Answer)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "hr",
+      "subject": "hr",
+      "question": "Tell me about a time you worked in a team.",
+      "answer": "",
+      "expectedConcepts": [
+        "Context and situation",
+        "Actions taken",
+        "Measurable outcome",
+        "Reflection"
+      ],
+      "questionFormat": "theory"
+    }
+  },
+  {
+    "id": "JAVA_CODE_01",
+    "module": "java_coding",
+    "name": "Java Coding: Two Sum (All 2 of 2 Pass)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Write a Java method solve(int[] nums, int target) returning indices of the two numbers that add up to target.",
+      "answer": "import java.util.HashMap;\npublic class Solution {\n    public static int[] solve(int[] nums, int target) {\n        HashMap<Integer, Integer> map = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            int complement = target - nums[i];\n            if (map.containsKey(complement)) return new int[] { map.get(complement), i };\n            map.put(nums[i], i);\n        }\n        return new int[] {};\n    }\n}",
+      "questionFormat": "coding",
+      "language": "java",
+      "testCases": [
+        {
+          "input": "[2, 7, 11, 15], 9",
+          "expectedOutput": "[0, 1]"
+        },
+        {
+          "input": "[3, 2, 4], 6",
+          "expectedOutput": "[1, 2]"
+        }
+      ]
+    }
+  },
+  {
+    "id": "JAVA_CODE_02",
+    "module": "java_coding",
+    "name": "Java Coding: Reverse String (All 2 of 2 Pass)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Write a Java method solve(String s) that reverses the input string.",
+      "answer": "public class Solution {\n    public static String solve(String s) {\n        return new StringBuilder(s).reverse().toString();\n    }\n}",
+      "questionFormat": "coding",
+      "language": "java",
+      "testCases": [
+        {
+          "input": "\"hello\"",
+          "expectedOutput": "\"olleh\""
+        },
+        {
+          "input": "\"Java\"",
+          "expectedOutput": "\"avaJ\""
+        }
+      ]
+    }
+  },
+  {
+    "id": "JAVA_CODE_03",
+    "module": "java_coding",
+    "name": "Java Coding: Partial Pass (2 of 3 Pass => Exactly 67%)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Write a Java method solve(int n) that returns true if n is positive and even.",
+      "answer": "public class Solution {\n    public static boolean solve(int n) {\n        return n % 2 == 0;\n    }\n}",
+      "questionFormat": "coding",
+      "language": "java",
+      "testCases": [
+        {
+          "input": "4",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "3",
+          "expectedOutput": "false"
+        },
+        {
+          "input": "-2",
+          "expectedOutput": "false"
+        }
+      ]
+    }
+  },
+  {
+    "id": "JAVA_CODE_04",
+    "module": "java_coding",
+    "name": "Java Coding: 0 of N Pass (Wrong Output)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Write a Java method solve(int a, int b) that returns the sum of a and b.",
+      "answer": "public class Solution {\n    public static int solve(int a, int b) {\n        return a * b;\n    }\n}",
+      "questionFormat": "coding",
+      "language": "java",
+      "testCases": [
+        {
+          "input": "2, 3",
+          "expectedOutput": "5"
+        },
+        {
+          "input": "10, 20",
+          "expectedOutput": "30"
+        }
+      ]
+    }
+  },
+  {
+    "id": "JAVA_CODE_05",
+    "module": "java_coding",
+    "name": "Java Coding: Compilation Error (Syntax Error)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "Write a Java method solve(int a, int b) that returns the sum.",
+      "answer": "public class Solution {\n    public static int solve(int a, int b) {\n        retur a + b\n    }\n}",
+      "questionFormat": "coding",
+      "language": "java",
+      "testCases": [
+        {
+          "input": "2, 3",
+          "expectedOutput": "5"
+        }
+      ]
+    }
+  },
+  {
+    "id": "SQL_01",
+    "module": "sql",
+    "name": "SQL: Select Department IT (All 2 of 2 Pass)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Write an SQL query to retrieve all employees in the 'IT' department.",
+      "answer": "SELECT name FROM employees WHERE department = 'IT';",
+      "questionFormat": "coding",
+      "language": "sql",
+      "schema": "CREATE TABLE employees (id INT, name TEXT, department TEXT);",
+      "sampleData": "INSERT INTO employees VALUES (1, 'Alice', 'IT'), (2, 'Bob', 'HR'), (3, 'Charlie', 'IT');",
+      "testCases": [
+        {
+          "input": "SELECT count(*) FROM employees WHERE department = 'IT';",
+          "expectedOutput": "Alice\nCharlie"
+        },
+        {
+          "input": "SELECT name FROM employees WHERE department = 'IT';",
+          "expectedOutput": "Alice\nCharlie"
+        }
+      ]
+    }
+  },
+  {
+    "id": "SQL_02",
+    "module": "sql",
+    "name": "SQL: Count High Earners (All 2 of 2 Pass)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Write an SQL query to count employees earning over 50000.",
+      "answer": "SELECT COUNT(*) FROM employees WHERE salary > 50000;",
+      "questionFormat": "coding",
+      "language": "sql",
+      "schema": "CREATE TABLE employees (id INT, name TEXT, salary INT);",
+      "sampleData": "INSERT INTO employees VALUES (1, 'Alice', 60000), (2, 'Bob', 45000), (3, 'Charlie', 70000);",
+      "testCases": [
+        {
+          "input": "SELECT COUNT(*) FROM employees WHERE salary > 50000;",
+          "expectedOutput": "2"
+        },
+        {
+          "input": "SELECT count(*) FROM employees WHERE salary > 50000;",
+          "expectedOutput": "2"
+        }
+      ]
+    }
+  },
+  {
+    "id": "SQL_03",
+    "module": "sql",
+    "name": "SQL: Partial Pass (2 of 3 Pass => Exactly 67%)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Write an SQL query to select active employees.",
+      "answer": "SELECT name FROM employees WHERE is_active = 1;",
+      "questionFormat": "coding",
+      "language": "sql",
+      "schema": "CREATE TABLE employees (id INT, name TEXT, is_active INT);",
+      "sampleData": "INSERT INTO employees VALUES (1, 'Alice', 1), (2, 'Bob', 0), (3, 'Charlie', 1);",
+      "testCases": [
+        {
+          "input": "t1",
+          "expectedOutput": "Alice\nCharlie"
+        },
+        {
+          "input": "t2",
+          "expectedOutput": "Alice\nCharlie"
+        },
+        {
+          "input": "t3",
+          "expectedOutput": "Alice"
+        }
+      ]
+    }
+  },
+  {
+    "id": "SQL_04",
+    "module": "sql",
+    "name": "SQL: 0 of N Pass (Wrong Query)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Write an SQL query to find employees with salary greater than 80000.",
+      "answer": "SELECT name FROM employees WHERE salary < 30000;",
+      "questionFormat": "coding",
+      "language": "sql",
+      "schema": "CREATE TABLE employees (id INT, name TEXT, salary INT);",
+      "sampleData": "INSERT INTO employees VALUES (1, 'Alice', 90000), (2, 'Bob', 50000);",
+      "testCases": [
+        {
+          "input": "t1",
+          "expectedOutput": "Alice"
+        }
+      ]
+    }
+  },
+  {
+    "id": "SQL_05",
+    "module": "sql",
+    "name": "SQL: Syntax Error",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "dbms",
+      "question": "Write an SQL query to select all employee names.",
+      "answer": "SELEKT name FORM employees;",
+      "questionFormat": "coding",
+      "language": "sql",
+      "schema": "CREATE TABLE employees (id INT, name TEXT);",
+      "sampleData": "INSERT INTO employees VALUES (1, 'Alice');",
+      "testCases": [
+        {
+          "input": "t1",
+          "expectedOutput": "Alice"
+        }
+      ]
+    }
+  },
+  {
+    "id": "OUT_01",
+    "module": "output_prediction",
+    "name": "Output Prediction: Exact Match Integer (30)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the output of the following Java snippet?",
+      "codeSnippet": "public class Test { public static void main(String[] args) { int a = 10; int b = 20; System.out.println(a + b); } }",
+      "answer": "30",
+      "expectedOutput": "30",
+      "questionFormat": "output_prediction"
+    }
+  },
+  {
+    "id": "OUT_02",
+    "module": "output_prediction",
+    "name": "Output Prediction: Exact Match String (Hello World)",
+    "expected_pass": true,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the output of the following Java snippet?",
+      "codeSnippet": "public class Test { public static void main(String[] args) { System.out.println(\"Hello World\"); } }",
+      "answer": "Hello World",
+      "expectedOutput": "Hello World",
+      "questionFormat": "output_prediction"
+    }
+  },
+  {
+    "id": "OUT_03",
+    "module": "output_prediction",
+    "name": "Output Prediction: Wrong Output Without Explanation (10)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the output of the following Java snippet?",
+      "codeSnippet": "public class Test { public static void main(String[] args) { int a = 10; int b = 20; System.out.println(a + b); } }",
+      "answer": "10",
+      "expectedOutput": "30",
+      "questionFormat": "output_prediction"
+    }
+  },
+  {
+    "id": "OUT_04",
+    "module": "output_prediction",
+    "name": "Output Prediction: Wrong Off-by-One Output (31)",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the output of the following Java snippet?",
+      "codeSnippet": "public class Test { public static void main(String[] args) { int a = 10; int b = 20; System.out.println(a + b); } }",
+      "answer": "31",
+      "expectedOutput": "30",
+      "questionFormat": "output_prediction"
+    }
+  },
+  {
+    "id": "OUT_05",
+    "module": "output_prediction",
+    "name": "Output Prediction: Empty Answer",
+    "expected_pass": false,
+    "payload": {
+      "interviewType": "technical",
+      "subject": "java",
+      "question": "What is the output of the following Java snippet?",
+      "codeSnippet": "public class Test { public static void main(String[] args) { System.out.println(\"Test\"); } }",
+      "answer": "",
+      "expectedOutput": "Test",
+      "questionFormat": "output_prediction"
+    }
+  }
+]

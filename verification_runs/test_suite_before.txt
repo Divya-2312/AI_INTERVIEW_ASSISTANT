@@ -1,0 +1,4 @@
+Ran 133 tests in ~310s
+
+FAILED (failures=1)
+(1 test failed: test_followup_fake_reference_and_no_zero_dropout where paraphrased answer scored < 70 under T_COVER 0.85)

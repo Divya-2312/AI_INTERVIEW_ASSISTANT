@@ -44,6 +44,21 @@ const userSchema = new mongoose.Schema(
       default: undefined,
       select: false,
     },
+    emailVerificationCodeHash: {
+      type: String,
+      default: undefined,
+      select: false,
+    },
+    emailVerificationCodeExpiresAt: {
+      type: Date,
+      default: undefined,
+      select: false,
+    },
+    emailVerificationCodeAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
     emailVerificationExpiresAt: {
       type: Date,
       default: undefined,
@@ -59,6 +74,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: undefined,
       select: false,
+    },
+    rememberMe: {
+      type: Boolean,
+      default: false,
     },
     // Account lockout protection
     failedLoginAttempts: {

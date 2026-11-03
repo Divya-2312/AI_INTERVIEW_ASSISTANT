@@ -1,0 +1,361 @@
+{
+  "problems": [
+    {
+      "id": "fibonacci",
+      "aliases": ["fibonacci", "fibonacci series", "fibonacci number", "nth fibonacci"],
+      "title": "N-th Fibonacci Number",
+      "category": "Recursion & Dynamic Programming",
+      "approaches": [
+        {
+          "name": "Naive Recursion",
+          "approachType": "recursive",
+          "timeComplexity": "O(2^N)",
+          "spaceComplexity": "O(N)",
+          "isOptimal": false,
+          "summary": "Tree recursion with two recursive branches per call.",
+          "tradeOff": "High exponential time due to overlapping subproblems; O(N) call stack space.",
+          "pros": "Simple and mathematically direct.",
+          "cons": "Severely redundant calculations leading to exponential time and potential TLE for N > 35."
+        },
+        {
+          "name": "Linear Iteration",
+          "approachType": "iterative",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": true,
+          "summary": "Single loop computing consecutive terms using two rolling variables.",
+          "tradeOff": "Optimal O(N) time and O(1) auxiliary space.",
+          "pros": "Fast, no recursion stack overhead, minimal memory.",
+          "cons": "Requires tracking rolling state variables."
+        },
+        {
+          "name": "Memoization / DP",
+          "approachType": "dynamic_programming",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(N)",
+          "isOptimal": false,
+          "summary": "Recursion with cache array/map or tabular array.",
+          "tradeOff": "Trades O(N) auxiliary space to achieve linear O(N) time.",
+          "pros": "Eliminates duplicate computations.",
+          "cons": "Allocates extra memory compared to rolling iteration."
+        }
+      ],
+      "bestTradeoff": "Iteration achieves the optimal O(N) time while using only O(1) auxiliary space, avoiding both recursive call stack depth and memoization array allocations."
+    },
+    {
+      "id": "factorial",
+      "aliases": ["factorial", "factorial of a number", "compute factorial"],
+      "title": "Factorial Calculation",
+      "category": "Mathematics & Recursion",
+      "approaches": [
+        {
+          "name": "Recursive Approach",
+          "approachType": "recursive",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(N)",
+          "isOptimal": false,
+          "summary": "Calls factorial(n-1) down to base case n <= 1.",
+          "tradeOff": "Linear time O(N) with O(N) auxiliary call-stack frames.",
+          "pros": "Natural recursive definition.",
+          "cons": "Call stack frames consume memory and risk StackOverflowError for very large N."
+        },
+        {
+          "name": "Iterative Approach",
+          "approachType": "iterative",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": true,
+          "summary": "Single loop multiplying numbers from 1 up to N.",
+          "tradeOff": "Linear time O(N) with O(1) constant auxiliary space.",
+          "pros": "Same time complexity as recursion but zero call stack overhead.",
+          "cons": "Requires explicit loop counter."
+        }
+      ],
+      "bestTradeoff": "Both approaches have the same O(N) time complexity, but iteration uses less auxiliary memory O(1) because it avoids recursive call stack allocations."
+    },
+    {
+      "id": "two_sum",
+      "aliases": ["two sum", "two sum problem", "pair with target sum", "pair sum"],
+      "title": "Two Sum",
+      "category": "Arrays & Hashing",
+      "approaches": [
+        {
+          "name": "Brute Force (Nested Loops)",
+          "approachType": "brute_force",
+          "timeComplexity": "O(N^2)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": false,
+          "summary": "Checks every pair of elements with nested loops.",
+          "tradeOff": "Quadratic time O(N^2) but O(1) auxiliary space.",
+          "pros": "No extra data structures required.",
+          "cons": "Slow for large arrays; can cause Time Limit Exceeded (TLE) when N > 10,000."
+        },
+        {
+          "name": "Hash Table (One-Pass / Two-Pass)",
+          "approachType": "hash_table",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(N)",
+          "isOptimal": true,
+          "summary": "Stores seen values in a HashMap or HashSet for O(1) complement lookup.",
+          "tradeOff": "Trades O(N) auxiliary space to reduce time to O(N).",
+          "pros": "Optimal O(N) average time complexity.",
+          "cons": "Allocates extra memory for hash entries."
+        },
+        {
+          "name": "Sort and Two Pointers",
+          "approachType": "two_pointers",
+          "timeComplexity": "O(N log N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": false,
+          "summary": "Sorts the array and uses two converging pointers from both ends.",
+          "tradeOff": "O(N log N) time bounded by sorting, with O(1) or O(N) space depending on sort algorithm.",
+          "pros": "Predictable memory usage without hash collisions.",
+          "cons": "Slower than HashMap and modifies original index ordering unless indices are preserved."
+        }
+      ],
+      "bestTradeoff": "Using a HashMap provides O(N) time complexity by trading O(N) space for fast lookups. Brute force uses O(1) space but is O(N^2) time, risking TLE on large arrays."
+    },
+    {
+      "id": "duplicate_detection",
+      "aliases": ["contains duplicate", "duplicate detection", "find duplicates", "find duplicate elements"],
+      "title": "Duplicate Detection",
+      "category": "Arrays & Hashing",
+      "approaches": [
+        {
+          "name": "Brute Force (Nested Loops)",
+          "approachType": "brute_force",
+          "timeComplexity": "O(N^2)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": false,
+          "summary": "Compares every element with every other element.",
+          "tradeOff": "O(N^2) time, O(1) space.",
+          "pros": "Simple to implement, no extra space.",
+          "cons": "Quadratic time complexity, slow for N > 5,000."
+        },
+        {
+          "name": "HashSet Lookup",
+          "approachType": "hash_table",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(N)",
+          "isOptimal": true,
+          "summary": "Inserts elements into a HashSet; returns true if add() fails.",
+          "tradeOff": "O(N) time with O(N) auxiliary space.",
+          "pros": "Linear time, single pass, early exit.",
+          "cons": "Requires O(N) memory for the set."
+        },
+        {
+          "name": "Sorting Based",
+          "approachType": "sorting",
+          "timeComplexity": "O(N log N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": false,
+          "summary": "Sorts the array and checks adjacent elements.",
+          "tradeOff": "O(N log N) time with O(1) auxiliary space (in-place sort).",
+          "pros": "Better time than brute force without using a hash table.",
+          "cons": "Modifies input array or requires copy."
+        }
+      ],
+      "bestTradeoff": "A HashSet achieves O(N) time at the cost of O(N) memory. If memory is severely constrained, in-place sorting achieves O(N log N) with O(1) auxiliary space."
+    },
+    {
+      "id": "binary_search",
+      "aliases": ["binary search", "search in sorted array", "search element"],
+      "title": "Searching in Sorted Array",
+      "category": "Searching Algorithms",
+      "approaches": [
+        {
+          "name": "Linear Search",
+          "approachType": "iterative",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": false,
+          "summary": "Sequentially inspects each element from index 0 to N-1.",
+          "tradeOff": "O(N) time, O(1) space.",
+          "pros": "Works on both unsorted and sorted arrays.",
+          "cons": "Does not exploit the sorted property; scans unnecessary elements."
+        },
+        {
+          "name": "Iterative Binary Search",
+          "approachType": "binary_search",
+          "timeComplexity": "O(log N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": true,
+          "summary": "Halves the search range at each iteration using two pointers low and high.",
+          "tradeOff": "O(log N) time, O(1) auxiliary space.",
+          "pros": "Optimal time and space; no recursion stack overhead.",
+          "cons": "Requires sorted input."
+        },
+        {
+          "name": "Recursive Binary Search",
+          "approachType": "recursive",
+          "timeComplexity": "O(log N)",
+          "spaceComplexity": "O(log N)",
+          "isOptimal": false,
+          "summary": "Divides range recursively with helper(arr, target, low, high).",
+          "tradeOff": "O(log N) time, O(log N) auxiliary space for recursive stack.",
+          "pros": "Clean divide-and-conquer formulation.",
+          "cons": "Uses extra stack memory compared to the iterative version."
+        }
+      ],
+      "bestTradeoff": "Iterative binary search is optimal, offering O(log N) time and O(1) auxiliary space. Linear search fails to take advantage of sorted data."
+    },
+    {
+      "id": "sorting",
+      "aliases": ["sort array", "sorting", "bubble sort", "merge sort", "selection sort", "insertion sort"],
+      "title": "Array Sorting",
+      "category": "Sorting Algorithms",
+      "approaches": [
+        {
+          "name": "Bubble / Selection Sort",
+          "approachType": "quadratic_sort",
+          "timeComplexity": "O(N^2)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": false,
+          "summary": "Nested loops repeatedly swapping adjacent or minimum elements.",
+          "tradeOff": "O(N^2) time with O(1) auxiliary space.",
+          "pros": "In-place, simple logic.",
+          "cons": "Quadratic time complexity, slow for N > 5,000."
+        },
+        {
+          "name": "Merge Sort",
+          "approachType": "divide_and_conquer",
+          "timeComplexity": "O(N log N)",
+          "spaceComplexity": "O(N)",
+          "isOptimal": true,
+          "summary": "Recursively splits the array into halves and merges sorted sub-arrays.",
+          "tradeOff": "Guaranteed O(N log N) time, requires O(N) auxiliary space for merging.",
+          "pros": "Stable sort, guaranteed O(N log N) worst-case time.",
+          "cons": "Requires extra array allocation for temporary storage."
+        },
+        {
+          "name": "Quick Sort / Dual-Pivot (Arrays.sort)",
+          "approachType": "divide_and_conquer",
+          "timeComplexity": "O(N log N)",
+          "spaceComplexity": "O(log N)",
+          "isOptimal": true,
+          "summary": "Partitions array around a pivot in-place.",
+          "tradeOff": "O(N log N) average time, O(log N) recursive stack space.",
+          "pros": "Fast in practice with high cache locality.",
+          "cons": "Worst case O(N^2) without randomized/dual pivot."
+        }
+      ],
+      "bestTradeoff": "Merge Sort and Quick Sort provide O(N log N) time, drastically outperforming O(N^2) Bubble Sort on large inputs. Merge Sort trades O(N) space for stability."
+    },
+    {
+      "id": "palindrome",
+      "aliases": ["valid palindrome", "palindrome", "palindrome check", "check palindrome"],
+      "title": "Palindrome String Verification",
+      "category": "Strings & Two Pointers",
+      "approaches": [
+        {
+          "name": "String Reversal",
+          "approachType": "string_reversal",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(N)",
+          "isOptimal": false,
+          "summary": "Creates a reversed copy using StringBuilder.reverse() and compares.",
+          "tradeOff": "O(N) time with O(N) auxiliary memory for reversed copy.",
+          "pros": "Very concise (1-2 lines).",
+          "cons": "Allocates unnecessary heap memory for the reversed string."
+        },
+        {
+          "name": "Two Pointers (In-Place)",
+          "approachType": "two_pointers",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": true,
+          "summary": "Compares characters from left and right pointers moving inward.",
+          "tradeOff": "O(N) time with O(1) constant auxiliary space.",
+          "pros": "No extra heap allocations, early exit on first mismatch.",
+          "cons": "Slightly more code than reverse()."
+        }
+      ],
+      "bestTradeoff": "Two Pointers achieves the same O(N) time but uses O(1) auxiliary space, avoiding string duplication in memory."
+    },
+    {
+      "id": "anagram",
+      "aliases": ["valid anagram", "anagram", "anagram check", "check anagram"],
+      "title": "Valid Anagram Verification",
+      "category": "Strings & Hashing",
+      "approaches": [
+        {
+          "name": "Sorting Characters",
+          "approachType": "sorting",
+          "timeComplexity": "O(N log N)",
+          "spaceComplexity": "O(N)",
+          "isOptimal": false,
+          "summary": "Converts both strings to char arrays, sorts them, and checks equality.",
+          "tradeOff": "O(N log N) time, O(N) space for char arrays.",
+          "pros": "Simple logic using Arrays.equals().",
+          "cons": "Sorting takes O(N log N) time, which is slower than linear frequency counting."
+        },
+        {
+          "name": "Fixed Frequency Array (int[26])",
+          "approachType": "frequency_array",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": true,
+          "summary": "Counts character frequencies in a fixed-size 26-element array.",
+          "tradeOff": "O(N) linear time with O(1) constant auxiliary space (26 ints).",
+          "pros": "Single-pass linear time and minimal constant space.",
+          "cons": "Assumes standard alphabet (e.g. lowercase English)."
+        },
+        {
+          "name": "HashMap Character Count",
+          "approachType": "hash_table",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(K)",
+          "isOptimal": true,
+          "summary": "Maps each character to its occurrence count.",
+          "tradeOff": "O(N) time with O(K) space where K is unique character count.",
+          "pros": "Supports arbitrary Unicode characters.",
+          "cons": "Slightly more overhead than primitive fixed array."
+        }
+      ],
+      "bestTradeoff": "A fixed frequency array operates in O(N) time and O(1) auxiliary space, beating O(N log N) sorting while avoiding the overhead of HashMap boxing."
+    },
+    {
+      "id": "leap_year",
+      "aliases": ["leap year", "check leap year", "is leap year", "isleapyear", "leap"],
+      "title": "Check Leap Year",
+      "category": "Mathematics & Conditionals",
+      "approaches": [
+        {
+          "name": "Nested Loops (Brute Force)",
+          "approachType": "brute_force",
+          "timeComplexity": "O(N^2)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": false,
+          "summary": "Simulates iterations with nested loops.",
+          "tradeOff": "Loops add unnecessary O(N^2) complexity for a problem directly solvable with modulo arithmetic.",
+          "pros": "None over direct calculation.",
+          "cons": "Unnecessary iterations and risks Time Limit Exceeded (TLE)."
+        },
+        {
+          "name": "Iterative Loop",
+          "approachType": "iterative",
+          "timeComplexity": "O(N)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": false,
+          "summary": "Iterates year by year or loop count.",
+          "tradeOff": "Unnecessary loop iterations for a problem directly solvable in O(1) with remainder conditions.",
+          "pros": "None over direct calculation.",
+          "cons": "Unnecessary loop overhead."
+        },
+        {
+          "name": "Direct Modulo Arithmetic",
+          "approachType": "direct",
+          "timeComplexity": "O(1)",
+          "spaceComplexity": "O(1)",
+          "isOptimal": true,
+          "summary": "Direct conditions using the remainder operator (divisible by 4, except century years unless divisible by 400).",
+          "tradeOff": "Direct arithmetic conditions using the remainder operator (divisible by 4, except century years unless divisible by 400) achieve O(1) time and O(1) space; the loops can be removed.",
+          "pros": "Optimal O(1) time and space, simple boolean logic without loops.",
+          "cons": "Requires correct compound condition logic."
+        }
+      ],
+      "bestTradeoff": "A leap-year check is solved in O(1) time and O(1) auxiliary space using direct remainder conditions (divisible by 4, except century years unless divisible by 400) without any loops."
+    }
+  ]
+}
+

@@ -156,6 +156,13 @@ export const apiService = {
     });
   },
 
+  async verifyEmailCode(email, code) {
+    return await fetchAPI('/auth/verify-email-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+  },
+
   async resendVerification(email) {
     return await fetchAPI('/auth/resend-verification', {
       method: 'POST',
@@ -192,6 +199,17 @@ export const apiService = {
       // Ignore network errors on logout
     } finally {
       setAccessToken(null);
+    }
+  },
+
+  async deleteAccount() {
+    try {
+      const data = await fetchAPI('/auth/delete-account', { method: 'DELETE' });
+      setAccessToken(null);
+      return data;
+    } catch (err) {
+      setAccessToken(null);
+      throw err;
     }
   },
 

@@ -56,7 +56,7 @@ class TestHREvaluationSuite(unittest.TestCase):
             res.correctness or 0.0,
             res.relevance or 0.0,
             res.accuracy or 0.0,
-            res.communication or 0.0,
+            res.conceptCoverage or 0.0,
         )
         self.assertEqual(
             res.score,
@@ -85,7 +85,7 @@ class TestHREvaluationSuite(unittest.TestCase):
             res.correctness or 0.0,
             res.relevance or 0.0,
             res.accuracy or 0.0,
-            res.communication or 0.0,
+            res.conceptCoverage or 0.0,
         )
         self.assertEqual(
             res.score,

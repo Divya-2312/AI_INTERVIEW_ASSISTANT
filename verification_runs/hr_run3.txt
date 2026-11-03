@@ -1,0 +1,89 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]
+Loading weights: 100%|##########| 103/103 [00:00<00:00, 10187.31it/s]
+[Embedding] Loaded BERT-derived Sentence Transformer 'all-MiniLM-L6-v2'
+================================================================================
+         MOCKMATE AI: HR EVALUATION GOLDEN SET ACCURACY BENCHMARK
+================================================================================
+Total benchmark cases: 44 across 10 distinct HR questions
+Running evaluator...
+--------------------------------------------------------------------------------
+[Mode] Ollama is ONLINE - Evaluating via fine-tuned LLaMA model (temp=0.0).
+[MISS] C01 | Archetype: excellent_star  | Expected: [ 75, 100] | Actual:  68% | Sub-scores: R=80% C=60% A=55% Comm=77%
+[PASS] C02 | Archetype: good            | Expected: [ 60,  85] | Actual:  60% | Sub-scores: R=81% C=45% A=45% Comm=69%
+[PASS] C03 | Archetype: average         | Expected: [ 40,  65] | Actual:  40% | Sub-scores: R=79% C=5% A=15% Comm=59%
+[MISS] C04 | Archetype: vague           | Expected: [ 20,  50] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C05 | Archetype: off_topic       | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[LLaMA] evaluate_answer failed: no JSON object found in model output: '{"score": 100, "relevance": 1.0, "correctness": 1.0, "conceptCoverage": 1.0, "accuracy": 1.0, "communication": 1.0, "isIrrelevant": false, "feedback": "A well-structured answer that gives context and '. Falling back to offline fallback model.
+[MISS] C06 | Archetype: excellent_star  | Expected: [ 75, 100] | Actual:  38% | Sub-scores: R=50% C=0% A=22% Comm=80%
+[PASS] C07 | Archetype: good            | Expected: [ 60,  85] | Actual:  62% | Sub-scores: R=85% C=45% A=47% Comm=69%
+[MISS] C08 | Archetype: very_short      | Expected: [  1,  35] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C09 | Archetype: keyword_list    | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C10 | Archetype: excellent_star  | Expected: [ 75, 100] | Actual:  88% | Sub-scores: R=83% C=90% A=95% Comm=83%
+[PASS] C11 | Archetype: good            | Expected: [ 60,  85] | Actual:  62% | Sub-scores: R=88% C=45% A=45% Comm=69%
+[MISS] C12 | Archetype: vague           | Expected: [ 20,  50] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C13 | Archetype: off_topic       | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C14 | Archetype: excellent       | Expected: [ 70, 100] | Actual:  67% | Sub-scores: R=77% C=60% A=55% Comm=77%
+[PASS] C15 | Archetype: average         | Expected: [ 30,  60] | Actual:  39% | Sub-scores: R=88% C=0% A=0% Comm=67%
+[PASS] C16 | Archetype: copied_question | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C17 | Archetype: spoken_fillers  | Expected: [ 25,  55] | Actual:   4% | Sub-scores: R=15% C=0% A=0% Comm=0%
+[MISS] C18 | Archetype: excellent_star  | Expected: [ 75, 100] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C19 | Archetype: good            | Expected: [ 60,  85] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C20 | Archetype: very_short      | Expected: [  1,  35] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C21 | Archetype: off_topic       | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C22 | Archetype: excellent_star  | Expected: [ 75, 100] | Actual:  73% | Sub-scores: R=84% C=60% A=65% Comm=83%
+[PASS] C23 | Archetype: good            | Expected: [ 60,  85] | Actual:  61% | Sub-scores: R=86% C=45% A=45% Comm=69%
+[MISS] C24 | Archetype: average         | Expected: [ 40,  65] | Actual:  39% | Sub-scores: R=90% C=0% A=0% Comm=67%
+[PASS] C25 | Archetype: keyword_list    | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C26 | Archetype: spoken_fillers  | Expected: [ 25,  55] | Actual:   4% | Sub-scores: R=15% C=0% A=0% Comm=0%
+[MISS] C27 | Archetype: excellent_star  | Expected: [ 75, 100] | Actual:  68% | Sub-scores: R=79% C=60% A=55% Comm=77%
+[PASS] C28 | Archetype: good            | Expected: [ 60,  85] | Actual:  60% | Sub-scores: R=82% C=45% A=45% Comm=69%
+[MISS] C29 | Archetype: vague           | Expected: [ 20,  50] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C30 | Archetype: very_short      | Expected: [  1,  35] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C31 | Archetype: off_topic       | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C32 | Archetype: excellent_star  | Expected: [ 75, 100] | Actual:  69% | Sub-scores: R=82% C=60% A=55% Comm=77%
+[PASS] C33 | Archetype: good            | Expected: [ 60,  85] | Actual:  69% | Sub-scores: R=83% C=60% A=55% Comm=77%
+[MISS] C34 | Archetype: average         | Expected: [ 40,  65] | Actual:  37% | Sub-scores: R=88% C=0% A=0% Comm=59%
+[PASS] C35 | Archetype: copied_question | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C36 | Archetype: excellent       | Expected: [ 70, 100] | Actual:  69% | Sub-scores: R=83% C=60% A=55% Comm=77%
+[PASS] C37 | Archetype: good            | Expected: [ 55,  85] | Actual:  62% | Sub-scores: R=88% C=45% A=45% Comm=69%
+[MISS] C38 | Archetype: vague           | Expected: [ 20,  50] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C39 | Archetype: off_topic       | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C40 | Archetype: excellent_star  | Expected: [ 75, 100] | Actual:  68% | Sub-scores: R=81% C=60% A=55% Comm=77%
+[MISS] C41 | Archetype: good            | Expected: [ 60,  85] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[MISS] C42 | Archetype: very_short      | Expected: [  1,  35] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C43 | Archetype: keyword_list    | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+[PASS] C44 | Archetype: off_topic       | Expected: [  0,   0] | Actual:   0% | Sub-scores: R=0% C=0% A=0% Comm=0%
+--------------------------------------------------------------------------------
+Benchmark completed in 171.39s
+Results: 21 / 44 PASSED (47.7%)
+Misses : 23 / 44
+
+================================================================================
+                        HONEST LIST OF MISSES
+================================================================================
+- Case C01 (excellent_star): Expected (75, 100), got 68% (off by 7 points) on 'Tell me about yourself....'
+- Case C04 (vague): Expected (20, 50), got 0% (off by 20 points) on 'Tell me about yourself....'
+- Case C06 (excellent_star): Expected (75, 100), got 38% (off by 37 points) on 'What are your greatest strengths?...'
+- Case C08 (very_short): Expected (1, 35), got 0% (off by 1 points) on 'What are your greatest strengths?...'
+- Case C12 (vague): Expected (20, 50), got 0% (off by 20 points) on 'What is your greatest weakness, and how are y...'
+- Case C14 (excellent): Expected (70, 100), got 67% (off by 3 points) on 'Why do you want to work for our company?...'
+- Case C17 (spoken_fillers): Expected (25, 55), got 4% (off by 21 points) on 'Why do you want to work for our company?...'
+- Case C18 (excellent_star): Expected (75, 100), got 0% (off by 75 points) on 'Describe a time you faced a difficult challen...'
+- Case C19 (good): Expected (60, 85), got 0% (off by 60 points) on 'Describe a time you faced a difficult challen...'
+- Case C20 (very_short): Expected (1, 35), got 0% (off by 1 points) on 'Describe a time you faced a difficult challen...'
+- Case C22 (excellent_star): Expected (75, 100), got 73% (off by 2 points) on 'Tell me about a time you worked in a team. Wh...'
+- Case C24 (average): Expected (40, 65), got 39% (off by 1 points) on 'Tell me about a time you worked in a team. Wh...'
+- Case C26 (spoken_fillers): Expected (25, 55), got 4% (off by 21 points) on 'Tell me about a time you worked in a team. Wh...'
+- Case C27 (excellent_star): Expected (75, 100), got 68% (off by 7 points) on 'Describe a situation where you had a conflict...'
+- Case C29 (vague): Expected (20, 50), got 0% (off by 20 points) on 'Describe a situation where you had a conflict...'
+- Case C30 (very_short): Expected (1, 35), got 0% (off by 1 points) on 'Describe a situation where you had a conflict...'
+- Case C32 (excellent_star): Expected (75, 100), got 69% (off by 6 points) on 'Describe a situation where you took the initi...'
+- Case C34 (average): Expected (40, 65), got 37% (off by 3 points) on 'Describe a situation where you took the initi...'
+- Case C36 (excellent): Expected (70, 100), got 69% (off by 1 points) on 'Where do you see yourself in five years?...'
+- Case C38 (vague): Expected (20, 50), got 0% (off by 20 points) on 'Where do you see yourself in five years?...'
+- Case C40 (excellent_star): Expected (75, 100), got 68% (off by 7 points) on 'Tell me about a time you failed or made a ser...'
+- Case C41 (good): Expected (60, 85), got 0% (off by 60 points) on 'Tell me about a time you failed or made a ser...'
+- Case C42 (very_short): Expected (1, 35), got 0% (off by 1 points) on 'Tell me about a time you failed or made a ser...'
+================================================================================

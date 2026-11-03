@@ -1,0 +1,1766 @@
+{
+  "java": [
+    {
+      "interview_id": "6ae0b659b2f763f1409ffc9d",
+      "subject": "java",
+      "session_idx": 1,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-080",
+          "text": "Can you create an array of a generic type in Java? Why or why not?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Generics"
+        },
+        {
+          "slot": 2,
+          "id": "java-theory-087",
+          "text": "What is a method reference and when would you use one?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 3,
+          "id": "q-3",
+          "text": "Can you provide an example of using a method reference to make the lambda expression more readable?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 4,
+          "id": "q-4",
+          "text": "What happens if the referenced method requires arguments and you want to pass a constant value to it?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 5,
+          "id": "java-theory-019",
+          "text": "What is the difference between Comparable and Comparator?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 6,
+          "id": "q-6",
+          "text": "Can you provide an example where using Comparator would be preferable over Comparable in terms of encapsulation and design pattern benefits?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 7,
+          "id": "java-theory-048",
+          "text": "What is the difference between Runnable and Callable?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 8,
+          "id": "java-theory-012",
+          "text": "What does the `final` keyword mean when applied to a class, method, and variable?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-099",
+          "text": "What is the difference between == comparing primitives vs objects?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keywords"
+        },
+        {
+          "slot": 10,
+          "id": "java-theory-071",
+          "text": "Why is concatenating strings in a loop with + inefficient?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b6a6b2f763f1409ffd09",
+      "subject": "java",
+      "session_idx": 2,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-015",
+          "text": "What is the difference between static and instance members?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 2,
+          "id": "java-theory-038",
+          "text": "Can you catch multiple exception types in one catch block?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Exceptions"
+        },
+        {
+          "slot": 3,
+          "id": "java-theory-090",
+          "text": "What does the reduce() operation do in streams?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 4,
+          "id": "java-theory-061",
+          "text": "What is the difference between a memory leak in C++ and a 'memory leak' in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "JVM"
+        },
+        {
+          "slot": 5,
+          "id": "java-theory-025",
+          "text": "What is a Deque and what makes it useful?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-056",
+          "text": "What is ThreadLocal used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 7,
+          "id": "java-theory-047",
+          "text": "What is the Executor framework and why is it preferred over manually creating threads?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 8,
+          "id": "java-theory-074",
+          "text": "What does String.substring() do, and is it safe on shared underlying arrays in modern Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-097",
+          "text": "What is an enum in Java and what can it contain?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keywords"
+        },
+        {
+          "slot": 10,
+          "id": "java-theory-079",
+          "text": "Why are raw types (using a generic class without a type argument) discouraged?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Generics"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b6d0b2f763f1409ffd7b",
+      "subject": "java",
+      "session_idx": 3,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-064",
+          "text": "What is the Java String pool?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "JVM"
+        },
+        {
+          "slot": 2,
+          "id": "java-theory-075",
+          "text": "What is the time complexity of common StringBuilder operations?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        },
+        {
+          "slot": 3,
+          "id": "java-theory-086",
+          "text": "What is Optional and what problem does it solve?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 4,
+          "id": "java-theory-035",
+          "text": "How do you create a custom exception in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Exceptions"
+        },
+        {
+          "slot": 5,
+          "id": "q-5",
+          "text": "Can you explain the reasoning behind using RuntimeException instead of Exception in your example?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-023",
+          "text": "Why must a class override both equals() and hashCode() together?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 7,
+          "id": "q-7",
+          "text": "Can you provide an example where two objects are equal but have different hashCodes and how you would handle this scenario in a HashMap?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 8,
+          "id": "java-theory-051",
+          "text": "What are atomic classes like AtomicInteger used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-006",
+          "text": "What is the difference between method overloading and method overriding?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 10,
+          "id": "java-theory-081",
+          "text": "What is the benefit of using generics instead of raw Object types in collections?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Generics"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b708b2f763f1409ffde9",
+      "subject": "java",
+      "session_idx": 4,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-018",
+          "text": "What is the difference between HashSet and TreeSet?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 2,
+          "id": "q-2",
+          "text": "Can you provide an example where using a TreeSet would offer significant benefits over using a HashSet?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 3,
+          "id": "q-3",
+          "text": "Can you elaborate on how a TreeSet improves performance when elements need to be inserted or removed frequently, especially when compared to a HashSet?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 4,
+          "id": "java-theory-083",
+          "text": "What is a functional interface?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 5,
+          "id": "java-theory-066",
+          "text": "What is a StackOverflowError caused by at the JVM level?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "JVM"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-040",
+          "text": "What commonly causes a NullPointerException?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Exceptions"
+        },
+        {
+          "slot": 7,
+          "id": "java-theory-004",
+          "text": "What is polymorphism, and what are its two types in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 8,
+          "id": "q-8",
+          "text": "Can you provide a simple example in Java where you have a method that takes an object of type 'Animal' as a parameter, and you want to call a different method based on the actual type of the object, demonstrating runtime polymorphism?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-076",
+          "text": "How would you remove duplicate characters from a string while preserving order?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        },
+        {
+          "slot": 10,
+          "id": "java-theory-046",
+          "text": "What is a deadlock, and how can it be avoided?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b74cb2f763f1409ffe55",
+      "subject": "java",
+      "session_idx": 5,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-043",
+          "text": "What is the difference between extending Thread and implementing Runnable?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 2,
+          "id": "java-theory-008",
+          "text": "What is the difference between `this` and `super` keywords?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 3,
+          "id": "java-theory-077",
+          "text": "What is type erasure in Java generics?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Generics"
+        },
+        {
+          "slot": 4,
+          "id": "java-theory-005",
+          "text": "What is abstraction, and how is it achieved in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 5,
+          "id": "java-theory-030",
+          "text": "What is the difference between List, Set, and Map?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-093",
+          "text": "What is the transient keyword used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keywords"
+        },
+        {
+          "slot": 7,
+          "id": "q-7",
+          "text": "Can you provide an example where using transient would improve the design of a class, and how would you test the serialization of this class?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 8,
+          "id": "java-theory-068",
+          "text": "What is the difference between String, StringBuilder, and StringBuffer?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-082",
+          "text": "What is a lambda expression in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 10,
+          "id": "java-theory-034",
+          "text": "What is the difference between throw and throws?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Exceptions"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b77bb2f763f1409ffec5",
+      "subject": "java",
+      "session_idx": 6,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-044",
+          "text": "What does the synchronized keyword do?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 2,
+          "id": "java-theory-057",
+          "text": "What are the main memory areas in the JVM?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "JVM"
+        },
+        {
+          "slot": 3,
+          "id": "java-theory-070",
+          "text": "What is string interning?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        },
+        {
+          "slot": 4,
+          "id": "java-theory-059",
+          "text": "What is garbage collection in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "JVM"
+        },
+        {
+          "slot": 5,
+          "id": "java-theory-009",
+          "text": "What is the difference between an abstract class and an interface?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-078",
+          "text": "What is a generic method, and how do you write one?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Generics"
+        },
+        {
+          "slot": 7,
+          "id": "java-theory-029",
+          "text": "How do you make a collection thread-safe in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 8,
+          "id": "java-theory-036",
+          "text": "What is try-with-resources and why is it useful?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Exceptions"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-096",
+          "text": "What are varargs in Java and how do you declare them?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keywords"
+        },
+        {
+          "slot": 10,
+          "id": "q-10",
+          "text": "Can you provide an example of using varargs in a method where the number of arguments varies?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b7aab2f763f1409fff35",
+      "subject": "java",
+      "session_idx": 7,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-012",
+          "text": "What does the `final` keyword mean when applied to a class, method, and variable?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 2,
+          "id": "q-2",
+          "text": "Can you provide a concrete example where using `final` on a class would lead to unexpected behavior, such as tight coupling or decreased flexibility?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 3,
+          "id": "java-theory-048",
+          "text": "What is the difference between Runnable and Callable?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 4,
+          "id": "q-4",
+          "text": "How does the requirement that Callable returns a value affect the design of the class's execution flow?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 5,
+          "id": "java-theory-087",
+          "text": "What is a method reference and when would you use one?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-017",
+          "text": "What is the difference between HashMap and Hashtable?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 7,
+          "id": "java-theory-099",
+          "text": "What is the difference between == comparing primitives vs objects?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keywords"
+        },
+        {
+          "slot": 8,
+          "id": "q-8",
+          "text": "Can you provide an example where using == to compare objects would lead to incorrect results, and why .equals() is still used in such cases?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-071",
+          "text": "Why is concatenating strings in a loop with + inefficient?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        },
+        {
+          "slot": 10,
+          "id": "java-theory-080",
+          "text": "Can you create an array of a generic type in Java? Why or why not?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Generics"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b7d8b2f763f1409fffa1",
+      "subject": "java",
+      "session_idx": 8,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-015",
+          "text": "What is the difference between static and instance members?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 2,
+          "id": "q-2",
+          "text": "Can you provide an example where a static method would be useful in a class that has instance variables and methods?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 3,
+          "id": "java-theory-053",
+          "text": "What is a daemon thread?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 4,
+          "id": "java-theory-047",
+          "text": "What is the Executor framework and why is it preferred over manually creating threads?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 5,
+          "id": "java-theory-084",
+          "text": "What is the Stream API used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-025",
+          "text": "What is a Deque and what makes it useful?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 7,
+          "id": "q-7",
+          "text": "Can you provide a specific scenario where using an ArrayDeque would be more efficient than using a LinkedList or a Stack for storing elements?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 8,
+          "id": "java-theory-074",
+          "text": "What does String.substring() do, and is it safe on shared underlying arrays in modern Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-097",
+          "text": "What is an enum in Java and what can it contain?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keywords"
+        },
+        {
+          "slot": 10,
+          "id": "java-theory-061",
+          "text": "What is the difference between a memory leak in C++ and a 'memory leak' in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "JVM"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b7f9b2f763f140a0000f",
+      "subject": "java",
+      "session_idx": 9,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-006",
+          "text": "What is the difference between method overloading and method overriding?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 2,
+          "id": "q-2",
+          "text": "Can you provide an example where method overloading would not be suitable, but method overriding would be?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 3,
+          "id": "java-theory-026",
+          "text": "What is a PriorityQueue and how does it order elements?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 4,
+          "id": "java-theory-023",
+          "text": "Why must a class override both equals() and hashCode() together?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 5,
+          "id": "java-theory-090",
+          "text": "What does the reduce() operation do in streams?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-035",
+          "text": "How do you create a custom exception in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Exceptions"
+        },
+        {
+          "slot": 7,
+          "id": "java-theory-056",
+          "text": "What is ThreadLocal used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 8,
+          "id": "java-theory-075",
+          "text": "What is the time complexity of common StringBuilder operations?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Strings"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-064",
+          "text": "What is the Java String pool?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "JVM"
+        },
+        {
+          "slot": 10,
+          "id": "q-10",
+          "text": "Can you give an example of how String.intern() is used in practice?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b813b2f763f140a0007d",
+      "subject": "java",
+      "session_idx": 10,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "java-theory-083",
+          "text": "What is a functional interface?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Functional"
+        },
+        {
+          "slot": 2,
+          "id": "java-theory-038",
+          "text": "Can you catch multiple exception types in one catch block?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Exceptions"
+        },
+        {
+          "slot": 3,
+          "id": "java-theory-040",
+          "text": "What commonly causes a NullPointerException?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Exceptions"
+        },
+        {
+          "slot": 4,
+          "id": "q-4",
+          "text": "Can you give an example of a specific Java method call or array access that would throw a NullPointerException due to an uninitialized field?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 5,
+          "id": "q-5",
+          "text": "Can you provide an example of a scenario where an uninitialized field is accessed directly, but not through a method call, and explain how that differs from the case you described earlier?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 6,
+          "id": "java-theory-051",
+          "text": "What are atomic classes like AtomicInteger used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Multithreading"
+        },
+        {
+          "slot": 7,
+          "id": "java-theory-019",
+          "text": "What is the difference between Comparable and Comparator?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Collections"
+        },
+        {
+          "slot": 8,
+          "id": "q-8",
+          "text": "Can you provide an example of using Comparable and Comparator together in a class, and how the Comparator is used to define a different ordering?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 9,
+          "id": "java-theory-004",
+          "text": "What is polymorphism, and what are its two types in Java?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "OOP"
+        },
+        {
+          "slot": 10,
+          "id": "java-theory-066",
+          "text": "What is a StackOverflowError caused by at the JVM level?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "JVM"
+        }
+      ]
+    }
+  ],
+  "dbms": [
+    {
+      "interview_id": "6ae0b83ab2f763f140a000e9",
+      "subject": "dbms",
+      "session_idx": 1,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-022",
+          "text": "Give an example of an insertion anomaly caused by an unnormalized table.",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-010",
+          "text": "What are the types of relationships (cardinality) in an ER diagram?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "ER Model"
+        },
+        {
+          "slot": 3,
+          "id": "dbms-theory-091",
+          "text": "What is a lossless join decomposition?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 4,
+          "id": "dbms-theory-015",
+          "text": "What happens if you try to insert a duplicate value into a primary key column?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 5,
+          "id": "dbms-theory-073",
+          "text": "What is database sharding?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-035",
+          "text": "What does a self join do, and when would you use one?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-054",
+          "text": "What is a two-phase locking (2PL) protocol?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 8,
+          "id": "dbms-theory-064",
+          "text": "What is a composite (multi-column) index, and when is it useful?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        },
+        {
+          "slot": 9,
+          "id": "dbms-theory-094",
+          "text": "What is a checkpoint in database recovery?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 10,
+          "id": "q-10",
+          "text": "What happens if a transaction crashes between two checkpoints?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b86ab2f763f140a00159",
+      "subject": "dbms",
+      "session_idx": 2,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-066",
+          "text": "What is EXPLAIN (or a query execution plan) used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-069",
+          "text": "Should you index a column that is frequently updated?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        },
+        {
+          "slot": 3,
+          "id": "dbms-theory-053",
+          "text": "What is the difference between optimistic and pessimistic concurrency control?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 4,
+          "id": "dbms-theory-096",
+          "text": "What is a data dictionary (or system catalog) in a DBMS?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 5,
+          "id": "dbms-theory-099",
+          "text": "What does the BETWEEN operator do?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-021",
+          "text": "Give an example of an update anomaly caused by an unnormalized table.",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-011",
+          "text": "How is a many-to-many relationship implemented in a relational schema?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "ER Model"
+        },
+        {
+          "slot": 8,
+          "id": "q-8",
+          "text": "Can you provide an example of a many-to-many relationship in a real-world scenario, such as a university course enrollment system, where the relationship between students and courses is mediated by the enrollment table?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 9,
+          "id": "dbms-theory-002",
+          "text": "What is a foreign key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 10,
+          "id": "dbms-theory-078",
+          "text": "What is a primary use case for a document-oriented NoSQL database like MongoDB?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b89ab2f763f140a001c9",
+      "subject": "dbms",
+      "session_idx": 3,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-028",
+          "text": "Why might you choose not to fully normalize a database?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-025",
+          "text": "What is a functional dependency?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 3,
+          "id": "dbms-theory-077",
+          "text": "What is a data warehouse, and how does it differ from a typical transactional database?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 4,
+          "id": "dbms-theory-050",
+          "text": "What is a non-repeatable read?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 5,
+          "id": "dbms-theory-041",
+          "text": "What does GROUP BY do, and how does it interact with aggregate functions?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-006",
+          "text": "What is the difference between a primary key and a unique key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-067",
+          "text": "What is index selectivity, and why does it matter?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        },
+        {
+          "slot": 8,
+          "id": "dbms-theory-014",
+          "text": "What is a relationship in the ER model?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "ER Model"
+        },
+        {
+          "slot": 9,
+          "id": "dbms-theory-039",
+          "text": "What is a view in SQL?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 10,
+          "id": "dbms-theory-056",
+          "text": "What is a savepoint in a transaction?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b8c3b2f763f140a0023b",
+      "subject": "dbms",
+      "session_idx": 4,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-058",
+          "text": "What does 'consistency' mean in the ACID properties, specifically?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-089",
+          "text": "What is the purpose of the LIKE operator?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 3,
+          "id": "q-3",
+          "text": "Can you provide an example of using the LIKE operator with an AND operator to search for names that start with 'A' and end with 'n', and how would you handle cases where the name contains an apostrophe or special characters?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 4,
+          "id": "dbms-theory-081",
+          "text": "What is the difference between a natural key and a surrogate key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 5,
+          "id": "dbms-theory-019",
+          "text": "What is Third Normal Form (3NF)?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-100",
+          "text": "What is the difference between a physical schema and a logical schema?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 7,
+          "id": "q-7",
+          "text": "Can you provide a concrete example of a scenario where a change to the physical schema would affect the performance of a query but not the data itself?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 8,
+          "id": "q-8",
+          "text": "Can you provide a concrete example of a scenario where adding a new index affects query performance but not data integrity?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 9,
+          "id": "dbms-theory-003",
+          "text": "What is a candidate key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 10,
+          "id": "dbms-theory-092",
+          "text": "What is the difference between a B-tree and a B+ tree, as commonly used for database indexes?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b90db2f763f140a002a7",
+      "subject": "dbms",
+      "session_idx": 5,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-033",
+          "text": "What is the difference between LEFT JOIN and RIGHT JOIN?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-084",
+          "text": "What is a database transaction log used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 3,
+          "id": "dbms-theory-047",
+          "text": "What is the difference between COMMIT and ROLLBACK?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 4,
+          "id": "dbms-theory-072",
+          "text": "What is a schema in the context of a database?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 5,
+          "id": "q-5",
+          "text": "Can you provide an example of how a schema would influence the design of a database for a real-world application, such as an e-commerce platform?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-004",
+          "text": "What is a composite key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-017",
+          "text": "What is First Normal Form (1NF)?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 8,
+          "id": "q-8",
+          "text": "Can you explain why a table in 1NF would still contain a column with a repeating pattern, such as a list of addresses, if it's still uniquely identifiable?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 9,
+          "id": "dbms-theory-008",
+          "text": "What is an entity and an entity set in the ER model?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "ER Model"
+        },
+        {
+          "slot": 10,
+          "id": "dbms-theory-062",
+          "text": "What is the tradeoff of adding too many indexes to a table?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b944b2f763f140a00315",
+      "subject": "dbms",
+      "session_idx": 6,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-042",
+          "text": "What is the difference between UNION and UNION ALL?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-088",
+          "text": "What is a CROSS JOIN?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 3,
+          "id": "dbms-theory-075",
+          "text": "What is database replication, and why is it used?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 4,
+          "id": "dbms-theory-005",
+          "text": "What is a super key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 5,
+          "id": "q-5",
+          "text": "Can you provide an example of a table with a super key, and then explain how removing one of the columns in the super key would affect the uniqueness of the rows?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 6,
+          "id": "q-6",
+          "text": "Can you provide a concrete example of a table with a super key where removing a column from the super key affects the uniqueness of the rows?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-012",
+          "text": "What is an attribute, and what types of attributes exist?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "ER Model"
+        },
+        {
+          "slot": 8,
+          "id": "dbms-theory-030",
+          "text": "How do you decide which normal form is 'good enough' for a real-world schema?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 9,
+          "id": "q-9",
+          "text": "Can you provide a specific example of a real-world table where selective denormalization would improve performance, and how would you quantify the impact of denormalization on join performance?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 10,
+          "id": "dbms-theory-068",
+          "text": "What is a covering index?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b985b2f763f140a00381",
+      "subject": "dbms",
+      "session_idx": 7,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-054",
+          "text": "What is a two-phase locking (2PL) protocol?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-035",
+          "text": "What does a self join do, and when would you use one?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 3,
+          "id": "dbms-theory-018",
+          "text": "What is Second Normal Form (2NF)?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 4,
+          "id": "dbms-theory-095",
+          "text": "What is the difference between a scalar function and an aggregate function in SQL?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 5,
+          "id": "dbms-theory-009",
+          "text": "What is the difference between a weak entity and a strong entity?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "ER Model"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-015",
+          "text": "What happens if you try to insert a duplicate value into a primary key column?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-083",
+          "text": "What does ON DELETE CASCADE do on a foreign key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 8,
+          "id": "dbms-theory-064",
+          "text": "What is a composite (multi-column) index, and when is it useful?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        },
+        {
+          "slot": 9,
+          "id": "dbms-theory-022",
+          "text": "Give an example of an insertion anomaly caused by an unnormalized table.",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 10,
+          "id": "dbms-theory-080",
+          "text": "What is a database constraint, and name a few common types.",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b996b2f763f140a003f3",
+      "subject": "dbms",
+      "session_idx": 8,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-099",
+          "text": "What does the BETWEEN operator do?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-078",
+          "text": "What is a primary use case for a document-oriented NoSQL database like MongoDB?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 3,
+          "id": "dbms-theory-051",
+          "text": "What is a phantom read?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 4,
+          "id": "q-4",
+          "text": "Can you provide an example of a scenario where a phantom read occurs, and how it affects the outcome of a transaction?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 5,
+          "id": "q-5",
+          "text": "Can you provide a concrete example of a phantom read in a real-world scenario, such as an online banking system where two concurrent transactions affect the data retrieved by the first transaction?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-010",
+          "text": "What are the types of relationships (cardinality) in an ER diagram?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "ER Model"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-023",
+          "text": "Give an example of a deletion anomaly caused by an unnormalized table.",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 8,
+          "id": "dbms-theory-066",
+          "text": "What is EXPLAIN (or a query execution plan) used for?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        },
+        {
+          "slot": 9,
+          "id": "dbms-theory-002",
+          "text": "What is a foreign key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 10,
+          "id": "q-10",
+          "text": "Can you explain why referential integrity is enforced only at insert time, not update or delete time?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b9c5b2f763f140a0045f",
+      "subject": "dbms",
+      "session_idx": 9,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-025",
+          "text": "What is a functional dependency?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-056",
+          "text": "What is a savepoint in a transaction?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 3,
+          "id": "dbms-theory-028",
+          "text": "Why might you choose not to fully normalize a database?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 4,
+          "id": "dbms-theory-044",
+          "text": "What is a trigger in SQL?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 5,
+          "id": "dbms-theory-077",
+          "text": "What is a data warehouse, and how does it differ from a typical transactional database?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-069",
+          "text": "Should you index a column that is frequently updated?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-013",
+          "text": "What is generalization and specialization in ER modeling?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "ER Model"
+        },
+        {
+          "slot": 8,
+          "id": "dbms-theory-007",
+          "text": "What is a NULL value in a database?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 9,
+          "id": "q-9",
+          "text": "Can you provide a specific example of a table where NULL would be used to represent missing data, such as a customer's address?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 10,
+          "id": "dbms-theory-037",
+          "text": "What is a subquery, and can you give an example use case?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        }
+      ]
+    },
+    {
+      "interview_id": "6ae0b9e4b2f763f140a004cf",
+      "subject": "dbms",
+      "session_idx": 10,
+      "difficulty": "medium",
+      "questions": [
+        {
+          "slot": 1,
+          "id": "dbms-theory-058",
+          "text": "What does 'consistency' mean in the ACID properties, specifically?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 2,
+          "id": "dbms-theory-050",
+          "text": "What is a non-repeatable read?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Transactions"
+        },
+        {
+          "slot": 3,
+          "id": "q-3",
+          "text": "Can you explain why a non-repeatable read occurs even if both transactions are committed, and not just rolled back or retried?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 4,
+          "id": "q-4",
+          "text": "Can you provide an example of a scenario where a non-repeatable read occurs due to low isolation level, and how would it differ if the isolation level were set to higher (e.g. Serializable)?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 5,
+          "id": "q-5",
+          "text": "Can you provide a concrete example of a non-repeatable read scenario where the first transaction reads the row, the second transaction updates the row, and the first transaction reads the row again before the update is committed, but after the second transaction has committed its update?",
+          "difficulty": "medium",
+          "isFollowUp": true,
+          "category": "Adaptive Follow-Up"
+        },
+        {
+          "slot": 6,
+          "id": "dbms-theory-091",
+          "text": "What is a lossless join decomposition?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Normalization"
+        },
+        {
+          "slot": 7,
+          "id": "dbms-theory-089",
+          "text": "What is the purpose of the LIKE operator?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "SQL"
+        },
+        {
+          "slot": 8,
+          "id": "dbms-theory-094",
+          "text": "What is a checkpoint in database recovery?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "General"
+        },
+        {
+          "slot": 9,
+          "id": "dbms-theory-003",
+          "text": "What is a candidate key?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Keys"
+        },
+        {
+          "slot": 10,
+          "id": "dbms-theory-063",
+          "text": "How does a B-tree index generally work?",
+          "difficulty": "medium",
+          "isFollowUp": false,
+          "category": "Indexing"
+        }
+      ]
+    }
+  ]
+}

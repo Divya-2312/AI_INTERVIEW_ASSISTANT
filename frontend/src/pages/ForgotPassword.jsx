@@ -11,7 +11,7 @@ export const ForgotPassword = () => {
   const [step, setStep] = useState(1);
 
   // Form State
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('mockmate_remembered_email') || localStorage.getItem('assistant_remembered_email') || '');
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');

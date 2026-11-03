@@ -1,0 +1,1682 @@
+[
+  {
+    "id": "JAVA_TH_01",
+    "module": "java_theory",
+    "name": "Java Theory: OOP Principles (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 95,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.06,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 90,
+        "correctness": 90,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 95
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.9,
+    "relevance": 1.0,
+    "accuracy": 0.9,
+    "communication": 0.8,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_02",
+    "module": "java_theory",
+    "name": "Java Theory: OOP Principles (Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 45,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.06,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 40,
+        "correctness": 20,
+        "relevance": 30,
+        "concept_coverage": 88
+      },
+      "rule": "mean of 4",
+      "score": 45
+    },
+    "conceptCoverage": 0.88,
+    "correctness": 0.2,
+    "relevance": 0.3,
+    "accuracy": 0.4,
+    "communication": 0.1,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_03",
+    "module": "java_theory",
+    "name": "Java Theory: OOP Principles (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_04",
+    "module": "java_theory",
+    "name": "Java Theory: OOP Principles (Empty Answer)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_05",
+    "module": "java_theory",
+    "name": "Java Theory: HashMap vs ConcurrentHashMap (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 93,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.09,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 80,
+        "correctness": 90,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 93
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.9,
+    "relevance": 1.0,
+    "accuracy": 0.8,
+    "communication": 0.7,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_06",
+    "module": "java_theory",
+    "name": "Java Theory: HashMap vs ConcurrentHashMap (Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": true,
+    "score": 62,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 40,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 67
+      },
+      "rule": "mean of 4",
+      "score": 62
+    },
+    "conceptCoverage": 0.67,
+    "correctness": 0.6,
+    "relevance": 0.8,
+    "accuracy": 0.4,
+    "communication": 0.5,
+    "decision_match": false
+  },
+  {
+    "id": "JAVA_TH_07",
+    "module": "java_theory",
+    "name": "Java Theory: HashMap vs ConcurrentHashMap (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "fallback_rules",
+    "time_sec": 2.04,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_08",
+    "module": "java_theory",
+    "name": "Java Theory: Garbage Collection (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 85,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.06,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 70,
+        "correctness": 90,
+        "relevance": 80,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 85
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.9,
+    "relevance": 0.8,
+    "accuracy": 0.7,
+    "communication": 0.6,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_09",
+    "module": "java_theory",
+    "name": "Java Theory: Garbage Collection (Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": true,
+    "score": 53,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 40,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 33
+      },
+      "rule": "mean of 4",
+      "score": 53
+    },
+    "conceptCoverage": 0.33,
+    "correctness": 0.6,
+    "relevance": 0.8,
+    "accuracy": 0.4,
+    "communication": 0.5,
+    "decision_match": false
+  },
+  {
+    "id": "JAVA_TH_10",
+    "module": "java_theory",
+    "name": "Java Theory: Garbage Collection (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_11",
+    "module": "java_theory",
+    "name": "Java Theory: Pass by Value (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 95,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 90,
+        "correctness": 90,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 95
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.9,
+    "relevance": 1.0,
+    "accuracy": 0.9,
+    "communication": 0.8,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_12",
+    "module": "java_theory",
+    "name": "Java Theory: Pass by Value (Myth Claim / Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": true,
+    "score": 85,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 70,
+        "correctness": 80,
+        "relevance": 90,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 85
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.8,
+    "relevance": 0.9,
+    "accuracy": 0.7,
+    "communication": 0.6,
+    "decision_match": false
+  },
+  {
+    "id": "JAVA_TH_13",
+    "module": "java_theory",
+    "name": "Java Theory: Interface vs Abstract Class (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 100,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 1.0,
+    "relevance": 1.0,
+    "accuracy": 1.0,
+    "communication": 0.9,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_14",
+    "module": "java_theory",
+    "name": "Java Theory: Interface vs Abstract Class (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_TH_15",
+    "module": "java_theory",
+    "name": "Java Theory: Interface vs Abstract Class (Empty Answer)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_01",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: ACID Properties (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 93,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 80,
+        "correctness": 90,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 93
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.9,
+    "relevance": 1.0,
+    "accuracy": 0.8,
+    "communication": 0.7,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_02",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: ACID Properties (Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": true,
+    "score": 70,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 70,
+        "correctness": 80,
+        "relevance": 90,
+        "concept_coverage": 38
+      },
+      "rule": "mean of 4",
+      "score": 70
+    },
+    "conceptCoverage": 0.38,
+    "correctness": 0.8,
+    "relevance": 0.9,
+    "accuracy": 0.7,
+    "communication": 0.6,
+    "decision_match": false
+  },
+  {
+    "id": "DBMS_TH_03",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: ACID Properties (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "fallback_rules",
+    "time_sec": 2.04,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_04",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: ACID Properties (Empty Answer)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_05",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Clustered vs Non-Clustered (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 93,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 80,
+        "correctness": 90,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 93
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.9,
+    "relevance": 1.0,
+    "accuracy": 0.8,
+    "communication": 0.8,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_06",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Clustered vs Non-Clustered (Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": true,
+    "score": 70,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 40,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 70
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.6,
+    "relevance": 0.8,
+    "accuracy": 0.4,
+    "communication": 0.3,
+    "decision_match": false
+  },
+  {
+    "id": "DBMS_TH_07",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Clustered vs Non-Clustered (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "fallback_rules",
+    "time_sec": 2.05,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_08",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Normalization 1NF to 3NF (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 91,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 95,
+        "correctness": 90,
+        "relevance": 80,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 91
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.9,
+    "relevance": 0.8,
+    "accuracy": 0.95,
+    "communication": 0.85,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_09",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Normalization 1NF to 3NF (Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": true,
+    "score": 70,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 40,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 70
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.6,
+    "relevance": 0.8,
+    "accuracy": 0.4,
+    "communication": 0.3,
+    "decision_match": false
+  },
+  {
+    "id": "DBMS_TH_10",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Normalization 1NF to 3NF (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "fallback_rules",
+    "time_sec": 2.04,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_11",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Primary Key vs Unique Key (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": false,
+    "score": 35,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 38,
+        "relevance": 100,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 35
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.38,
+    "relevance": 1.0,
+    "accuracy": 0.0,
+    "communication": 0.9,
+    "decision_match": false
+  },
+  {
+    "id": "DBMS_TH_12",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Primary Key vs Unique Key (Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 36,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 50,
+        "relevance": 70,
+        "concept_coverage": 25
+      },
+      "rule": "mean of 4",
+      "score": 36
+    },
+    "conceptCoverage": 0.25,
+    "correctness": 0.5,
+    "relevance": 0.7,
+    "accuracy": 0.0,
+    "communication": 0.75,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_13",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Inner Join vs Left Join (Reference Answer)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 88,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 80,
+        "correctness": 90,
+        "relevance": 80,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 88
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.9,
+    "relevance": 0.8,
+    "accuracy": 0.8,
+    "communication": 0.7,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_14",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Inner Join vs Left Join (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "fallback_rules",
+    "time_sec": 2.05,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "DBMS_TH_15",
+    "module": "dbms_theory",
+    "name": "DBMS Theory: Inner Join vs Left Join (Empty Answer)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "theory",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "HR_01",
+    "module": "hr",
+    "name": "HR: Tell Me About Yourself (Good STAR)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 68,
+    "modelUsed": "mockmate-hr100:latest",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 55,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 75
+      },
+      "rule": "mean of 4",
+      "score": 68
+    },
+    "conceptCoverage": 0.75,
+    "correctness": 0.6,
+    "relevance": 0.8,
+    "accuracy": 0.55,
+    "communication": 0.77,
+    "decision_match": true
+  },
+  {
+    "id": "HR_02",
+    "module": "hr",
+    "name": "HR: Tell Me About Yourself (Minimal / Brief)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 26,
+    "modelUsed": "mockmate-hr100:latest",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 78,
+        "concept_coverage": 25
+      },
+      "rule": "mean of 4",
+      "score": 26
+    },
+    "conceptCoverage": 0.25,
+    "correctness": 0.0,
+    "relevance": 0.78,
+    "accuracy": 0.0,
+    "communication": 0.67,
+    "decision_match": true
+  },
+  {
+    "id": "HR_03",
+    "module": "hr",
+    "name": "HR: Tell Me About Yourself (Wrong-Topic: Everest)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "hr_gate_filter",
+    "time_sec": 2.06,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "HR_04",
+    "module": "hr",
+    "name": "HR: Tell Me About Yourself (Empty Answer)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "HR_05",
+    "module": "hr",
+    "name": "HR: Greatest Strengths (Good STAR)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 75,
+    "modelUsed": "mockmate-hr100:latest",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 55,
+        "correctness": 60,
+        "relevance": 84,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 75
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 0.6,
+    "relevance": 0.84,
+    "accuracy": 0.55,
+    "communication": 0.77,
+    "decision_match": true
+  },
+  {
+    "id": "HR_06",
+    "module": "hr",
+    "name": "HR: Greatest Strengths (Half-Correct / Clich\u00e9)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "hr_gate_filter",
+    "time_sec": 2.06,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "HR_07",
+    "module": "hr",
+    "name": "HR: Greatest Strengths (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "hr_gate_filter",
+    "time_sec": 2.06,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "HR_08",
+    "module": "hr",
+    "name": "HR: Greatest Weakness (Good STAR)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 68,
+    "modelUsed": "mockmate-hr100:latest",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 55,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 75
+      },
+      "rule": "mean of 4",
+      "score": 68
+    },
+    "conceptCoverage": 0.75,
+    "correctness": 0.6,
+    "relevance": 0.8,
+    "accuracy": 0.55,
+    "communication": 0.77,
+    "decision_match": true
+  },
+  {
+    "id": "HR_09",
+    "module": "hr",
+    "name": "HR: Greatest Weakness (Half-Correct / Disguised Strength)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 42,
+    "modelUsed": "mockmate-hr100:latest",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 93,
+        "concept_coverage": 75
+      },
+      "rule": "mean of 4",
+      "score": 42
+    },
+    "conceptCoverage": 0.75,
+    "correctness": 0.0,
+    "relevance": 0.93,
+    "accuracy": 0.0,
+    "communication": 0.67,
+    "decision_match": true
+  },
+  {
+    "id": "HR_10",
+    "module": "hr",
+    "name": "HR: Greatest Weakness (Wrong-Topic)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "hr_gate_filter",
+    "time_sec": 2.07,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "HR_11",
+    "module": "hr",
+    "name": "HR: Challenging Project (Good STAR)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 67,
+    "modelUsed": "mockmate-hr100:latest",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 55,
+        "correctness": 60,
+        "relevance": 79,
+        "concept_coverage": 75
+      },
+      "rule": "mean of 4",
+      "score": 67
+    },
+    "conceptCoverage": 0.75,
+    "correctness": 0.6,
+    "relevance": 0.79,
+    "accuracy": 0.55,
+    "communication": 0.77,
+    "decision_match": true
+  },
+  {
+    "id": "HR_12",
+    "module": "hr",
+    "name": "HR: Challenging Project (Half-Correct)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "hr_gate_filter",
+    "time_sec": 2.08,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "HR_13",
+    "module": "hr",
+    "name": "HR: Teamwork Experience (Good STAR)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 61,
+    "modelUsed": "mockmate-hr100:latest",
+    "time_sec": 2.06,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 55,
+        "correctness": 60,
+        "relevance": 80,
+        "concept_coverage": 50
+      },
+      "rule": "mean of 4",
+      "score": 61
+    },
+    "conceptCoverage": 0.5,
+    "correctness": 0.6,
+    "relevance": 0.8,
+    "accuracy": 0.55,
+    "communication": 0.77,
+    "decision_match": true
+  },
+  {
+    "id": "HR_14",
+    "module": "hr",
+    "name": "HR: Teamwork Experience (Anti-Teamwork / Contradiction)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "fallback_rules",
+    "time_sec": 2.05,
+    "isIrrelevant": true,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "HR_15",
+    "module": "hr",
+    "name": "HR: Teamwork Experience (Empty Answer)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.03,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "hr",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_CODE_01",
+    "module": "java_coding",
+    "name": "Java Coding: Two Sum (All 2 of 2 Pass)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 100,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.04,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_CODE_02",
+    "module": "java_coding",
+    "name": "Java Coding: Reverse String (All 2 of 2 Pass)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 100,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_CODE_03",
+    "module": "java_coding",
+    "name": "Java Coding: Partial Pass (2 of 3 Pass => Exactly 67%)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 67,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.09,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 67,
+        "correctness": 67,
+        "relevance": 67,
+        "concept_coverage": 67
+      },
+      "rule": "mean of 4",
+      "score": 67
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_CODE_04",
+    "module": "java_coding",
+    "name": "Java Coding: 0 of N Pass (Wrong Output)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "JAVA_CODE_05",
+    "module": "java_coding",
+    "name": "Java Coding: Compilation Error (Syntax Error)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "coding",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "SQL_01",
+    "module": "sql",
+    "name": "SQL: Select Department IT (All 2 of 2 Pass)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 100,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "SQL_02",
+    "module": "sql",
+    "name": "SQL: Count High Earners (All 2 of 2 Pass)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 100,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.08,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "SQL_03",
+    "module": "sql",
+    "name": "SQL: Partial Pass (2 of 3 Pass => Exactly 67%)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 67,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 67,
+        "correctness": 67,
+        "relevance": 67,
+        "concept_coverage": 67
+      },
+      "rule": "mean of 4",
+      "score": 67
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "SQL_04",
+    "module": "sql",
+    "name": "SQL: 0 of N Pass (Wrong Query)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "SQL_05",
+    "module": "sql",
+    "name": "SQL: Syntax Error",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.08,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "sql",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": null,
+    "correctness": null,
+    "relevance": null,
+    "accuracy": null,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "OUT_01",
+    "module": "output_prediction",
+    "name": "Output Prediction: Exact Match Integer (30)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 100,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 1.0,
+    "relevance": 1.0,
+    "accuracy": 1.0,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "OUT_02",
+    "module": "output_prediction",
+    "name": "Output Prediction: Exact Match String (Hello World)",
+    "expected_pass": true,
+    "actual_pass": true,
+    "score": 100,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.07,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 100,
+        "correctness": 100,
+        "relevance": 100,
+        "concept_coverage": 100
+      },
+      "rule": "mean of 4",
+      "score": 100
+    },
+    "conceptCoverage": 1.0,
+    "correctness": 1.0,
+    "relevance": 1.0,
+    "accuracy": 1.0,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "OUT_03",
+    "module": "output_prediction",
+    "name": "Output Prediction: Wrong Output Without Explanation (10)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.06,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "OUT_04",
+    "module": "output_prediction",
+    "name": "Output Prediction: Wrong Off-by-One Output (31)",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.09,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": null,
+    "decision_match": true
+  },
+  {
+    "id": "OUT_05",
+    "module": "output_prediction",
+    "name": "Output Prediction: Empty Answer",
+    "expected_pass": false,
+    "actual_pass": false,
+    "score": 0,
+    "modelUsed": "llama3.2:3b",
+    "time_sec": 2.05,
+    "isIrrelevant": false,
+    "formula": {
+      "module": "output_prediction",
+      "parameters": {
+        "accuracy": 0,
+        "correctness": 0,
+        "relevance": 0,
+        "concept_coverage": 0
+      },
+      "rule": "mean of 4",
+      "score": 0
+    },
+    "conceptCoverage": 0.0,
+    "correctness": 0.0,
+    "relevance": 0.0,
+    "accuracy": 0.0,
+    "communication": 0.0,
+    "decision_match": true
+  }
+]

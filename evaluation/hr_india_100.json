@@ -1,0 +1,2255 @@
+[
+ {
+  "id": "hr001",
+  "category": "introduction",
+  "question": "Tell me about yourself.",
+  "guidance": "Give a brief present-past-future summary: education, key projects or experience, and why this role fits, in under two minutes.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "student",
+   "graduate",
+   "studied",
+   "degree",
+   "college",
+   "project",
+   "experience",
+   "skills",
+   "background",
+   "interested",
+   "career",
+   "intern"
+  ]
+ },
+ {
+  "id": "hr002",
+  "category": "introduction",
+  "question": "Walk me through your resume.",
+  "guidance": "Go chronologically through education and experience, but only dwell on parts most relevant to this role.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "resume",
+   "education",
+   "studied",
+   "degree",
+   "college",
+   "experience",
+   "project",
+   "internship",
+   "skills",
+   "worked",
+   "graduated"
+  ]
+ },
+ {
+  "id": "hr003",
+  "category": "introduction",
+  "question": "Tell me about your family background.",
+  "guidance": "Briefly mention your family and the values or support that shaped you, then connect it to your motivation without oversharing.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "family",
+   "father",
+   "mother",
+   "parents",
+   "brother",
+   "sister",
+   "siblings",
+   "background",
+   "upbringing",
+   "supported",
+   "values"
+  ]
+ },
+ {
+  "id": "hr004",
+  "category": "introduction",
+  "question": "Where are you from and how has your hometown shaped you?",
+  "guidance": "Mention your hometown and one concrete way it shaped your values, work ethic or outlook.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "hometown",
+   "city",
+   "town",
+   "village",
+   "grew",
+   "born",
+   "raised",
+   "native",
+   "place"
+  ]
+ },
+ {
+  "id": "hr005",
+  "category": "introduction",
+  "question": "How would your friends describe you?",
+  "guidance": "Give two or three genuine traits, each supported by a short example.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "friends",
+   "friend",
+   "describe",
+   "describes",
+   "people",
+   "trait",
+   "calm",
+   "helpful",
+   "reliable",
+   "funny"
+  ]
+ },
+ {
+  "id": "hr006",
+  "category": "introduction",
+  "question": "What are your hobbies and interests?",
+  "guidance": "Name genuine hobbies and tie one to a transferable skill such as discipline, teamwork or creativity.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "hobby",
+   "hobbies",
+   "interest",
+   "reading",
+   "music",
+   "sports",
+   "cricket",
+   "travel",
+   "cooking",
+   "painting",
+   "gaming"
+  ]
+ },
+ {
+  "id": "hr007",
+  "category": "introduction",
+  "question": "What do you do in your free time?",
+  "guidance": "Describe productive or enriching habits with a concrete example of learning or contribution.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "free",
+   "time",
+   "spare",
+   "hobby",
+   "reading",
+   "learn",
+   "watch",
+   "sports",
+   "music",
+   "practice",
+   "weekend"
+  ]
+ },
+ {
+  "id": "hr008",
+  "category": "introduction",
+  "question": "What is the proudest achievement of your life so far?",
+  "guidance": "Describe a specific achievement, your actions, the measurable result and what it taught you.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "proud",
+   "achievement",
+   "achieved",
+   "won",
+   "award",
+   "success",
+   "accomplished",
+   "milestone"
+  ]
+ },
+ {
+  "id": "hr009",
+  "category": "introduction",
+  "question": "What motivates you to get up and go to work every day?",
+  "guidance": "Link intrinsic motivators such as learning, impact and growth to a real example.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "motivate",
+   "motivates",
+   "motivation",
+   "passion",
+   "learning",
+   "growth",
+   "impact",
+   "goal",
+   "inspired",
+   "drive"
+  ]
+ },
+ {
+  "id": "hr010",
+  "category": "introduction",
+  "question": "Describe yourself in three words.",
+  "guidance": "Choose three relevant traits and back each with a quick example.",
+  "concepts": [
+   "Context and situation for introduction",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "words",
+   "trait",
+   "adjective",
+   "hardworking",
+   "honest",
+   "adaptable",
+   "curious",
+   "creative",
+   "dedicated"
+  ]
+ },
+ {
+  "id": "hr011",
+  "category": "education",
+  "question": "Why did you choose your branch or stream of study?",
+  "guidance": "Explain your genuine reasons, what you gained from it and how it prepared you for this career.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "branch",
+   "stream",
+   "course",
+   "degree",
+   "chose",
+   "choose",
+   "engineering",
+   "interest",
+   "subject",
+   "field"
+  ]
+ },
+ {
+  "id": "hr012",
+  "category": "education",
+  "question": "Tell me about your final year project.",
+  "guidance": "Describe the problem, your specific role, the approach, the outcome and what you learned.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "project",
+   "final",
+   "year",
+   "built",
+   "developed",
+   "team",
+   "application",
+   "system",
+   "module",
+   "guide"
+  ]
+ },
+ {
+  "id": "hr013",
+  "category": "education",
+  "question": "What was your biggest academic challenge and how did you handle it?",
+  "guidance": "Describe a specific challenge, the concrete steps you took and the improvement you achieved.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "academic",
+   "challenge",
+   "difficult",
+   "subject",
+   "exam",
+   "semester",
+   "study",
+   "marks",
+   "overcame",
+   "improved"
+  ]
+ },
+ {
+  "id": "hr014",
+  "category": "education",
+  "question": "You have backlogs or low marks in some semesters. How do you explain this?",
+  "guidance": "Own the issue honestly, explain the cause briefly, and show recovery steps with proof of improvement.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "backlog",
+   "backlogs",
+   "marks",
+   "arrears",
+   "semester",
+   "grades",
+   "score",
+   "cleared",
+   "improved",
+   "reason"
+  ]
+ },
+ {
+  "id": "hr015",
+  "category": "education",
+  "question": "Why is there a gap in your education or career?",
+  "guidance": "Explain the gap honestly and briefly, show what you did to learn or grow during it, and show readiness now.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "gap",
+   "break",
+   "year",
+   "course",
+   "learning",
+   "preparation",
+   "family",
+   "health",
+   "reason",
+   "upskilling"
+  ]
+ },
+ {
+  "id": "hr016",
+  "category": "education",
+  "question": "Why did you choose this college or university?",
+  "guidance": "Give reasons based on curriculum, faculty or opportunities, and how you made use of them.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "college",
+   "university",
+   "institute",
+   "campus",
+   "faculty",
+   "curriculum",
+   "chose",
+   "reputation",
+   "placement"
+  ]
+ },
+ {
+  "id": "hr017",
+  "category": "education",
+  "question": "Which subject did you enjoy the most and why?",
+  "guidance": "Name the subject, explain why with an example of work you did, and link it to the role.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "subject",
+   "enjoyed",
+   "favourite",
+   "favorite",
+   "course",
+   "learned",
+   "interest",
+   "professor",
+   "topic"
+  ]
+ },
+ {
+  "id": "hr018",
+  "category": "education",
+  "question": "Have you done any internships? What did you learn?",
+  "guidance": "Describe the role, your tasks, an outcome and the lessons you took away; if none, describe equivalent practical work.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "internship",
+   "intern",
+   "trainee",
+   "company",
+   "learned",
+   "tasks",
+   "mentor",
+   "project",
+   "industry"
+  ]
+ },
+ {
+  "id": "hr019",
+  "category": "education",
+  "question": "What extra courses or certifications have you completed?",
+  "guidance": "Mention relevant courses, why you chose them and how you applied what you learned.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "course",
+   "courses",
+   "certification",
+   "certified",
+   "online",
+   "coursera",
+   "training",
+   "learned",
+   "completed"
+  ]
+ },
+ {
+  "id": "hr020",
+  "category": "education",
+  "question": "What did you learn from college beyond academics?",
+  "guidance": "Give examples such as teamwork, time management or leadership from clubs, events or projects.",
+  "concepts": [
+   "Context and situation for education",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "learned",
+   "activities",
+   "club",
+   "events",
+   "teamwork",
+   "leadership",
+   "skills",
+   "volunteering",
+   "communication"
+  ]
+ },
+ {
+  "id": "hr021",
+  "category": "company fit",
+  "question": "Why do you want to work for our company?",
+  "guidance": "Show specific knowledge of the company's work, values or growth and connect it to your own goals.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "company",
+   "organization",
+   "organisation",
+   "culture",
+   "growth",
+   "values",
+   "products",
+   "clients",
+   "opportunity",
+   "brand"
+  ]
+ },
+ {
+  "id": "hr022",
+  "category": "company fit",
+  "question": "Why should we hire you?",
+  "guidance": "Match two or three of your strongest skills with the role's needs, backed by evidence.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "hire",
+   "skills",
+   "strengths",
+   "experience",
+   "contribute",
+   "value",
+   "team",
+   "learn",
+   "fit"
+  ]
+ },
+ {
+  "id": "hr023",
+  "category": "company fit",
+  "question": "What do you know about our company?",
+  "guidance": "Mention verified facts about products, size, locations and recent news, and link them to your interest.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "company",
+   "founded",
+   "products",
+   "services",
+   "headquarters",
+   "employees",
+   "clients",
+   "industry",
+   "news"
+  ]
+ },
+ {
+  "id": "hr024",
+  "category": "company fit",
+  "question": "Why did you apply for this position?",
+  "guidance": "Explain how the role matches your skills and aspirations, with a concrete example.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "position",
+   "role",
+   "job",
+   "responsibilities",
+   "skills",
+   "match",
+   "interested",
+   "opportunity"
+  ]
+ },
+ {
+  "id": "hr025",
+  "category": "company fit",
+  "question": "What do you expect from this job?",
+  "guidance": "Describe realistic expectations around learning, responsibility and growth while showing willingness to contribute.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "expect",
+   "expectation",
+   "learning",
+   "growth",
+   "responsibility",
+   "mentorship",
+   "opportunity",
+   "training"
+  ]
+ },
+ {
+  "id": "hr026",
+  "category": "company fit",
+  "question": "What can you contribute to our organisation in the first six months?",
+  "guidance": "Offer a realistic plan to learn quickly and deliver value, with examples of past quick learning.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "contribute",
+   "months",
+   "learn",
+   "quickly",
+   "deliver",
+   "value",
+   "onboarding",
+   "project"
+  ]
+ },
+ {
+  "id": "hr027",
+  "category": "company fit",
+  "question": "Why do you want to leave your current job?",
+  "guidance": "Give a positive, forward-looking reason without criticising your employer, and show what you seek next.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "leave",
+   "leaving",
+   "current",
+   "job",
+   "growth",
+   "learning",
+   "opportunity",
+   "challenge",
+   "change"
+  ]
+ },
+ {
+  "id": "hr028",
+  "category": "company fit",
+  "question": "What makes you different from other candidates?",
+  "guidance": "Identify a genuine differentiator such as a skill or experience and prove it with a specific example.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "different",
+   "unique",
+   "differentiator",
+   "stand",
+   "skill",
+   "experience",
+   "strength"
+  ]
+ },
+ {
+  "id": "hr029",
+  "category": "company fit",
+  "question": "Why did you choose this industry or career path?",
+  "guidance": "Explain how your interest began, the steps you have taken and your long-term commitment.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "industry",
+   "career",
+   "path",
+   "field",
+   "chose",
+   "interest",
+   "passion",
+   "technology"
+  ]
+ },
+ {
+  "id": "hr030",
+  "category": "company fit",
+  "question": "Do you have any questions for us?",
+  "guidance": "Ask thoughtful questions about the team, how success is measured and growth, showing genuine research.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "question",
+   "questions",
+   "team",
+   "culture",
+   "growth",
+   "training",
+   "expectations",
+   "process"
+  ]
+ },
+ {
+  "id": "hr031",
+  "category": "company fit",
+  "question": "How did you hear about this opening?",
+  "guidance": "Answer honestly and briefly, and show what attracted you once you learned about it.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "heard",
+   "hear",
+   "opening",
+   "job",
+   "portal",
+   "referral",
+   "friend",
+   "website",
+   "linkedin",
+   "campus"
+  ]
+ },
+ {
+  "id": "hr032",
+  "category": "company fit",
+  "question": "What do you think our company could do better?",
+  "guidance": "Give a respectful, constructive observation based on research, with an idea of how you could help.",
+  "concepts": [
+   "Context and situation for company fit",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "company",
+   "improve",
+   "better",
+   "suggestion",
+   "idea",
+   "growth",
+   "product",
+   "process",
+   "feedback"
+  ]
+ },
+ {
+  "id": "hr033",
+  "category": "self-awareness",
+  "question": "What are your strengths?",
+  "guidance": "Name relevant strengths with a short example proving each one.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "strength",
+   "strengths",
+   "skill",
+   "quality",
+   "example"
+  ]
+ },
+ {
+  "id": "hr034",
+  "category": "self-awareness",
+  "question": "What is your biggest weakness?",
+  "guidance": "Name a genuine, non-critical weakness, the steps you are taking to improve and visible progress.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "weakness",
+   "weaknesses",
+   "improve",
+   "overcome",
+   "learning",
+   "shy",
+   "delegating"
+  ]
+ },
+ {
+  "id": "hr035",
+  "category": "self-awareness",
+  "question": "What are your areas of improvement?",
+  "guidance": "Name real areas, the actions you have taken and examples of progress.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "improve",
+   "improvement",
+   "area",
+   "areas",
+   "learning",
+   "skill",
+   "progress"
+  ]
+ },
+ {
+  "id": "hr036",
+  "category": "self-awareness",
+  "question": "What is one skill you would like to improve and how?",
+  "guidance": "Choose a real skill, give a concrete learning plan and examples of progress so far.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "skill",
+   "improve",
+   "learning",
+   "plan",
+   "course",
+   "practice",
+   "progress"
+  ]
+ },
+ {
+  "id": "hr037",
+  "category": "self-awareness",
+  "question": "How do you handle criticism?",
+  "guidance": "Show openness to feedback with a specific example of acting on it and improving.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "criticism",
+   "feedback",
+   "suggestion",
+   "accept",
+   "improve",
+   "listened",
+   "learn",
+   "constructive"
+  ]
+ },
+ {
+  "id": "hr038",
+  "category": "self-awareness",
+  "question": "How do you stay organised and manage your time?",
+  "guidance": "Describe concrete methods such as planning and prioritising, with an example of meeting a tight deadline.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "organised",
+   "organized",
+   "time",
+   "plan",
+   "schedule",
+   "prioritise",
+   "priorities",
+   "deadline",
+   "planner",
+   "list"
+  ]
+ },
+ {
+  "id": "hr039",
+  "category": "self-awareness",
+  "question": "What is your greatest professional or academic accomplishment?",
+  "guidance": "Describe the situation, your actions, measurable results and lessons.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "accomplishment",
+   "achievement",
+   "achieved",
+   "result",
+   "project",
+   "award",
+   "success"
+  ]
+ },
+ {
+  "id": "hr040",
+  "category": "self-awareness",
+  "question": "How do you keep learning new skills?",
+  "guidance": "Share concrete habits, courses or projects, and an example where you applied new learning.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "learning",
+   "learn",
+   "course",
+   "online",
+   "practice",
+   "reading",
+   "projects",
+   "skills",
+   "new"
+  ]
+ },
+ {
+  "id": "hr041",
+  "category": "self-awareness",
+  "question": "Are you a leader or a follower?",
+  "guidance": "Show balance with examples of leading when needed and supporting others effectively.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "leader",
+   "leadership",
+   "follower",
+   "lead",
+   "team",
+   "support",
+   "followed"
+  ]
+ },
+ {
+  "id": "hr042",
+  "category": "self-awareness",
+  "question": "How do you handle stress?",
+  "guidance": "Describe healthy, practical techniques with a real example of staying effective under stress.",
+  "concepts": [
+   "Context and situation for self-awareness",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "stress",
+   "pressure",
+   "calm",
+   "relax",
+   "exercise",
+   "breathe",
+   "manage",
+   "plan",
+   "cope"
+  ]
+ },
+ {
+  "id": "hr043",
+  "category": "career goals",
+  "question": "Where do you see yourself in five years?",
+  "guidance": "Show realistic growth aligned with the role and company, with learning milestones and commitment.",
+  "concepts": [
+   "Context and situation for career goals",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "years",
+   "future",
+   "grow",
+   "growth",
+   "goal",
+   "senior",
+   "learning",
+   "career"
+  ]
+ },
+ {
+  "id": "hr044",
+  "category": "career goals",
+  "question": "What are your short-term and long-term career goals?",
+  "guidance": "Give clear goals for each horizon that connect to the role and the steps you will take.",
+  "concepts": [
+   "Context and situation for career goals",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "short",
+   "term",
+   "long",
+   "goal",
+   "goals",
+   "plan",
+   "career",
+   "future"
+  ]
+ },
+ {
+  "id": "hr045",
+  "category": "career goals",
+  "question": "How does this role fit into your career plans?",
+  "guidance": "Explain how the role develops skills you need and supports your long-term direction.",
+  "concepts": [
+   "Context and situation for career goals",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "career",
+   "plans",
+   "fit",
+   "skills",
+   "growth",
+   "future",
+   "develop"
+  ]
+ },
+ {
+  "id": "hr046",
+  "category": "career goals",
+  "question": "Do you plan to pursue higher studies?",
+  "guidance": "Answer honestly, show commitment to the job, and explain how you would balance any future learning.",
+  "concepts": [
+   "Context and situation for career goals",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "higher",
+   "studies",
+   "masters",
+   "mba",
+   "degree",
+   "study",
+   "further",
+   "learning"
+  ]
+ },
+ {
+  "id": "hr047",
+  "category": "career goals",
+  "question": "How long do you plan to stay with our company?",
+  "guidance": "Show a long-term view tied to growth and learning, without making rigid promises.",
+  "concepts": [
+   "Context and situation for career goals",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "stay",
+   "long",
+   "term",
+   "years",
+   "commitment",
+   "growth",
+   "loyal"
+  ]
+ },
+ {
+  "id": "hr048",
+  "category": "career goals",
+  "question": "Which skills do you want to develop in this role?",
+  "guidance": "Name specific skills relevant to the job and how you will build them.",
+  "concepts": [
+   "Context and situation for career goals",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "skills",
+   "develop",
+   "learn",
+   "improve",
+   "technical",
+   "communication",
+   "leadership"
+  ]
+ },
+ {
+  "id": "hr049",
+  "category": "career goals",
+  "question": "What would your dream job look like?",
+  "guidance": "Describe a role that aligns with the position's real responsibilities and your values.",
+  "concepts": [
+   "Context and situation for career goals",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "dream",
+   "job",
+   "ideal",
+   "passion",
+   "impact",
+   "learning"
+  ]
+ },
+ {
+  "id": "hr050",
+  "category": "career goals",
+  "question": "What does success mean to you?",
+  "guidance": "Define success through impact, learning and teamwork, with an example from your experience.",
+  "concepts": [
+   "Context and situation for career goals",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "success",
+   "meaning",
+   "means",
+   "impact",
+   "growth",
+   "learning",
+   "goals",
+   "achievement",
+   "team"
+  ]
+ },
+ {
+  "id": "hr051",
+  "category": "logistics",
+  "question": "What are your salary expectations?",
+  "guidance": "Give a researched range based on market rates, stay flexible, and emphasise learning and fit over pay alone.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "salary",
+   "pay",
+   "package",
+   "expectation",
+   "expectations",
+   "lpa",
+   "range",
+   "market",
+   "negotiable",
+   "ctc"
+  ]
+ },
+ {
+  "id": "hr052",
+  "category": "logistics",
+  "question": "What is your current CTC and expected CTC?",
+  "guidance": "State your current figure honestly, give a reasoned expected range and show openness to discussion.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "ctc",
+   "current",
+   "expected",
+   "salary",
+   "lpa",
+   "package",
+   "fresher",
+   "negotiable"
+  ]
+ },
+ {
+  "id": "hr053",
+  "category": "logistics",
+  "question": "Are you willing to relocate to another city?",
+  "guidance": "Answer clearly about flexibility, mention practical considerations and show enthusiasm for the opportunity.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "relocate",
+   "relocation",
+   "move",
+   "city",
+   "shift",
+   "willing",
+   "flexible",
+   "location"
+  ]
+ },
+ {
+  "id": "hr054",
+  "category": "logistics",
+  "question": "Are you comfortable working night shifts or rotational shifts?",
+  "guidance": "Give a clear, honest answer about flexibility, with a real example of adapting to irregular hours.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "night",
+   "shift",
+   "shifts",
+   "rotational",
+   "flexible",
+   "schedule",
+   "hours",
+   "willing"
+  ]
+ },
+ {
+  "id": "hr055",
+  "category": "logistics",
+  "question": "Are you willing to sign a service agreement or bond?",
+  "guidance": "Answer honestly after understanding the terms, show commitment to a long stay and ask about the conditions.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "bond",
+   "agreement",
+   "service",
+   "years",
+   "commitment",
+   "terms",
+   "contract",
+   "willing"
+  ]
+ },
+ {
+  "id": "hr056",
+  "category": "logistics",
+  "question": "What is your notice period?",
+  "guidance": "State the notice period, mention any flexibility for an earlier release and show commitment to a smooth handover.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "notice",
+   "period",
+   "days",
+   "month",
+   "months",
+   "serving",
+   "relieve",
+   "handover",
+   "join"
+  ]
+ },
+ {
+  "id": "hr057",
+  "category": "logistics",
+  "question": "When can you join us?",
+  "guidance": "Give an honest joining date aligned with your commitments and show eagerness.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "join",
+   "joining",
+   "date",
+   "immediately",
+   "weeks",
+   "notice",
+   "available",
+   "start"
+  ]
+ },
+ {
+  "id": "hr058",
+  "category": "logistics",
+  "question": "Are you comfortable working from the office five days a week?",
+  "guidance": "Give a clear answer with reasons showing you value collaboration and are ready to adapt.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "office",
+   "onsite",
+   "five",
+   "days",
+   "collaboration",
+   "commute",
+   "hybrid",
+   "remote",
+   "comfortable"
+  ]
+ },
+ {
+  "id": "hr059",
+  "category": "logistics",
+  "question": "Are you willing to travel or be deployed at client locations?",
+  "guidance": "Express flexibility with an example of adapting, and mention any genuine constraints honestly.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "travel",
+   "travelling",
+   "client",
+   "location",
+   "deployed",
+   "onsite",
+   "flexible",
+   "willing"
+  ]
+ },
+ {
+  "id": "hr060",
+  "category": "logistics",
+  "question": "Are you comfortable working weekends or long hours when needed?",
+  "guidance": "Show willingness to put in extra effort for critical deadlines, with an example, while keeping sustainable habits.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "weekends",
+   "weekend",
+   "overtime",
+   "hours",
+   "late",
+   "deadline",
+   "extra",
+   "effort",
+   "flexible",
+   "commitment"
+  ]
+ },
+ {
+  "id": "hr061",
+  "category": "logistics",
+  "question": "Do you have any other job offers?",
+  "guidance": "Answer honestly and diplomatically, and explain why this opportunity interests you.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "offer",
+   "offers",
+   "interviews",
+   "options",
+   "other",
+   "companies",
+   "applied",
+   "interest"
+  ]
+ },
+ {
+  "id": "hr062",
+  "category": "logistics",
+  "question": "If we offer a lower salary than you expect, what would you do?",
+  "guidance": "Show professionalism: discuss the structure, growth and learning value, and negotiate respectfully.",
+  "concepts": [
+   "Context and situation for logistics",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "salary",
+   "lower",
+   "offer",
+   "negotiate",
+   "growth",
+   "learning",
+   "package",
+   "value",
+   "discuss"
+  ]
+ },
+ {
+  "id": "hr063",
+  "category": "teamwork",
+  "question": "Tell me about a time you worked in a team.",
+  "guidance": "Use STAR: describe the team goal, your specific contribution, the result and what you learned.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "team",
+   "teammates",
+   "group",
+   "project",
+   "together",
+   "collaboration",
+   "contribution",
+   "worked"
+  ]
+ },
+ {
+  "id": "hr064",
+  "category": "teamwork",
+  "question": "How do you handle a teammate who is not cooperating?",
+  "guidance": "Describe talking to them privately, understanding the cause, finding a solution and the improved outcome.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "teammate",
+   "cooperating",
+   "cooperate",
+   "colleague",
+   "talked",
+   "understand",
+   "reason",
+   "motivate",
+   "conflict"
+  ]
+ },
+ {
+  "id": "hr065",
+  "category": "teamwork",
+  "question": "Describe a time you helped a colleague or classmate.",
+  "guidance": "Give a specific situation, how you helped, the outcome and what it taught you.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "helped",
+   "help",
+   "colleague",
+   "classmate",
+   "friend",
+   "supported",
+   "guided",
+   "taught"
+  ]
+ },
+ {
+  "id": "hr066",
+  "category": "teamwork",
+  "question": "How do you communicate with people who disagree with you?",
+  "guidance": "Show active listening and respectful discussion, with a real example of reaching agreement.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "disagree",
+   "disagreement",
+   "opinion",
+   "listen",
+   "listening",
+   "discuss",
+   "agreement",
+   "respect",
+   "perspective"
+  ]
+ },
+ {
+  "id": "hr067",
+  "category": "teamwork",
+  "question": "Tell me about a time you had to explain something complex to someone.",
+  "guidance": "Describe the situation, how you simplified it and the positive result.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "explain",
+   "explained",
+   "complex",
+   "simple",
+   "simplified",
+   "understand",
+   "example",
+   "analogy",
+   "teaching"
+  ]
+ },
+ {
+  "id": "hr068",
+  "category": "teamwork",
+  "question": "How comfortable are you working with people from different backgrounds and languages?",
+  "guidance": "Show adaptability with a real example of working in a diverse team and what you learned.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "diverse",
+   "different",
+   "backgrounds",
+   "languages",
+   "cultures",
+   "adapt",
+   "team",
+   "respect",
+   "communication"
+  ]
+ },
+ {
+  "id": "hr069",
+  "category": "teamwork",
+  "question": "What role do you usually play in a group?",
+  "guidance": "Describe your natural role with an example and show flexibility to take other roles.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "role",
+   "group",
+   "team",
+   "usually",
+   "coordinator",
+   "leader",
+   "member",
+   "planner"
+  ]
+ },
+ {
+  "id": "hr070",
+  "category": "teamwork",
+  "question": "How do you handle working with someone you do not get along with?",
+  "guidance": "Show professionalism, focus on shared goals and give an example of successful collaboration.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "along",
+   "difficult",
+   "colleague",
+   "professional",
+   "personality",
+   "focus",
+   "goals",
+   "respect"
+  ]
+ },
+ {
+  "id": "hr071",
+  "category": "teamwork",
+  "question": "Describe a time you received difficult feedback.",
+  "guidance": "Describe the feedback, your response, the changes you made and the improvement.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "feedback",
+   "criticism",
+   "difficult",
+   "improved",
+   "changed",
+   "learned",
+   "manager",
+   "mentor"
+  ]
+ },
+ {
+  "id": "hr072",
+  "category": "teamwork",
+  "question": "How do you keep communication clear in a remote or hybrid team?",
+  "guidance": "Describe concrete habits such as regular updates, clear documentation and proactive check-ins, with an example.",
+  "concepts": [
+   "Context and situation for teamwork",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "remote",
+   "hybrid",
+   "communication",
+   "updates",
+   "meetings",
+   "documentation",
+   "chat",
+   "video",
+   "calls"
+  ]
+ },
+ {
+  "id": "hr073",
+  "category": "leadership",
+  "question": "Tell me about a time you took the lead on something.",
+  "guidance": "Describe the situation, how you organised people, the result and your lessons about leadership.",
+  "concepts": [
+   "Context and situation for leadership",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "lead",
+   "led",
+   "leader",
+   "organised",
+   "organized",
+   "team",
+   "initiative",
+   "responsibility",
+   "coordinated"
+  ]
+ },
+ {
+  "id": "hr074",
+  "category": "leadership",
+  "question": "Have you ever taken initiative without being asked?",
+  "guidance": "Give a specific example of spotting a problem, acting on it and the result.",
+  "concepts": [
+   "Context and situation for leadership",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "initiative",
+   "volunteered",
+   "proactive",
+   "started",
+   "noticed",
+   "without",
+   "asked",
+   "idea"
+  ]
+ },
+ {
+  "id": "hr075",
+  "category": "leadership",
+  "question": "How do you motivate others in your team?",
+  "guidance": "Describe practical methods with a real example of improving a team's motivation or performance.",
+  "concepts": [
+   "Context and situation for leadership",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "motivate",
+   "motivated",
+   "motivation",
+   "encourage",
+   "team",
+   "morale",
+   "recognise",
+   "appreciate"
+  ]
+ },
+ {
+  "id": "hr076",
+  "category": "leadership",
+  "question": "Describe a time you had to make a tough decision.",
+  "guidance": "Explain the options, your reasoning, the decision, the result and your reflection.",
+  "concepts": [
+   "Context and situation for leadership",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "decision",
+   "decide",
+   "difficult",
+   "tough",
+   "options",
+   "choice",
+   "weighed",
+   "result"
+  ]
+ },
+ {
+  "id": "hr077",
+  "category": "leadership",
+  "question": "How do you delegate tasks and make sure they are completed?",
+  "guidance": "Describe matching tasks to strengths, setting clear expectations and following up, with an example.",
+  "concepts": [
+   "Context and situation for leadership",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "delegate",
+   "delegated",
+   "tasks",
+   "assign",
+   "strengths",
+   "follow",
+   "track",
+   "responsibility"
+  ]
+ },
+ {
+  "id": "hr078",
+  "category": "leadership",
+  "question": "Tell me about a time you managed multiple priorities.",
+  "guidance": "Describe the competing tasks, how you prioritised, the outcome and what you would repeat.",
+  "concepts": [
+   "Context and situation for leadership",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "priorities",
+   "prioritise",
+   "prioritize",
+   "tasks",
+   "deadlines",
+   "multiple",
+   "schedule",
+   "urgent",
+   "important"
+  ]
+ },
+ {
+  "id": "hr079",
+  "category": "conflict handling",
+  "question": "Tell me about a conflict you faced and how you resolved it.",
+  "guidance": "Describe the conflict calmly, your actions toward resolution, the outcome and the lessons.",
+  "concepts": [
+   "Context and situation for conflict handling",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "conflict",
+   "resolved",
+   "resolve",
+   "disagreement",
+   "argument",
+   "talked",
+   "compromise",
+   "mediation"
+  ]
+ },
+ {
+  "id": "hr080",
+  "category": "conflict handling",
+  "question": "Tell me about a time you disagreed with your manager or professor.",
+  "guidance": "Show respectful disagreement backed by reasoning, how you reached a resolution and what you learned.",
+  "concepts": [
+   "Context and situation for conflict handling",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "disagreed",
+   "disagreement",
+   "manager",
+   "professor",
+   "respectfully",
+   "reasoning",
+   "data",
+   "discussed"
+  ]
+ },
+ {
+  "id": "hr081",
+  "category": "conflict handling",
+  "question": "What would you do if you disagreed with a decision made by your team lead?",
+  "guidance": "Describe voicing concerns respectfully with reasons, then supporting the final decision professionally.",
+  "concepts": [
+   "Context and situation for conflict handling",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "disagree",
+   "decision",
+   "lead",
+   "concerns",
+   "respectfully",
+   "support",
+   "discuss"
+  ]
+ },
+ {
+  "id": "hr082",
+  "category": "conflict handling",
+  "question": "How would you handle an angry customer or client?",
+  "guidance": "Show listening, empathy, a clear solution and follow-up, ideally with an example.",
+  "concepts": [
+   "Context and situation for conflict handling",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "angry",
+   "customer",
+   "client",
+   "calm",
+   "listen",
+   "apologise",
+   "apologize",
+   "solution",
+   "complaint"
+  ]
+ },
+ {
+  "id": "hr083",
+  "category": "conflict handling",
+  "question": "Tell me about a time you had to adapt to a big change.",
+  "guidance": "Describe the change, how you adapted, the result and what you learned.",
+  "concepts": [
+   "Context and situation for conflict handling",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "change",
+   "adapt",
+   "adapted",
+   "new",
+   "flexible",
+   "transition",
+   "learned"
+  ]
+ },
+ {
+  "id": "hr084",
+  "category": "conflict handling",
+  "question": "What would you do if you were given a task you had never done before?",
+  "guidance": "Show a structured approach: research, ask for help, learn quickly and deliver, with an example.",
+  "concepts": [
+   "Context and situation for conflict handling",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "never",
+   "new",
+   "task",
+   "learn",
+   "research",
+   "ask",
+   "help",
+   "figure",
+   "guidance"
+  ]
+ },
+ {
+  "id": "hr085",
+  "category": "conflict handling",
+  "question": "Have you ever had to work with limited resources or information?",
+  "guidance": "Give an example of how you improvised, prioritised and still delivered.",
+  "concepts": [
+   "Context and situation for conflict handling",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "limited",
+   "resources",
+   "information",
+   "constraints",
+   "improvised",
+   "managed",
+   "budget",
+   "time"
+  ]
+ },
+ {
+  "id": "hr086",
+  "category": "conflict handling",
+  "question": "What would you do if your manager gave you an unrealistic deadline?",
+  "guidance": "Show professional communication: clarify priorities, suggest alternatives and deliver what is feasible.",
+  "concepts": [
+   "Context and situation for conflict handling",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "unrealistic",
+   "deadline",
+   "manager",
+   "discuss",
+   "timeline",
+   "priorities",
+   "feasible",
+   "communicate"
+  ]
+ },
+ {
+  "id": "hr087",
+  "category": "pressure and failure",
+  "question": "Tell me about a time you failed.",
+  "guidance": "Own the failure honestly, explain what you did, what you learned and how you improved.",
+  "concepts": [
+   "Context and situation for pressure and failure",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "failed",
+   "failure",
+   "mistake",
+   "learned",
+   "lesson",
+   "setback",
+   "improved"
+  ]
+ },
+ {
+  "id": "hr088",
+  "category": "pressure and failure",
+  "question": "Tell me about a time you worked under pressure.",
+  "guidance": "Describe the situation, how you stayed organised and calm, the result and the lessons.",
+  "concepts": [
+   "Context and situation for pressure and failure",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "pressure",
+   "stress",
+   "deadline",
+   "calm",
+   "managed",
+   "delivered",
+   "tight"
+  ]
+ },
+ {
+  "id": "hr089",
+  "category": "pressure and failure",
+  "question": "Tell me about a mistake you made and how you fixed it.",
+  "guidance": "Take ownership, describe the fix and the steps taken to prevent a repeat.",
+  "concepts": [
+   "Context and situation for pressure and failure",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "mistake",
+   "error",
+   "fixed",
+   "corrected",
+   "owned",
+   "responsibility",
+   "prevent"
+  ]
+ },
+ {
+  "id": "hr090",
+  "category": "pressure and failure",
+  "question": "How do you handle tight deadlines?",
+  "guidance": "Describe planning, prioritising and communication, with a specific example of meeting a deadline.",
+  "concepts": [
+   "Context and situation for pressure and failure",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "deadline",
+   "deadlines",
+   "tight",
+   "plan",
+   "prioritise",
+   "schedule",
+   "delivered",
+   "time"
+  ]
+ },
+ {
+  "id": "hr091",
+  "category": "pressure and failure",
+  "question": "Tell me about a time you were disappointed with a result.",
+  "guidance": "Describe the setback, your response, what you did to move forward and the lesson.",
+  "concepts": [
+   "Context and situation for pressure and failure",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "disappointed",
+   "disappointment",
+   "result",
+   "setback",
+   "marks",
+   "moved",
+   "forward",
+   "learned"
+  ]
+ },
+ {
+  "id": "hr092",
+  "category": "pressure and failure",
+  "question": "What is the toughest decision you have made so far?",
+  "guidance": "Explain the situation, options considered, your decision, the outcome and your reflection.",
+  "concepts": [
+   "Context and situation for pressure and failure",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "decision",
+   "toughest",
+   "difficult",
+   "options",
+   "choice",
+   "weighed",
+   "outcome"
+  ]
+ },
+ {
+  "id": "hr093",
+  "category": "pressure and failure",
+  "question": "What would you do if you were unable to meet a deadline?",
+  "guidance": "Show early communication, a recovery plan and what you would learn for the future.",
+  "concepts": [
+   "Context and situation for pressure and failure",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "deadline",
+   "unable",
+   "miss",
+   "delay",
+   "inform",
+   "communicate",
+   "manager",
+   "recovery",
+   "plan"
+  ]
+ },
+ {
+  "id": "hr094",
+  "category": "pressure and failure",
+  "question": "How do you stay motivated when work becomes repetitive or difficult?",
+  "guidance": "Describe practical techniques and a real example of persisting and finding purpose.",
+  "concepts": [
+   "Context and situation for pressure and failure",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "motivated",
+   "motivation",
+   "repetitive",
+   "difficult",
+   "boring",
+   "routine",
+   "purpose",
+   "goals"
+  ]
+ },
+ {
+  "id": "hr095",
+  "category": "ethics and values",
+  "question": "What would you do if you saw a colleague doing something unethical?",
+  "guidance": "Show integrity: raise it through the right channel with facts while protecting confidentiality.",
+  "concepts": [
+   "Context and situation for ethics and values",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "unethical",
+   "wrong",
+   "report",
+   "integrity",
+   "colleague",
+   "honest",
+   "manager",
+   "policy"
+  ]
+ },
+ {
+  "id": "hr096",
+  "category": "ethics and values",
+  "question": "Tell me about a time you had to make an ethical choice.",
+  "guidance": "Describe the situation, the options, why you chose to act with integrity and the outcome.",
+  "concepts": [
+   "Context and situation for ethics and values",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "ethical",
+   "integrity",
+   "honest",
+   "right",
+   "decision",
+   "wrong",
+   "values",
+   "chose"
+  ]
+ },
+ {
+  "id": "hr097",
+  "category": "ethics and values",
+  "question": "How do you handle confidential information?",
+  "guidance": "Describe respecting confidentiality and sharing only on a need-to-know basis, with an example.",
+  "concepts": [
+   "Context and situation for ethics and values",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "confidential",
+   "confidentiality",
+   "sensitive",
+   "information",
+   "privacy",
+   "secure",
+   "share"
+  ]
+ },
+ {
+  "id": "hr098",
+  "category": "ethics and values",
+  "question": "What does work-life balance mean to you?",
+  "guidance": "Show a mature view of productivity and wellbeing without implying low commitment, with examples.",
+  "concepts": [
+   "Context and situation for ethics and values",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "balance",
+   "personal",
+   "life",
+   "family",
+   "health",
+   "productivity",
+   "time",
+   "hobbies"
+  ]
+ },
+ {
+  "id": "hr099",
+  "category": "ethics and values",
+  "question": "What are your thoughts on working beyond your job description?",
+  "guidance": "Show willingness to go the extra mile when needed, with an example and respect for sustainable habits.",
+  "concepts": [
+   "Context and situation for ethics and values",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "beyond",
+   "description",
+   "extra",
+   "additional",
+   "responsibilities",
+   "initiative",
+   "effort",
+   "help"
+  ]
+ },
+ {
+  "id": "hr100",
+  "category": "ethics and values",
+  "question": "Is there anything else you would like us to know about you?",
+  "guidance": "Close with one or two relevant, honest points not yet covered, with a concise and confident wrap-up.",
+  "concepts": [
+   "Context and situation for ethics and values",
+   "Concrete personal actions taken",
+   "Quantifiable or tangible outcome",
+   "Professional self-reflection and ownership"
+  ],
+  "keywords": [
+   "strength",
+   "skill",
+   "passion",
+   "commitment",
+   "learn",
+   "contribute",
+   "thank",
+   "experience",
+   "project",
+   "team",
+   "college",
+   "achievement",
+   "internship",
+   "goal",
+   "interest"
+  ]
+ }
+]

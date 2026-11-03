@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "C:\Users\kavin\Downloads\MockMateAI-fresh\MockMateAI-Clean-Source\evaluation\eval_models.py", line 15, in <module>
+    india = {x["question"] for x in json.load(open("hr_india_100.json", encoding="utf-8"))}
+                                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'hr_india_100.json'

@@ -105,6 +105,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const deleteAccount = async () => {
+    try {
+      return await apiService.deleteAccount();
+    } finally {
+      setUser(null);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -114,6 +122,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        deleteAccount,
         setUser,
       }}
     >

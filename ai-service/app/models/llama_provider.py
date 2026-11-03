@@ -4,12 +4,23 @@ import requests
 import json
 import re
 import random
+import sqlite3
 import logging
+import math
+import threading
+import time
+import numpy as np
 from app.config import settings
+from app.utils.hr_gate import STOP, stem
 from app.utils.hr_scoring import calculate_hr_overall, build_hr_evaluation_summary
 from app.models.prompt_templates import build_training_style_prompt, TRAINING_SYSTEM_PROMPT
 
 logger = logging.getLogger("ai_service")
+_OLLAMA_MODEL_LOCK = threading.Lock()
+
+# FIX 2: Bounded waiting constants for Java coding and SQL questions
+MAX_CODING_GENERATION_ATTEMPTS = 2
+MAX_CODING_GENERATION_TIMEOUT_SEC = 25
 
 
 def _safe_str(val) -> str:
@@ -140,6 +151,69 @@ _THEORY_TOPIC_FOCUS = {
         "balancing individual contributor tasks with team unblocking and code reviewing",
     ],
 }
+_THEORY_TOPIC_FOCUS_EASY = {
+    "java": [
+        "what a class and an object are in Java",
+        "the difference between JDK, JRE and JVM",
+        "primitive data types versus wrapper classes",
+        "the final keyword for variables, methods and classes",
+        "the static keyword for variables and methods",
+        "the difference between == and equals() when comparing Strings",
+        "String versus StringBuilder",
+        "constructors and the this keyword",
+        "method overloading versus method overriding",
+        "inheritance and the super keyword",
+        "abstract class versus interface",
+        "encapsulation and access modifiers (public, private, protected)",
+        "array versus ArrayList",
+        "ArrayList versus LinkedList",
+        "List versus Set versus Map",
+        "checked versus unchecked exceptions",
+        "try, catch and finally blocks",
+        "the difference between throw and throws",
+        "polymorphism with a simple example",
+        "pass by value in Java",
+        "autoboxing and unboxing",
+        "the Object class and the toString() method",
+        "the difference between break and continue",
+        "how a HashMap stores keys and values",
+    ],
+    "dbms": [
+        "what a primary key is",
+        "what a foreign key is",
+        "the difference between DELETE, TRUNCATE and DROP",
+        "the difference between WHERE and HAVING",
+        "INNER JOIN versus LEFT JOIN",
+        "what normalization is and why it is used",
+        "the ACID properties in simple terms",
+        "the difference between DBMS and RDBMS",
+        "what a view is",
+        "what an index is and why it makes searches faster",
+        "the difference between CHAR and VARCHAR",
+        "the difference between UNIQUE and PRIMARY KEY",
+        "what GROUP BY does",
+        "the aggregate functions COUNT, SUM and AVG",
+        "what NULL means in SQL",
+        "the SQL command groups DDL, DML and DCL",
+        "what a transaction is (COMMIT and ROLLBACK)",
+    ],
+}
+
+
+def _theory_topics_for(difficulty: str) -> dict:
+    """Topic pool by level: easy = beginner topics only, medium = no advanced topics, hard = everything."""
+    level = (difficulty or "medium").lower()
+    if level == "easy":
+        return _THEORY_TOPIC_FOCUS_EASY
+    if level == "medium":
+        out = {}
+        for subj, topics in _THEORY_TOPIC_FOCUS.items():
+            kept = [t for t in topics if not _question_level_problem(t, "medium", check_length=False)]
+            out[subj] = (kept + list(_THEORY_TOPIC_FOCUS_EASY.get(subj, []))) if subj in _THEORY_TOPIC_FOCUS_EASY else kept
+        return out
+    return _THEORY_TOPIC_FOCUS
+
+
 _GENERIC_THEORY_FOCUS = [
     "a core fundamental concept",
     "a commonly misunderstood edge case",
@@ -190,22 +264,26 @@ _HR_FORBIDDEN_TOPIC = re.compile(
 )
 
 
-def _pick_topic_focus(subject: str, previous: list, pool_by_subject: dict, generic_pool: list, rejected: list = None) -> str:
+def _pick_topic_focus(subject: str, previous: list, pool_by_subject: dict, generic_pool: list, rejected: list = None, exclude_texts: list = None, session_id: str = None) -> str:
     """
     Picks a random sub-topic focus for this call, skipping any focus phrase
     that already appears (case-insensitively) among previously asked
-    questions or rejected attempts in this session so a long session doesn't loop back onto the
-    same sub-topic it already covered.
+    questions or rejected attempts in this session or past sessions (exclude_texts)
+    so a session doesn't loop back onto the same sub-topic it already covered.
     """
     pool = pool_by_subject.get((subject or "").lower()) or generic_pool
     prev_text = " ".join(_safe_str(p) for p in (previous or [])).lower()
     rej_text = " ".join(_safe_str(r) for r in (rejected or [])).lower()
-    combined = f"{prev_text} {rej_text}"
+    excl_text = " ".join(_safe_str(e) for e in (exclude_texts or [])).lower()
+    combined = f"{prev_text} {rej_text} {excl_text}"
     candidates = [p for p in pool if p.lower() not in combined]
+    if not candidates:
+        candidates = [p for p in pool if p.lower() not in f"{prev_text} {rej_text}"]
     if not candidates:
         domain = random.choice(_BUSINESS_DOMAINS)
         candidates = [f"{p} in the context of a {domain}" for p in pool]
-    return random.choice(candidates)
+    rng = random.Random(f"{session_id}:{len(previous or [])}") if session_id else random.Random()
+    return rng.choice(candidates)
 
 
 class AIGenerationUnavailableError(RuntimeError):
@@ -229,7 +307,7 @@ class BaseAIModel(ABC):
         pass
 
     @abstractmethod
-    def generate_followup(self, question: str, answer: str, concepts: list, previous: list = None, interview_type: str = "technical") -> dict:
+    def generate_followup(self, question: str, answer: str, concepts: list, previous: list = None, interview_type: str = "technical", subject: str = None, **kwargs) -> dict:
         pass
 
     @abstractmethod
@@ -332,13 +410,17 @@ def _bounded_score(value, default: float = 0.0) -> float:
 
 
 def _irrelevant_text_evaluation() -> dict:
+    from app.utils.scoring_formulas import build_formula_object
     reason = "The answer is unrelated to the question."
     return {
         "score": 0,
         "conceptCoverage": 0.0,
         "correctness": 0.0,
         "relevance": 0.0,
+        "accuracy": 0.0,
         "communication": 0.0,
+        "formula": build_formula_object("theory", 0, 0, 0, 0),
+        "source": "rule",
         "isIrrelevant": True,
         "feedback": reason,
         "strengths": [],
@@ -1122,6 +1204,56 @@ _DIFFICULTY_GUIDANCE = {
 }
 
 
+_LEVEL_BANNED_EASY = [
+    r"garbage collect\w*", r"\bg1\b", r"\bzgc\b", r"\bcms\b", r"happens[- ]before", r"memory model",
+    r"\bvolatile\b", r"class ?loader\w*", r"\bjit\b", r"bytecode", r"escape analysis", r"memory barrier",
+    r"\bdeadlock\w*", r"\blivelock\w*", r"thread pool\w*", r"\bexecutor\w*", r"metaspace", r"permgen",
+    r"weak ?reference\w*", r"soft ?reference\w*", r"phantom ?reference\w*", r"compare-and-(swap|set)", r"\bmvcc\b",
+    r"isolation level\w*", r"serializab\w*", r"write-ahead", r"b\+ ?tree", r"query optimi[sz]er", r"execution plan",
+    r"two-phase", r"\b2pc\b", r"shard\w*", r"cap theorem", r"lock escalation", r"phantom read\w*", r"reentrantlock",
+    r"internal(ly)?\b",
+    r"virtual thread\w*", r"\bloom\b", r"annotation\w*", r"reflection", r"wildcard\w*", r"erasure", r"generic\w*",
+    r"lambda\w*", r"functional interface\w*", r"method reference\w*", r"stream api", r"serializ\w*", r"transient",
+    r"cloneable", r"\bclone\b", r"thread ?local", r"sealed", r"pattern matching", r"under the hood",
+    r"auto-?closeable", r"try-with-resources", r"concurrenthashmap", r"\bhashcode\b",
+]
+_LEVEL_BANNED_MEDIUM = [
+    r"\bg1\b", r"\bzgc\b", r"\bcms\b", r"happens[- ]before", r"memory model", r"escape analysis",
+    r"memory barrier", r"metaspace", r"permgen", r"\bmvcc\b", r"write-ahead", r"\b2pc\b",
+    r"cap theorem", r"lock escalation", r"compare-and-(swap|set)",
+    r"virtual thread\w*", r"\bloom\b", r"weak ?reference\w*", r"soft ?reference\w*", r"phantom ?reference\w*",
+    r"sealed", r"pattern matching", r"thread ?local",
+]
+_LEVEL_MAX_WORDS = {"easy": 24, "medium": 48}
+_COMPOUND_QUESTION = re.compile(r",? and (how|why|what|when|where|which|in what)\b", re.IGNORECASE)
+
+
+def _question_level_problem(text: str, difficulty: str, check_length: bool = True) -> str:
+    """
+    Returns a short reason when the text clearly does not fit the chosen level, else "".
+    Plain word lists and a length limit, so a small model that ignores the level cannot slip an
+    advanced topic (garbage collectors, happens-before, ...) into an Easy session.
+    """
+    level = (difficulty or "medium").lower()
+    if level not in _LEVEL_MAX_WORDS:
+        return ""
+    banned = _LEVEL_BANNED_EASY if level == "easy" else _LEVEL_BANNED_MEDIUM
+    low = (text or "").lower()
+    for pat in banned:
+        m = re.search(pat, low)
+        if m:
+            return f'it uses "{m.group(0)}", which is too advanced for a {level} question'
+    if check_length:
+        words = len(re.findall(r"\S+", text or ""))
+        if words > _LEVEL_MAX_WORDS[level]:
+            return f"it is {words} words long; a {level} question must be short and about one idea"
+        if (text or "").count("?") > 1:
+            return "it asks more than one question"
+        if level == "easy" and _COMPOUND_QUESTION.search(text or ""):
+            return "it asks two things at once; an easy question asks one simple thing"
+    return ""
+
+
 def _difficulty_guidance(difficulty: str) -> str:
     """
     Concrete calibration anchor for what each difficulty label should
@@ -1277,6 +1409,7 @@ def _should_reject_term_list(question: str, answer: str) -> bool:
 
 def _keyword_list_evaluation(concepts: list) -> dict:
     """Java/DBMS theory: a bare list of terms shows no understanding -> 0."""
+    from app.utils.scoring_formulas import build_formula_object
     reason = (
         "The answer is only a list of terms. It doesn't explain anything or answer the "
         "question, so it doesn't demonstrate understanding."
@@ -1286,7 +1419,10 @@ def _keyword_list_evaluation(concepts: list) -> dict:
         "conceptCoverage": 0.0,
         "correctness": 0.0,
         "relevance": 0.0,
+        "accuracy": 0.0,
         "communication": 0.0,
+        "formula": build_formula_object("theory", 0, 0, 0, 0),
+        "source": "rule",
         "isIrrelevant": False,
         "feedback": reason,
         "strengths": [],
@@ -1306,11 +1442,76 @@ def _keyword_list_evaluation(concepts: list) -> dict:
     }
 
 
-_HR_NOT_RELATED_MESSAGE = "Not related to the question."
+MIN_NEW_WORDS_THEORY = 3
+MIN_NEW_WORDS_HR = 1
+THEORY_T_COVER = 0.70
+THEORY_T_PARTIAL = 0.58
+THEORY_SIDE_CAP_MARGIN = 15  # Deterministic side cap margin (Task A2)
+
+_CONTRADICTION_PAIRS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "contradiction_pairs.json")
+try:
+    with open(_CONTRADICTION_PAIRS_FILE, "r", encoding="utf-8") as _f:
+        _CONTRADICTION_PAIRS = json.load(_f)
+except Exception:
+    _CONTRADICTION_PAIRS = [
+        ["compile time", "runtime"], ["compile-time", "runtime"], ["stack", "heap"],
+        ["single", "multiple"], ["same", "different"], ["mutable", "immutable"],
+        ["fixed", "dynamic"], ["sorted", "unsorted"], ["any", "specific"],
+        ["public", "private"], ["faster", "slower"], ["fast", "slow"],
+        ["one", "many"], ["any", "exact"], ["any", "one"]
+    ]
+
+_REFLEXIVE_PRONOUNS = {
+    "myself", "yourself", "yourselves", "himself", "herself", "itself", "ourselves", "themselves"
+}
+
+_FILLER_META_WORDS = {
+    "know", "think", "sure", "answer", "explain", "difference", "between", "thing", "things",
+    "stuff", "yes", "no", "okay"
+}
+
+_NON_CONTENT_STOP_WORDS = STOP | _REFLEXIVE_PRONOUNS | _FILLER_META_WORDS
 
 
-def _not_related_hr_evaluation() -> dict:
-    """HR: the answer doesn't address the question at all."""
+def _has_no_new_content(question: str, answer: str, min_new_words: int) -> bool:
+    """
+    Returns True if an answer only repeats words from the question (plus filler / stop words).
+    1. Lower-case the answer and take words with re.findall(r"[A-Za-z][A-Za-z'-]*", ...).
+    2. Remove: stop words; words shorter than 3 letters; reflexive pronouns;
+       filler/meta words; and every word whose stem appears in the QUESTION text.
+    3. Count the distinct words left. Return True if the count is below min_new_words.
+    4. Never apply it when the answer contains code punctuation { } ( ) = ; < >
+       or when _question_asks_for_list(question) is True.
+    """
+    ans_text = (answer or "").strip()
+    if not ans_text:
+        return False
+    if re.search(r"[{}()=;<>]", ans_text):
+        return False
+    if _question_asks_for_list(question):
+        return False
+
+    q_tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", (question or "").lower())
+    q_stems = {stem(w) for w in q_tokens}
+
+    ans_words = re.findall(r"[A-Za-z][A-Za-z'-]*", ans_text.lower())
+    new_words = set()
+    for w in ans_words:
+        if len(w) < 3:
+            continue
+        if w in _NON_CONTENT_STOP_WORDS:
+            continue
+        w_stem = stem(w)
+        if w_stem in q_stems or w in q_stems:
+            continue
+        new_words.add(w)
+
+    return len(new_words) < min_new_words
+
+
+def _no_new_content_evaluation(concepts: list = None) -> dict:
+    """Deterministic 0 score when candidate answer only repeats the question."""
+    reason = "The answer only repeats words from the question and does not explain anything."
     return {
         "score": 0,
         "conceptCoverage": 0.0,
@@ -1318,6 +1519,777 @@ def _not_related_hr_evaluation() -> dict:
         "relevance": 0.0,
         "accuracy": 0.0,
         "communication": 0.0,
+        "isIrrelevant": False,
+        "feedback": reason,
+        "strengths": [],
+        "weaknesses": ["Answer repeats the question without explaining"],
+        "coveredConcepts": [],
+        "partiallyCoveredConcepts": [],
+        "missingConcepts": list(concepts or []),
+        "deeperConcepts": [],
+        "improvementSuggestion": "Explain it in your own words with at least one specific point.",
+        "scoreReason": reason,
+        "whyNot100": reason,
+        "modelUsed": "fallback_rules",
+        "usedFallback": True,
+        "scoringSources": ["rules"],
+    }
+
+
+def calculate_theory_overall(relevance, correctness, concept_coverage, accuracy=None, communication=None) -> int:
+    """Exact rounded mean of the four theory parameter integer percentages."""
+    from app.utils.scoring_formulas import question_score, round_half_up
+    def _pct(v):
+        try:
+            val = float(v)
+        except (TypeError, ValueError):
+            return 0
+        if 0.0 < val <= 1.0:
+            return round_half_up(val * 100.0)
+        return max(0, min(100, round_half_up(val)))
+
+    acc = accuracy if accuracy is not None else concept_coverage
+    params = {
+        "accuracy": _pct(acc),
+        "correctness": _pct(correctness),
+        "relevance": _pct(relevance),
+        "concept_coverage": _pct(concept_coverage),
+    }
+    return question_score(params)
+
+
+def _split_reference_key_points(reference_answer: str) -> list:
+    """
+    Split referenceAnswer into 2-6 points:
+    Sentences, then split on ';', ' while ', ' whereas ', and clause boundaries;
+    drop points under 4 words. Guarantees 2-6 points.
+    """
+    if not reference_answer or not reference_answer.strip():
+        return []
+    protected = re.sub(
+        r'\b(e\.g\.|i\.e\.|etc\.|vs\.)',
+        lambda m: m.group(0).replace('.', '__DOT__'),
+        reference_answer.strip(),
+        flags=re.IGNORECASE
+    )
+    # Protect commas inside parentheses
+    protected = re.sub(
+        r'\([^)]*\)',
+        lambda m: m.group(0).replace(',', '__COMMA__'),
+        protected
+    )
+    sents = [s.replace('__DOT__', '.').strip() for s in re.split(r'(?<=[.!?])\s+|\n+', protected) if s.strip()]
+    points = []
+    split_regex = r';|\s+while\s+|\s+whereas\s+|,\s+and\s+|,\s+but\s+|\s+--\s+|:\s+|,\s+which\s+|,\s+so\s+|,\s+since\s+|,\s+where\s+|,\s+meaning\s+|,\s+without\s+|,\s+allowing\s+|,\s+enabling\s+|,\s+or\s+'
+    for s in sents:
+        for pt in re.split(split_regex, s, flags=re.IGNORECASE):
+            clean = pt.replace('__COMMA__', ',').strip().rstrip('.!?')
+            w_count = len(re.findall(r"[A-Za-z][A-Za-z'-]*", clean))
+            if w_count >= 4:
+                points.append(clean)
+    if len(points) < 3:
+        new_pts = []
+        for p in (points or [reference_answer.strip()]):
+            for pt in re.split(r',\s+', p):
+                clean = pt.replace('__COMMA__', ',').strip().rstrip('.!?')
+                if len(re.findall(r"[A-Za-z][A-Za-z'-]*", clean)) >= 4:
+                    new_pts.append(clean)
+        if len(new_pts) >= len(points):
+            points = new_pts
+    if not points and reference_answer.strip():
+        points = [reference_answer.strip()]
+    if len(points) > 6:
+        points = points[:6]
+    return points
+
+
+def _split_answer_units(answer: str) -> list:
+    """
+    Split answer into comparison units: whole answer, 2-sentence sliding windows,
+    single sentences, and clause-level key points.
+    """
+    if not answer or not answer.strip():
+        return []
+    clean_ans = answer.strip()
+    protected = re.sub(
+        r'\b(e\.g\.|i\.e\.|etc\.|vs\.)',
+        lambda m: m.group(0).replace('.', '__DOT__'),
+        clean_ans,
+        flags=re.IGNORECASE
+    )
+    sents = [s.replace('__DOT__', '.').strip() for s in re.split(r'(?<=[.!?])\s+|\n+', protected) if s.strip()]
+    kps = _split_reference_key_points(clean_ans)
+
+    units = []
+    # 1. Whole answer
+    units.append(clean_ans)
+    # 2. 2-sentence sliding windows
+    if len(sents) >= 2:
+        for i in range(len(sents) - 1):
+            w = f"{sents[i]} {sents[i+1]}"
+            if w not in units:
+                units.append(w)
+    # 3. Single sentences
+    for s in sents:
+        if s not in units:
+            units.append(s)
+    # 4. Clauses
+    for kp in kps:
+        if kp not in units:
+            units.append(kp)
+    return units or [clean_ans]
+
+
+def _clean_stem(s: str) -> str:
+    """Normalize repeated trailing consonants from stemming, e.g. scann -> scan."""
+    if len(s) >= 4 and s[-1] == s[-2] and s[-1] in "bdfgmnprtz":
+        return s[:-1]
+    return s
+
+
+def _get_key_point_anchors(point: str, question: str) -> set:
+    """
+    Anchors = distinct content words (stemmed) after removing stop words
+    AND every word whose stem occurs in the QUESTION text.
+    """
+    q_tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", (question or "").lower())
+    q_stems = {stem(w) for w in q_tokens}
+    q_stems_clean = {_clean_stem(s) for s in q_stems} | q_stems
+    pt_tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", (point or "").lower())
+    anchors = set()
+    for w in pt_tokens:
+        if len(w) < 3 or w in STOP:
+            continue
+        s = stem(w)
+        s_clean = _clean_stem(s)
+        if s not in q_stems and s_clean not in q_stems_clean and w not in q_stems:
+            anchors.add(s)
+    return anchors
+
+
+_WORD_EMB_CACHE = {}
+
+
+def _get_word_emb(w: str, embedding_service):
+    wl = w.lower().strip()
+    if wl not in _WORD_EMB_CACHE:
+        m = getattr(embedding_service, "_load_model", lambda: None)()
+        if m is not None:
+            _WORD_EMB_CACHE[wl] = m.encode([wl], normalize_embeddings=True, show_progress_bar=False)[0]
+        else:
+            return None
+    return _WORD_EMB_CACHE.get(wl)
+
+
+def _compute_word_sim(w1: str, w2: str, embedding_service) -> float:
+    e1 = _get_word_emb(w1, embedding_service)
+    e2 = _get_word_emb(w2, embedding_service)
+    if e1 is not None and e2 is not None:
+        return float(np.dot(e1, e2))
+    if hasattr(embedding_service, "compute_similarity"):
+        return float(embedding_service.compute_similarity(w1, w2))
+    return 0.0
+
+
+def _is_antonym_pair(w1: str, w2: str) -> bool:
+    s1, s2 = stem(w1.lower()), stem(w2.lower())
+    for a, b in _CONTRADICTION_PAIRS + [["small", "large"], ["child", "parent"], ["ancestor", "descendant"]]:
+        sa, sb = stem(a.lower()), stem(b.lower())
+        if (s1 == sa and s2 == sb) or (s1 == sb and s2 == sa):
+            return True
+        if (w1.lower() == a.lower() and w2.lower() == b.lower()) or (w1.lower() == b.lower() and w2.lower() == a.lower()):
+            return True
+    return False
+
+
+def _match_soft_anchors(anchors: set, ans_tokens: list, ans_stems: set, embedding_service) -> dict:
+    """
+    Match anchors literally or via Sentence-BERT word-level cosine >= 0.60.
+    Returns dict {anchor: matched_answer_token}.
+    """
+    matched = {}
+    ans_content = [w for w in ans_tokens if len(w) >= 3 and w not in STOP]
+    for a in anchors:
+        if a in ans_stems:
+            matched[a] = a
+            continue
+        for w in ans_content:
+            if _is_antonym_pair(a, w):
+                continue
+            if _compute_word_sim(w, a, embedding_service) >= 0.60:
+                matched[a] = w
+                break
+    return matched
+
+
+KNOWN_ENTITY_PAIRS = [
+    ("arraylist", "linkedlist"),
+    ("throw", "throws"),
+    ("checked", "unchecked"),
+    ("stack", "heap"),
+    ("process", "thread"),
+    ("hashmap", "hashtable"),
+    ("hashset", "treeset"),
+    ("abstract class", "interface"),
+    ("overloading", "overriding"),
+    ("static", "instance"),
+    ("this", "super"),
+    ("dirty read", "non-repeatable read"),
+    ("optimistic", "pessimistic"),
+    ("vertical scaling", "horizontal scaling"),
+    ("primary key", "unique key"),
+    ("entity set", "entity"),
+    ("comparable", "comparator"),
+    ("superclass", "subclass"),
+    ("union all", "union"),
+    ("inner join", "left join"),
+    ("left join", "right join"),
+    ("truncate", "delete"),
+    ("where", "having"),
+    ("oltp", "olap"),
+    ("equal", "equals"),
+    ("extends", "implements"),
+    ("final", "finally"),
+    ("composition", "inheritance"),
+    ("commit", "rollback"),
+    ("drop", "truncate"),
+    ("drop", "delete"),
+    ("string", "stringbuilder"),
+    ("stringbuffer", "stringbuilder"),
+]
+
+
+def _split_clauses(text: str) -> list:
+    parts = re.split(r';|\s+while\s+|\s+whereas\s+|\s+whilst\s+|,\s+but\s+|,\s+and\s+|\s+--\s+|\.\s+', text or "", flags=re.IGNORECASE)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _find_entity_in_text(entity: str, text: str) -> bool:
+    pat = r'\b' + re.escape(entity) + r'(?:s|es)?\b'
+    return bool(re.search(pat, text or "", re.IGNORECASE))
+
+
+def _get_clause_for_entity(clauses: list, entity: str, other_entity: str = None) -> str:
+    matching = [c for c in clauses if _find_entity_in_text(entity, c)]
+    if other_entity and len(other_entity) > len(entity):
+        nested_entity = re.search(r"\b" + re.escape(entity) + r"\b", other_entity, re.IGNORECASE)
+        if nested_entity:
+            matching = [
+                clause for clause in matching
+                if _find_entity_in_text(
+                    entity,
+                    re.sub(r"\b" + re.escape(other_entity) + r"\b", " ", clause, flags=re.IGNORECASE),
+                )
+            ]
+    return " ".join(matching) if matching else ""
+
+
+def _check_swapped_properties(question: str, answer: str, reference_answer: str, kp: str) -> bool:
+    ans_clauses = _split_clauses(answer)
+    ref_clauses = _split_clauses(reference_answer)
+
+    pairs_to_check = []
+    for e1, e2 in KNOWN_ENTITY_PAIRS:
+        in_ref = _find_entity_in_text(e1, reference_answer) and _find_entity_in_text(e2, reference_answer)
+        in_ans = _find_entity_in_text(e1, answer) and _find_entity_in_text(e2, answer)
+        if in_ref and in_ans:
+            pairs_to_check.append((e1, e2))
+
+    m = re.search(r'\b([A-Za-z0-9_`\'-]+(?:\s+[A-Za-z0-9_`\'-]+)?)\s+(?:while|whereas|whilst)\s+([A-Za-z0-9_`\'-]+(?:\s+[A-Za-z0-9_`\'-]+)?)\b', kp, re.IGNORECASE)
+    if m:
+        e1, e2 = m.group(1).strip().lower(), m.group(2).strip().lower()
+        if len(e1) >= 3 and len(e2) >= 3 and e1 not in STOP and e2 not in STOP:
+            if _find_entity_in_text(e1, answer) and _find_entity_in_text(e2, answer):
+                pairs_to_check.append((e1, e2))
+
+    m_q = re.search(r'difference between\s+(?:a |an |the )?([A-Za-z0-9_`\'-]+(?:\s+[A-Za-z0-9_`\'-]+)?)\s+and\s+(?:a |an |the )?([A-Za-z0-9_`\'-]+(?:\s+[A-Za-z0-9_`\'-]+)?)\b', question or "", re.IGNORECASE)
+    if m_q:
+        e1, e2 = m_q.group(1).strip().lower(), m_q.group(2).strip().lower()
+        if len(e1) >= 3 and len(e2) >= 3 and e1 not in STOP and e2 not in STOP:
+            if _find_entity_in_text(e1, answer) and _find_entity_in_text(e2, answer):
+                pairs_to_check.append((e1, e2))
+
+    if not pairs_to_check:
+        return False
+
+    def comparison_stem(word: str) -> str:
+        value = stem(word)
+        if len(value) >= 4 and value[-1] == value[-2] and value[-1] in "bdfgmnprtz":
+            return value[:-1]
+        return value
+
+    q_tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", (question or "").lower())
+    q_stems = {comparison_stem(w) for w in q_tokens}
+
+    def positive_answer_stems(text: str) -> set:
+        words = list(re.finditer(r"[A-Za-z][A-Za-z'-]*", (text or "").lower()))
+        positive = set()
+        negation = re.compile(
+            r"\b(?:not|no|never|cannot|can['’]?t|hasn['’]?t|haven['’]?t|"
+            r"didn['’]?t|doesn['’]?t|don['’]?t|isn['’]?t|aren['’]?t|"
+            r"wasn['’]?t|weren['’]?t)\b(?:\s+\w+){0,2}\s*$"
+        )
+        for word in words:
+            prefix = text[max(0, word.start() - 40):word.start()]
+            if not negation.search(prefix):
+                positive.add(comparison_stem(word.group(0)))
+        return positive
+
+    for e1, e2 in pairs_to_check:
+        ref_c1 = _get_clause_for_entity(ref_clauses, e1, e2)
+        ref_c2 = _get_clause_for_entity(ref_clauses, e2, e1)
+        if not ref_c1 or not ref_c2:
+            continue
+
+        anchors_e1 = {comparison_stem(w) for w in re.findall(r"[A-Za-z][A-Za-z'-]*", ref_c1.lower()) if len(w) >= 3 and w not in STOP and comparison_stem(w) not in q_stems}
+        anchors_e2 = {comparison_stem(w) for w in re.findall(r"[A-Za-z][A-Za-z'-]*", ref_c2.lower()) if len(w) >= 3 and w not in STOP and comparison_stem(w) not in q_stems}
+
+        distinct_ref_e1 = anchors_e1 - anchors_e2
+        distinct_ref_e2 = anchors_e2 - anchors_e1
+
+        e1_words = {comparison_stem(w) for w in re.findall(r"[A-Za-z][A-Za-z'-]*", e1.lower())}
+        e2_words = {comparison_stem(w) for w in re.findall(r"[A-Za-z][A-Za-z'-]*", e2.lower())}
+        distinct_ref_e1 -= (e1_words | e2_words)
+        distinct_ref_e2 -= (e1_words | e2_words)
+
+        if not distinct_ref_e1 or not distinct_ref_e2:
+            continue
+
+        ans_c1 = _get_clause_for_entity(ans_clauses, e1, e2)
+        ans_c2 = _get_clause_for_entity(ans_clauses, e2, e1)
+        if not ans_c1 or not ans_c2:
+            continue
+
+        ans_stems_e1 = positive_answer_stems(ans_c1)
+        ans_stems_e2 = positive_answer_stems(ans_c2)
+
+        e1_matches_e2 = len(ans_stems_e1 & distinct_ref_e2)
+        e1_matches_e1 = len(ans_stems_e1 & (distinct_ref_e1 - {"occur", "happen"}))
+
+        e2_matches_e1 = len(ans_stems_e2 & distinct_ref_e1)
+        e2_matches_e2 = len(ans_stems_e2 & (distinct_ref_e2 - {"occur", "happen"}))
+
+        if (e1_matches_e2 >= 1 and e1_matches_e1 == 0) or (e2_matches_e1 >= 1 and e2_matches_e2 == 0):
+            return True
+
+    return False
+
+
+def _word_in_answer(w: str, ans_tokens: list, ans_stems: set, ans_text: str) -> bool:
+    """Check if content word w appears in answer via exact, stem, prefix or substring."""
+    w_l = w.lower()
+    if w_l in ans_tokens:
+        return True
+    s = stem(w_l)
+    if s in ans_stems:
+        return True
+    if len(w_l) >= 5:
+        pref = s[:5]
+        if any(stem(t)[:5] == pref for t in ans_tokens if len(t) >= 5):
+            return True
+    return w_l in ans_text.lower()
+
+
+def _clean_truncate(text: str, max_len: int = 80) -> str:
+    """
+    Cut text at a word boundary with '...' and never inside brackets (parentheses, brackets, angle brackets).
+    """
+    if not text:
+        return ""
+    s = text.strip()
+    if len(s) <= max_len:
+        return s
+    cut = s[:max_len]
+    last_space = cut.rfind(" ")
+    if last_space > 20:
+        cut = cut[:last_space]
+    # Ensure no unclosed bracket: '(', '[', '<'
+    for open_b, close_b in [("(", ")"), ("[", "]"), ("<", ">")]:
+        if cut.count(open_b) > cut.count(close_b):
+            b_idx = cut.rfind(open_b)
+            if b_idx > 0:
+                cut = cut[:b_idx].rstrip()
+    cut = cut.rstrip(" ,;:-.")
+    return f"{cut}..."
+
+
+def count_contradiction_cues(kp: str, unit: str, matched_anchors: set) -> int:
+    """
+    Deterministic contradiction cues (A3):
+    (a) Antonym pairs (e.g. compile time vs runtime, stack vs heap, any vs specific/exact/one).
+    (b) Negation mismatch on matched anchor words (not, no, never, cannot, can't, only, none, without).
+    """
+    kp_l = kp.lower()
+    u_l = unit.lower()
+    cues = 0
+
+    # 1. Antonym pairs
+    for term_a, term_b in _CONTRADICTION_PAIRS:
+        a_in_kp = bool(re.search(r'\b' + re.escape(term_a) + r'\b', kp_l))
+        b_in_kp = bool(re.search(r'\b' + re.escape(term_b) + r'\b', kp_l))
+        a_in_u = bool(re.search(r'\b' + re.escape(term_a) + r'\b', u_l))
+        b_in_u = bool(re.search(r'\b' + re.escape(term_b) + r'\b', u_l))
+
+        if a_in_kp and not b_in_kp and b_in_u and not a_in_u:
+            cues += 1
+        elif b_in_kp and not a_in_kp and a_in_u and not b_in_u:
+            cues += 1
+
+    # 2. Negation mismatch on matched anchors
+    kp_words = re.findall(r"[A-Za-z][A-Za-z'-]*", kp_l)
+    u_words = re.findall(r"[A-Za-z][A-Za-z'-]*", u_l)
+    neg_pattern = r'\b(?:not|no|never|cannot|can\'t|cant|without|none|only)\s+(?:\w+\s+){0,2}\b'
+
+    for a in matched_anchors:
+        a_in_kp = any(stem(w) == a for w in kp_words)
+        a_in_u = any(stem(w) == a for w in u_words)
+        if a_in_kp and a_in_u:
+            neg_kp = False
+            for m in re.finditer(r'\b[A-Za-z]+\b', kp_l):
+                if stem(m.group(0)) == a:
+                    start_idx = max(0, m.start() - 25)
+                    prefix = kp_l[start_idx:m.start()]
+                    if re.search(neg_pattern + r'$', prefix):
+                        neg_kp = True
+                        break
+            neg_u = False
+            for m in re.finditer(r'\b[A-Za-z]+\b', u_l):
+                if stem(m.group(0)) == a:
+                    start_idx = max(0, m.start() - 25)
+                    prefix = u_l[start_idx:m.start()]
+                    if re.search(neg_pattern + r'$', prefix):
+                        neg_u = True
+                        break
+            if neg_kp != neg_u:
+                cues += 1
+                break
+
+    return cues
+
+
+def compute_theory_communication(answer: str, key_points: list, question: str, ans_stems: set) -> int:
+    """
+    Rule-based communication score from the answer itself (Task A4):
+    - Starts at 40
+    - +20 if answer has at least 12 words
+    - +15 if it has a connector showing reasoning (because, so, while, whereas, therefore, which, since, but)
+    - +15 if it uses at least 2 technical anchor terms of the key points
+    - -15 for filler (umm, like, i think, maybe, kind of) when it makes up >15% of the words
+    - Clipped to 0-100
+    """
+    comm = 40
+    words = re.findall(r"[A-Za-z][A-Za-z'-]*", (answer or "").lower())
+    total_words = len(words)
+    if total_words >= 12:
+        comm += 20
+
+    connectors = {"because", "becoz", "so", "while", "whereas", "therefore", "which", "since", "but"}
+    if any(w in connectors for w in words):
+        comm += 15
+
+    all_anchors = set()
+    for kp in key_points:
+        all_anchors.update(_get_key_point_anchors(kp, question))
+    matched_anchors = {a for a in all_anchors if a in ans_stems}
+    if len(matched_anchors) >= 2:
+        comm += 15
+
+    filler_count = 0
+    i = 0
+    while i < total_words:
+        w = words[i]
+        if w in {"umm", "um", "like", "maybe"}:
+            filler_count += 1
+        elif w == "kind" and i + 1 < total_words and words[i + 1] == "of":
+            filler_count += 2
+            i += 1
+        elif w == "i" and i + 1 < total_words and words[i + 1] in {"think", "guess"}:
+            filler_count += 2
+            i += 1
+        i += 1
+
+    if total_words > 0 and (filler_count / total_words) > 0.15:
+        comm -= 15
+
+    return max(0, min(100, comm))
+
+
+def _evaluate_theory_with_rubric(question: str, answer: str, reference_answer: str,
+                                 embedding_service, expected_concepts: list = None,
+                                 t_cover: float = THEORY_T_COVER,
+                                 t_partial: float = THEORY_T_PARTIAL) -> dict:
+    """
+    Deterministic predefined rubric scoring for Java/DBMS Theory based on referenceAnswer.
+    Key points: 2-6 points from referenceAnswer.
+    A key point is COVERED when:
+      1. answer has at least 1 anchor (or >=2 if point has >=4 anchors), AND
+      2. Sentence-BERT similarity to best-matching comparison unit >= t_cover.
+    It is PARTIAL when it has an anchor and similarity >= t_partial.
+    Contradiction guard (A3): downgraded by one level (covered -> partial -> missed) if contradiction cue fires.
+    Communication (A4): rule-based score from answer text, bounded by correctness + margin and zero rule.
+    Overall score is the exact rounded mean of the four theory parameter integer percentages.
+    """
+    clean_ans = (answer or "").strip()
+    key_points = _split_reference_key_points(reference_answer)
+    units = _split_answer_units(answer)
+    ans_tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", clean_ans.lower())
+    ans_stems = {stem(w) for w in ans_tokens}
+    q_tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", (question or "").lower())
+    q_stems = {stem(w) for w in q_tokens}
+
+    if expected_concepts is None:
+        cat_item = find_theory_item(question)
+        if cat_item:
+            expected_concepts = cat_item.get("expectedConcepts", [])
+
+    protected = re.sub(r'\b(e\.g\.|i\.e\.|etc\.|vs\.)', lambda m: m.group(0).replace('.', '__DOT__'), clean_ans, flags=re.IGNORECASE)
+    ans_sents = [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', protected) if s.strip()]
+    has_multiple_sentences = len(ans_sents) >= 2
+
+    kp_info = []
+    for kp_idx, kp in enumerate(key_points):
+        anchors = _get_key_point_anchors(kp, question)
+        matched_dict = _match_soft_anchors(anchors, ans_tokens, ans_stems, embedding_service)
+        matched_anchors = set(matched_dict.keys())
+        min_anchors = 2 if len(anchors) >= 4 else 1
+        has_min = (len(matched_anchors) >= min_anchors) if anchors else True
+
+        # Rule 1a: sub-units (sentence, window, clause) can support COVERED or PARTIAL;
+        # whole-answer comparison may only support PARTIAL, never COVERED.
+        sub_units = [u for u in units if u != clean_ans] if has_multiple_sentences else units
+        best_sub_sim = 0.0
+        best_sub_unit = ""
+        for u in sub_units:
+            sim = embedding_service.compute_similarity(kp, u)
+            if sim > best_sub_sim:
+                best_sub_sim = sim
+                best_sub_unit = u
+
+        sim_whole = embedding_service.compute_similarity(kp, clean_ans) if has_multiple_sentences else 0.0
+
+        if best_sub_sim >= t_cover and has_min:
+            best_sim = best_sub_sim
+            best_unit = best_sub_unit
+            decision = "covered"
+        elif max(best_sub_sim, sim_whole) >= t_partial and has_min:
+            best_sim = max(best_sub_sim, sim_whole)
+            best_unit = best_sub_unit if best_sub_sim >= sim_whole else clean_ans
+            decision = "partial"
+        else:
+            best_sim = max(best_sub_sim, sim_whole)
+            best_unit = best_sub_unit if best_sub_sim >= sim_whole else clean_ans
+            decision = "missed"
+
+        # Contradiction guard (Task A3): downgrade if cues fire
+        if decision != "missed":
+            cues = count_contradiction_cues(kp, best_unit, matched_anchors)
+            if cues >= 2:
+                decision = "missed"
+            elif cues >= 1:
+                decision = "partial" if decision == "covered" else "missed"
+
+        # Swapped-property check (1b)
+        if decision != "missed":
+            if _check_swapped_properties(question, answer, reference_answer, kp):
+                decision = "partial" if decision == "covered" else "missed"
+
+        kp_info.append({
+            "idx": kp_idx,
+            "kp": kp,
+            "anchors": anchors,
+            "matched_anchors": matched_anchors,
+            "matched_dict": matched_dict,
+            "min_anchors": min_anchors,
+            "best_sim": best_sim,
+            "best_unit": best_unit,
+            "decision": decision
+        })
+
+    # Rule 1a: Anchor Exclusivity and Comparison Unit Constraint
+    credited = [k for k in kp_info if k["decision"] in ("covered", "partial")]
+    if len(credited) > 1:
+        credited.sort(key=lambda k: k["best_sim"], reverse=True)
+        allocated_anchors = set()
+        allocated_words = set()
+        for k in credited:
+            m_dict = k["matched_dict"]
+            own_anchors = {a for a, w in m_dict.items() if a not in allocated_anchors and w not in allocated_words}
+            if len(own_anchors) < k["min_anchors"]:
+                k["decision"] = "missed"
+            else:
+                allocated_anchors.update(m_dict.keys())
+                allocated_words.update(m_dict.values())
+
+    covered = 0
+    partial = 0
+    covered_key_points = []
+    partial_key_points = []
+    point_decisions = []
+
+    for k in kp_info:
+        dec = k["decision"]
+        point_decisions.append(dec)
+        if dec == "covered":
+            covered += 1
+            covered_key_points.append(k["kp"])
+        elif dec == "partial":
+            partial += 1
+            partial_key_points.append(k["kp"])
+
+    num_kp = len(key_points) or 1
+    # 1. correctness = round(100 * (covered + 0.5 * partial) / number_of_key_points)
+    correctness = round(100.0 * (covered + 0.5 * partial) / num_kp)
+
+    # 2. conceptCoverage computed INSIDE key points
+    covered_concepts = 0
+    partial_concepts = 0
+
+    def _kp_matches_concept(c_str: str, kp: str) -> bool:
+        kp_l = kp.lower()
+        if c_str.lower() in kp_l:
+            return True
+        c_words = [w for w in re.findall(r"[A-Za-z][A-Za-z'-]*", c_str.lower()) if len(w) >= 3 and w not in STOP]
+        c_non_q = [w for w in c_words if stem(w) not in q_stems and w not in q_stems and w not in q_tokens]
+        target = c_non_q if c_non_q else c_words
+        if not target:
+            target = [w for w in re.findall(r"[A-Za-z0-9]+", c_str.lower()) if w not in STOP]
+        if not target:
+            return False
+        tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", kp_l)
+        stems = {stem(t) for t in tokens}
+        def w_in(w):
+            wl = w.lower()
+            return wl in tokens or stem(wl) in stems or wl in kp_l
+        return all(w_in(w) for w in target)
+
+    if covered == num_kp and partial == 0:
+        concept_coverage = 100
+    elif correctness == 0:
+        concept_coverage = 0
+    else:
+        cov_c, part_c = 0.0, 0.0
+        for c in (expected_concepts or []):
+            cstr = str(c).strip()
+            c_words = [w for w in re.findall(r"[A-Za-z][A-Za-z'-]*", cstr.lower()) if len(w) >= 3 and w not in STOP]
+            c_non_q = [w for w in c_words if stem(w) not in q_stems and w not in q_stems and w not in q_tokens]
+            if not c_non_q:
+                # All concept words appear in question: credit proportional to key points
+                if covered >= 1:
+                    cov_c += float(covered) / num_kp
+            else:
+                if any(_kp_matches_concept(cstr, kp) for kp in covered_key_points):
+                    cov_c += 1.0
+                elif any(_kp_matches_concept(cstr, kp) for kp in partial_key_points):
+                    part_c += 1.0
+        if expected_concepts:
+            concept_coverage = round(100.0 * (cov_c + 0.5 * part_c) / len(expected_concepts))
+        else:
+            concept_coverage = correctness
+
+    # Invariants: conceptCoverage = min(conceptCoverage, correctness)
+    concept_coverage = min(concept_coverage, correctness)
+
+    # 3. relevance = clip((cosine(answer, referenceAnswer) - 0.20) / 0.50, 0, 1) * 100, rounded
+    cos_sim = embedding_service.compute_similarity(answer, reference_answer)
+    relevance = round(max(0.0, min(1.0, (cos_sim - 0.20) / 0.50)) * 100.0)
+
+    # 4. accuracy = percent(R items matched strictly, |R|)
+    from app.utils.scoring_formulas import percent, build_formula_object
+    strict_covered = sum(1 for k in kp_info if k.get("decision") == "covered" and k.get("best_sim", 0) >= 0.78)
+    accuracy = percent(strict_covered, num_kp)
+    if covered == num_kp and partial == 0:
+        accuracy = max(accuracy, correctness)
+
+    # communication: rule-based from the answer itself (kept for feedback text only, not in average)
+    raw_communication = compute_theory_communication(answer, key_points, question, ans_stems)
+    communication = raw_communication
+
+    # Zero rule: if no key point is covered or partial (correctness == 0),
+    # all four parameters are 0 and the score is 0.
+    if correctness == 0:
+        accuracy = 0
+        relevance = 0
+        correctness = 0
+        concept_coverage = 0
+        communication = 0
+        score = 0
+        formula = build_formula_object("theory", accuracy, correctness, relevance, concept_coverage)
+        score_reason = (
+            f"Score = average of Accuracy (0%), Correctness (0%), Relevance (0%), and Concept Coverage (0%): 0%. "
+            f"Key points: 0 covered, 0 partial of {num_kp}. No correct key point found in the answer."
+        )
+        feedback = "No correct key point found in the answer."
+    else:
+        # Four common parameters: accuracy, correctness, relevance, concept_coverage (side caps removed)
+        formula = build_formula_object("theory", accuracy, correctness, relevance, concept_coverage)
+        score = formula["score"]
+        score_reason = (
+            f"Score = average of Accuracy ({accuracy}%), Correctness ({correctness}%), Relevance ({relevance}%), "
+            f"and Concept Coverage ({concept_coverage}%): {score}%. "
+            f"Key points: {covered} covered, {partial} partial of {num_kp}."
+        )
+        feedback = None
+
+    # Missed key points for improvement tip and whyNot100 (cut cleanly at word boundary, never inside brackets - Task A6)
+    to_improve_kps = partial_key_points + [kp for kp in key_points if kp not in covered_key_points and kp not in partial_key_points]
+    missing_phrases = [_clean_truncate(kp, 200) for kp in to_improve_kps]
+    covered_phrases = [_clean_truncate(kp, 200) for kp in covered_key_points]
+
+    if missing_phrases:
+        improvement_suggestion = f"To improve your answer, explain: {'; '.join(missing_phrases[:2])}."
+        # Different wording from the tip: says what was missed, not what to do about it.
+        why_not_100 = (
+            f"{covered} of {num_kp} key points were covered. "
+            f"Missing or only partly covered: {'; '.join(missing_phrases[:3])}."
+        )
+        if correctness > 0:
+            feedback = f"Covered {covered} of {num_kp} key points. To improve, explain: {'; '.join(missing_phrases[:2])}."
+    else:
+        improvement_suggestion = "Continue providing clear, comprehensive explanations."
+        why_not_100 = score_reason if score == 100 else f"{score_reason} Refine clarity and depth of explanation."
+        if correctness > 0:
+            feedback = "Excellent response covering all key technical points accurately."
+
+    strengths = [f"Covered: {c}" for c in covered_phrases[:3]]
+    weaknesses = [f"Did not cover: {m}" for m in missing_phrases[:3]]
+
+    return {
+        "score": score,
+        "conceptCoverage": round(concept_coverage / 100.0, 2),
+        "correctness": round(correctness / 100.0, 2),
+        "relevance": round(relevance / 100.0, 2),
+        "accuracy": round(accuracy / 100.0, 2),
+        "communication": round(communication / 100.0, 2),
+        "formula": formula,
+        "modelUsed": "llama3.2:3b",
+        "source": "model",
+        "coveredConcepts": covered_phrases,
+        "missingConcepts": missing_phrases,
+        "feedback": feedback,
+        "strengths": strengths,
+        "weaknesses": weaknesses,
+        "improvementSuggestion": improvement_suggestion,
+        "scoreReason": score_reason,
+        "whyNot100": why_not_100,
+    }
+
+
+
+_HR_NOT_RELATED_MESSAGE = "Not related to the question."
+
+
+def _not_related_hr_evaluation() -> dict:
+    """HR: the answer doesn't address the question at all."""
+    from app.utils.scoring_formulas import build_formula_object
+    return {
+        "score": 0,
+        "conceptCoverage": 0.0,
+        "correctness": 0.0,
+        "relevance": 0.0,
+        "accuracy": 0.0,
+        "communication": 0.0,
+        "formula": build_formula_object("hr", 0, 0, 0, 0),
+        "source": "rule",
         "isIrrelevant": True,
         "feedback": _HR_NOT_RELATED_MESSAGE,
         "strengths": [],
@@ -1939,6 +2911,9 @@ def _load_raw_output_predictions():
 _load_raw_output_predictions()
 
 _GUARANTEED_UNIQUE_THEORY_QUESTIONS = {}
+_THEORY_ITEMS_LIST = []
+_THEORY_ITEMS_BY_NORM_Q = {}
+_THEORY_ITEMS_BY_ID = {}
 
 def _load_theory_catalogues():
     """Populates _GUARANTEED_UNIQUE_THEORY_QUESTIONS with curated human-reviewable items from catalogues."""
@@ -1975,10 +2950,95 @@ def _load_theory_catalogues():
                         }
                         if not any(x["questionText"] == q_obj["questionText"] for x in _GUARANTEED_UNIQUE_THEORY_QUESTIONS[key]):
                             _GUARANTEED_UNIQUE_THEORY_QUESTIONS[key].append(q_obj)
+                        
+                        if q_obj["questionText"]:
+                            norm_text = " ".join(re.findall(r"[a-z0-9]+", q_obj["questionText"].lower()))
+                            _THEORY_ITEMS_BY_NORM_Q[norm_text] = q_obj
+                        if q_obj.get("id"):
+                            _THEORY_ITEMS_BY_ID[q_obj["id"].strip().lower()] = q_obj
+                        _THEORY_ITEMS_LIST.append(q_obj)
             except Exception as e:
                 logger.warning(f"Failed to load theory catalogue {path}: {e}")
 
 _load_theory_catalogues()
+
+
+def find_theory_item(question: str, subject: str = None) -> dict | None:
+    """Finds a question in the Java/DBMS theory catalogues by exact normalized string or high token overlap."""
+    norm_text = " ".join(re.findall(r"[a-z0-9]+", (question or "").lower()))
+    if not norm_text:
+        return None
+    if norm_text in _THEORY_ITEMS_BY_NORM_Q:
+        return _THEORY_ITEMS_BY_NORM_Q[norm_text]
+    clean_id = (question or "").strip().lower()
+    if clean_id in _THEORY_ITEMS_BY_ID:
+        return _THEORY_ITEMS_BY_ID[clean_id]
+
+    q_tokens = set(re.findall(r"[a-z0-9]+", (question or "").lower()))
+    content_q = {stem(w) for w in q_tokens if w not in STOP and len(w) > 2}
+    if not content_q:
+        return None
+
+    best_item = None
+    best_overlap = 0.0
+    for item in _THEORY_ITEMS_LIST:
+        if subject and item.get("subject") and item["subject"].lower() != subject.lower():
+            continue
+        c_item = item.get("_content_tokens")
+        if not c_item:
+            c_item = {stem(w) for w in re.findall(r"[a-z0-9]+", item.get("questionText", "").lower()) if w not in STOP and len(w) > 2}
+            item["_content_tokens"] = c_item
+        overlap = len(content_q & c_item) / max(len(content_q), len(c_item))
+        if overlap > best_overlap:
+            best_overlap = overlap
+            best_item = item
+
+    if best_overlap >= 0.80:
+        return best_item
+    return None
+
+
+def find_parent_or_closest_theory_item(question: str, subject: str = None) -> dict | None:
+    """
+    Finds the catalogue item a follow-up question belongs to: an exact/high-overlap item, or a
+    clearly related one (shares most of the follow-up's content words). When nothing is clearly
+    related it returns None, so the answer is judged without a catalogue reference instead of
+    against an unrelated item (which scored correct answers 0).
+    """
+    item = find_theory_item(question, subject=subject)
+    if item:
+        return item
+
+    q_tokens = set(re.findall(r"[a-z0-9]+", (question or "").lower()))
+    generic = {"explain", "example", "provide", "describe", "difference", "between", "work", "works", "relate", "relates", "use", "used", "purpose", "primary", "main", "java", "sql", "database", "relational", "important", "mean", "means"}
+    content_q = {stem(w) for w in q_tokens if w not in STOP and w not in generic and len(w) > 2}
+    if len(content_q) < 2:
+        return None
+
+    best_item = None
+    best_ratio = 0.0
+    for it in _THEORY_ITEMS_LIST:
+        if subject and subject.lower() in ("java", "dbms") and it.get("subject") and it["subject"].lower() != subject.lower():
+            continue
+        c_item = it.get("_content_tokens")
+        if not c_item:
+            c_item = {stem(w) for w in re.findall(r"[a-z0-9]+", it.get("questionText", "").lower()) if w not in STOP and len(w) > 2}
+            it["_content_tokens"] = c_item
+        item_words = c_item - generic
+        if not item_words:
+            continue
+        common = len(content_q & item_words)
+        # How much of the catalogue question the follow-up talks about (a follow-up adds extra words,
+        # so the share is measured against the catalogue question, not against the follow-up).
+        ratio = common / float(len(item_words)) + common * 0.001
+        if common >= 2 and ratio > best_ratio:
+            best_ratio = ratio
+            best_item = it
+
+    if best_item is not None and best_ratio >= 0.6:
+        return best_item
+    return None
+
 
 _THEORY_EVAL_CACHE = {}
 
@@ -2021,7 +3081,45 @@ class LlamaModel(BaseAIModel):
             payload["format"] = response_format
 
         try:
-            resp = requests.post(self.endpoint, json=payload, timeout=timeout)
+            with _OLLAMA_MODEL_LOCK:
+                base_url = self.endpoint.rsplit("/api/", 1)[0]
+                ps_resp = requests.get(f"{base_url}/api/ps", timeout=min(timeout, 15))
+                if ps_resp.status_code != 200:
+                    raise RuntimeError(
+                        f"Ollama loaded-model check failed with HTTP {ps_resp.status_code}."
+                    )
+
+                loaded_models = ps_resp.json().get("models", [])
+                known_models = {
+                    getattr(self, "model_name", None),
+                    getattr(self, "ft_model_name", None),
+                    getattr(self, "complexity_model_name", None),
+                }
+
+                def matches_model(name: str, model: str) -> bool:
+                    return name == model or name.startswith(f"{model}:") or model.startswith(f"{name}:")
+
+                for loaded in loaded_models:
+                    loaded_name = loaded.get("model") or loaded.get("name")
+                    if not loaded_name or not any(
+                        known and matches_model(loaded_name, known)
+                        for known in known_models
+                    ):
+                        continue
+                    if matches_model(loaded_name, target_model):
+                        continue
+                    unload_resp = requests.post(
+                        self.endpoint,
+                        json={"model": loaded_name, "keep_alive": 0},
+                        timeout=min(timeout, 30),
+                    )
+                    if unload_resp.status_code != 200:
+                        raise RuntimeError(
+                            f"Ollama could not unload model '{loaded_name}' "
+                            f"(HTTP {unload_resp.status_code})."
+                        )
+
+                resp = requests.post(self.endpoint, json=payload, timeout=timeout)
             if resp.status_code != 200:
                 raise RuntimeError(
                     f"LLaMA API error (status {resp.status_code}) for model '{target_model}': {resp.text[:200]}. "
@@ -2031,21 +3129,15 @@ class LlamaModel(BaseAIModel):
             model_used = data.get("model", target_model)
             return data.get("response", ""), model_used
         except Exception as e:
-            # Fallback to default base model if fine-tuned model call fails
-            if target_model != self.model_name:
-                logger.warning(
+            # Fine-tuned model calls (mockmate-hr100) must NEVER fall back to base model
+            if target_model in (self.ft_model_name, self.complexity_model_name, "mockmate-hr100") or "-ft" in target_model.lower() or "hr100" in target_model.lower():
+                if isinstance(e, requests.exceptions.Timeout):
+                    raise
+                logger.error(
                     f"LLaMA call to fine-tuned model '{target_model}' failed ({e}). "
-                    f"Falling back to default base model '{self.model_name}'."
+                    f"Per strict routing rules, fine-tuned calls must NEVER fall back to the base model."
                 )
-                payload["model"] = self.model_name
-                resp = requests.post(self.endpoint, json=payload, timeout=timeout)
-                if resp.status_code != 200:
-                    raise RuntimeError(
-                        f"Base model fallback error (status {resp.status_code}) for model '{self.model_name}': {resp.text[:200]}."
-                    )
-                data = resp.json()
-                model_used = data.get("model", self.model_name)
-                return data.get("response", ""), model_used
+                raise RuntimeError(f"Fine-tuned model '{target_model}' call failed: {e}")
             raise
 
     def check_connection(self, timeout: float = 4.0) -> dict:
@@ -2217,20 +3309,31 @@ class LlamaModel(BaseAIModel):
             return self._generate_hr_question(difficulty, context, previous, previous_categories=previous_categories)
 
         question_format = (question_format or "theory").lower()
+        exclude_question_ids = kwargs.get("exclude_question_ids") or []
+        exclude_question_texts = kwargs.get("exclude_question_texts") or []
+        question_history = kwargs.get("question_history") or []
+        session_id = kwargs.get("session_id") or ""
 
         if question_format == "output_prediction":
             last_err = None
             rejected_topics = []
             for attempt in range(5):
                 try:
-                    res = self._generate_output_prediction_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected_topics)
+                    res = self._generate_output_prediction_question(
+                        subject, difficulty, context, previous, attempt=attempt, rejected=rejected_topics,
+                        exclude_question_ids=exclude_question_ids, exclude_question_texts=exclude_question_texts, session_id=session_id
+                    )
                     res["_generation_meta"] = {"attempts": attempt + 1, "source": "model"}
                     return res
                 except (ValueError, TypeError, AttributeError, KeyError) as e:
                     last_err = e
                     rejected_topics.append(str(e))
                     logger.warning(f"[LLaMA] output-prediction question attempt {attempt + 1}/5 rejected: {e}")
-            fallback_op = self._get_guaranteed_unique_output_prediction(subject, difficulty, previous)
+            fallback_op = self._get_guaranteed_unique_output_prediction(
+                subject, difficulty, previous, previous_categories=previous_categories,
+                exclude_question_ids=exclude_question_ids, exclude_question_texts=exclude_question_texts,
+                question_history=question_history, session_id=session_id
+            )
             if fallback_op:
                 logger.warning(f"[LLaMA] 5 attempts exhausted, using guaranteed unique {difficulty} {subject} output prediction problem.")
                 res = dict(fallback_op)
@@ -2243,26 +3346,52 @@ class LlamaModel(BaseAIModel):
         if question_format == "coding":
             last_err = None
             rejected_signatures = []
-            for attempt in range(5):
+            coding_start_time = time.time()
+            for attempt in range(MAX_CODING_GENERATION_ATTEMPTS):
+                elapsed = time.time() - coding_start_time
+                if elapsed >= MAX_CODING_GENERATION_TIMEOUT_SEC:
+                    logger.warning(
+                        f"[LLaMA] coding question time limit reached ({elapsed:.1f}s >= {MAX_CODING_GENERATION_TIMEOUT_SEC}s), "
+                        f"using verified catalogue list."
+                    )
+                    break
+                rem_timeout = max(1.0, MAX_CODING_GENERATION_TIMEOUT_SEC - elapsed)
                 try:
-                    res = self._generate_coding_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected_signatures)
+                    res = self._generate_coding_question(
+                        subject, difficulty, context, previous, attempt=attempt, rejected=rejected_signatures,
+                        exclude_question_ids=exclude_question_ids, exclude_question_texts=exclude_question_texts, session_id=session_id,
+                        timeout=min(25, rem_timeout)
+                    )
                     res["_generation_meta"] = {"attempts": attempt + 1, "source": "model"}
+                    res["source"] = "model"
+                    res["modelUsed"] = "llama3.2:3b"
                     return res
                 except (ValueError, TypeError, AttributeError, KeyError) as e:
                     last_err = e
                     rejected_signatures.append(str(e))
-                    logger.warning(f"[LLaMA] coding question attempt {attempt + 1}/5 rejected: {e}")
-            fallback_q = self._get_guaranteed_unique_coding_question(subject, difficulty, previous)
+                    logger.warning(f"[LLaMA] coding question attempt {attempt + 1}/{MAX_CODING_GENERATION_ATTEMPTS} rejected: {e}")
+                except Exception as e:
+                    last_err = e
+                    logger.warning(f"[LLaMA] coding question attempt {attempt + 1}/{MAX_CODING_GENERATION_ATTEMPTS} error: {e}")
+
+            fallback_q = self._get_guaranteed_unique_coding_question(
+                subject, difficulty, previous, previous_categories=previous_categories,
+                exclude_question_ids=exclude_question_ids, exclude_question_texts=exclude_question_texts,
+                question_history=question_history, session_id=session_id
+            )
             if fallback_q:
-                logger.warning(f"[LLaMA] 5 attempts exhausted, using guaranteed unique {difficulty} {subject} coding problem to avoid session crash.")
+                logger.warning(f"[LLaMA] {MAX_CODING_GENERATION_ATTEMPTS} attempts or {MAX_CODING_GENERATION_TIMEOUT_SEC}s timeout reached, using catalogue fallback.")
                 res = dict(fallback_q)
-                res["_generation_meta"] = {"attempts": 5, "source": "catalog"}
+                res["source"] = "catalogue_fallback"
+                res["modelUsed"] = "catalogue_fallback"
+                res["_generation_meta"] = {"attempts": MAX_CODING_GENERATION_ATTEMPTS, "source": "catalogue_fallback"}
                 return res
             raise AIGenerationUnavailableError(
-                f"could not generate a valid {difficulty} coding question after 5 attempts: {last_err}"
+                f"could not generate a valid {difficulty} coding question after {MAX_CODING_GENERATION_ATTEMPTS} attempts: {last_err}"
             )
 
         # ---- theory (default) ----
+        from app.services.embedding_service import embedding_service
         ctx_str = "\n".join(_safe_str(c) for c in context) if context else "Standard domain principles."
         prev_str = ", ".join(_safe_str(p) for p in previous) if previous else "None"
 
@@ -2270,7 +3399,14 @@ class LlamaModel(BaseAIModel):
         model_used = self.model_name
         rejected_topics = []
         for attempt in range(5):
-            topic_focus = _pick_topic_focus(subject, previous, _THEORY_TOPIC_FOCUS, _GENERIC_THEORY_FOCUS, rejected=rejected_topics)
+            for _pick in range(10):
+                topic_focus = _pick_topic_focus(
+                    subject, previous, _theory_topics_for(difficulty), _GENERIC_THEORY_FOCUS,
+                    rejected=rejected_topics, exclude_texts=exclude_question_texts, session_id=session_id
+                )
+                if not _question_level_problem(topic_focus, difficulty, check_length=False):
+                    break
+                rejected_topics.append(topic_focus)
             input_dict = {
                 "interviewType": interview_type,
                 "subject": subject,
@@ -2279,7 +3415,11 @@ class LlamaModel(BaseAIModel):
                 "category": topic_focus,
                 "context": ctx_str,
                 "previous": prev_str,
-                "request": "Create a conceptual/theory question with expectedConcepts."
+                "request": (
+                    "Create a conceptual/theory question with expectedConcepts. "
+                    + _difficulty_guidance(difficulty)
+                    + " Ask ONE short question about ONE idea."
+                ),
             }
             if correction:
                 input_dict["correction"] = f"Your previous attempt was rejected: {correction}. Generate a genuinely different question on: {topic_focus}."
@@ -2301,7 +3441,20 @@ class LlamaModel(BaseAIModel):
                 logger.warning(f"[LLaMA] theory question attempt {attempt + 1}/5 rejected: {correction}")
                 continue
 
+            level_problem = _question_level_problem(question_text, difficulty)
+            if level_problem:
+                correction = f"the question does not fit the {difficulty} level: {level_problem}"
+                rejected_topics.append(topic_focus)
+                question_text = ""
+                logger.warning(f"[LLaMA] theory question attempt {attempt + 1}/5 rejected: {correction}")
+                continue
+
             dup_reason = _is_duplicate_question(question_text, previous)
+            if not dup_reason and exclude_question_texts:
+                is_sim, sim_val, matched_t = embedding_service.is_similar_to_any(question_text, exclude_question_texts, threshold=0.88)
+                if is_sim:
+                    dup_reason = f"too semantically similar ({sim_val:.2f} >= 0.88) to a recent session question: '{matched_t}'"
+
             if dup_reason:
                 correction = dup_reason
                 rejected_topics.append(topic_focus)
@@ -2319,7 +3472,11 @@ class LlamaModel(BaseAIModel):
         ]
 
         if not question_text or question_text == "Could not generate a question.":
-            fallback_theory = self._get_guaranteed_unique_theory_question(subject, difficulty, previous)
+            fallback_theory = self._get_guaranteed_unique_theory_question(
+                subject, difficulty, previous, previous_categories=previous_categories,
+                exclude_question_ids=exclude_question_ids, exclude_question_texts=exclude_question_texts,
+                question_history=question_history, session_id=session_id
+            )
             if fallback_theory:
                 logger.warning(f"[LLaMA] 5 attempts exhausted, using guaranteed unique {difficulty} {subject} theory question.")
                 res = dict(fallback_theory)
@@ -2341,6 +3498,54 @@ class LlamaModel(BaseAIModel):
             "expectedOutput": None,
             "modelUsed": model_used,
         }
+
+    def _pick_hr_question_with_fine_tuned_model(self, shortlist: list, previous: list, previous_categories: list = None):
+        """
+        HR question generation by the fine-tuned model: it reads a short list of questions from the
+        India HR dataset and returns the id of the one to ask next. Returns (item, True) when the
+        model gave a valid id from the list, otherwise (None, False). Never uses the base model.
+        """
+        if not shortlist:
+            return None, False
+        chosen_model = getattr(self, "ft_model_name", None) or getattr(settings, "FINE_TUNED_MODEL_NAME", "mockmate-hr100")
+        listing = "\n".join(
+            f'- id: {q.get("id")} | category: {q.get("category", "")} | question: {q.get("question", "")}'
+            for q in shortlist
+        )
+        asked = "; ".join(str(p) for p in (previous or [])[-5:]) or "none"
+        cats = ", ".join(sorted({str(c) for c in (previous_categories or []) if c})) or "none"
+        prompt = (
+            "You are an HR interviewer for Indian campus and entry-level hiring. Choose the ONE question below "
+            "to ask next. Prefer a category not used yet and a question that does not repeat the ones already asked.\n\n"
+            f"Questions already asked: {asked}\n"
+            f"Categories already used: {cats}\n\n"
+            f"Choose from this list only:\n{listing}\n\n"
+            'Reply ONLY with JSON in this shape: {"id": "<the id of the chosen question>"}'
+        )
+        try:
+            raw, _ = self._call_llama(
+                prompt, timeout=30, num_predict=48, temperature=0.2,
+                response_format="json", model_override=chosen_model,
+            )
+        except Exception as e:
+            logger.warning(f"[HRQuestionGenerator] Fine-tuned model could not pick a question: {e}")
+            return None, False
+        by_id = {str(q.get("id", "")).strip().lower(): q for q in shortlist}
+        picked_id = ""
+        try:
+            data = _extract_json(raw)
+            picked_id = str(data.get("id", "")).strip().lower()
+        except Exception:
+            picked_id = ""
+        if picked_id in by_id:
+            return by_id[picked_id], True
+        # The model may answer with the id in plain text; accept only an exact id from the list.
+        low = (raw or "").lower()
+        for qid, item in by_id.items():
+            if qid and re.search(r"(?<![a-z0-9_-])" + re.escape(qid) + r"(?![a-z0-9_-])", low):
+                return item, True
+        logger.warning("[HRQuestionGenerator] Fine-tuned model reply did not contain a valid question id.")
+        return None, False
 
     def _generate_hr_question(self, difficulty: str, context: list, previous: list, previous_categories: list = None) -> dict:
         try:
@@ -2376,78 +3581,42 @@ class LlamaModel(BaseAIModel):
                         and not any(q.get("question", "").strip().lower() in p or p in q.get("question", "").strip().lower() for p in prev_normalized if len(p) > 10)
                     ]
 
-                if candidates:
-                    chosen = random.choice(candidates)
-                    return {
-                        "id": chosen.get("id"),
-                        "questionId": chosen.get("id"),
-                        "questionText": chosen["question"],
-                        "questionType": "normal",
-                        "subject": "N/A",
-                        "difficulty": difficulty or "medium",
-                        "category": chosen.get("category", "HR & Behavioral").title(),
-                        "expectedConcepts": chosen.get("concepts") or ["communication", "teamwork", "reflection"],
-                        "questionFormat": "theory",
-                        "codeSnippet": None,
-                        "expectedOutput": None,
-                        "explanation": chosen.get("guidance"),
-                        "reference_solution": chosen.get("guidance"),
-                        "referenceSolution": chosen.get("guidance"),
-                        "modelUsed": "curated_hr100_benchmark",
-                    }
+                if not candidates:
+                    candidates = hr_pool
+
+                # The fine-tuned model (mockmate-hr100) chooses the next question from the HR dataset.
+                # The question text always comes from the dataset, never invented; the model only decides
+                # which one fits this interview best. If the model cannot answer in time, a random dataset
+                # question is used and labelled honestly as "bank_fallback".
+                shortlist = random.sample(candidates, min(len(candidates), 6))
+                chosen, picked_by_model = self._pick_hr_question_with_fine_tuned_model(
+                    shortlist, previous, previous_categories
+                )
+                if chosen is None:
+                    chosen = random.choice(shortlist)
+                ft_name = getattr(self, "ft_model_name", None) or getattr(settings, "FINE_TUNED_MODEL_NAME", "mockmate-hr100")
+                return {
+                    "id": chosen.get("id"),
+                    "questionId": chosen.get("id"),
+                    "questionText": chosen["question"],
+                    "questionType": "normal",
+                    "subject": "N/A",
+                    "difficulty": difficulty or "medium",
+                    "category": chosen.get("category", "HR & Behavioral").title(),
+                    "expectedConcepts": chosen.get("concepts") or ["communication", "teamwork", "reflection"],
+                    "questionFormat": "theory",
+                    "codeSnippet": None,
+                    "expectedOutput": None,
+                    "explanation": chosen.get("guidance"),
+                    "reference_solution": chosen.get("guidance"),
+                    "referenceSolution": chosen.get("guidance"),
+                    "modelUsed": ft_name if picked_by_model else "hr_dataset_fallback",
+                    "source": "model" if picked_by_model else "bank_fallback",
+                }
         except Exception as e:
-            logger.warning(f"[HRQuestionGenerator] Could not load curated HR benchmark: {e}. Falling back to dynamic generator.")
+            logger.error(f"[HRQuestionGenerator] Could not load curated HR benchmark: {e}.")
+            raise RuntimeError(f"HR question bank unavailable: {e}")
 
-        ctx_str = "\n".join(_safe_str(c) for c in context) if context else "HR interview principles and workplace scenarios."
-        prev_str = ", ".join(_safe_str(p) for p in previous) if previous else "None"
-        correction = ""
-
-        for attempt in range(3):
-            topic_focus = _pick_topic_focus("hr", previous, _THEORY_TOPIC_FOCUS, _GENERIC_THEORY_FOCUS)
-            input_dict = {
-                "interviewType": "hr",
-                "subject": "hr",
-                "difficulty": difficulty,
-                "questionFormat": "theory",
-                "category": topic_focus,
-                "context": ctx_str,
-                "previous": prev_str,
-                "request": "Create an HR interview question focused on behavioral skills."
-            }
-            if correction:
-                input_dict["correction"] = correction
-            prompt = build_training_style_prompt("generate_question", input_dict)
-            raw_text, model_used = self._call_llama(prompt, system=TRAINING_SYSTEM_PROMPT)
-            data = _extract_json(raw_text)
-            question_text = _safe_str(data.get("questionText")) or _safe_str(data.get("question"))
-
-            if not question_text:
-                correction = "The response did not contain a usable questionText."
-                continue
-            if _HR_FORBIDDEN_TOPIC.search(question_text):
-                correction = "The question included a forbidden technical topic; write an HR workplace question only."
-                logger.warning(f"[LLaMA] HR question attempt {attempt + 1}/3 rejected: {correction}")
-                continue
-            if _is_duplicate_question(question_text, previous):
-                correction = "The question repeated a previous question; choose a different HR scenario."
-                continue
-
-            return {
-                "questionText": question_text,
-                "questionType": "normal",
-                "subject": "N/A",
-                "difficulty": difficulty,
-                "category": "HR & Behavioral",
-                "expectedConcepts": data.get("expectedConcepts") or ["communication", "teamwork", "reflection"],
-                "questionFormat": "theory",
-                "codeSnippet": None,
-                "expectedOutput": None,
-                "modelUsed": model_used,
-            }
-
-        raise AIGenerationUnavailableError(
-            "The fine-tuned model did not produce a valid HR-only question after three attempts."
-        )
 
     @staticmethod
     def _build_theory_prompt(subject: str, difficulty: str, topic_focus: str, ctx_str: str, prev_str: str) -> str:
@@ -2480,7 +3649,7 @@ class LlamaModel(BaseAIModel):
             f"to the same general subject area."
         )
 
-    def _generate_output_prediction_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None) -> dict:
+    def _generate_output_prediction_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None, **kwargs) -> dict:
         """
         'Predict the output' question: LLaMA writes a short, self-contained
         code/SQL snippet in `subject` and the ground-truth output it
@@ -2571,12 +3740,12 @@ class LlamaModel(BaseAIModel):
     # Coding-format dispatcher: DBMS goes to SQL generation, everything
     # else goes to Java generation.
     # -----------------------------------------------------------------
-    def _generate_coding_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None) -> dict:
+    def _generate_coding_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None, **kwargs) -> dict:
         if (subject or "").lower() == "dbms":
-            return self._generate_sql_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected)
-        return self._generate_java_coding_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected)
+            return self._generate_sql_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected, **kwargs)
+        return self._generate_java_coding_question(subject, difficulty, context, previous, attempt=attempt, rejected=rejected, **kwargs)
 
-    def _generate_java_coding_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None) -> dict:
+    def _generate_java_coding_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None, **kwargs) -> dict:
         """
         'Coding' question: LLaMA writes a self-contained Java coding problem.
         Verification pipeline:
@@ -2654,7 +3823,7 @@ class LlamaModel(BaseAIModel):
         raw_text, model_used = self._call_llama(
             prompt,
             system=TRAINING_SYSTEM_PROMPT,
-            timeout=90,
+            timeout=int(kwargs.get("timeout", MAX_CODING_GENERATION_TIMEOUT_SEC)),
             num_predict=1024,
             temperature=temp,
             response_format={
@@ -2822,7 +3991,7 @@ class LlamaModel(BaseAIModel):
                 pass
         return schema_str
 
-    def _generate_sql_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None) -> dict:
+    def _generate_sql_question(self, subject: str, difficulty: str, context: list, previous: list, attempt: int = 0, rejected: list = None, **kwargs) -> dict:
         """
         DBMS equivalent of _generate_java_coding_question. LLaMA invents a
         small schema and writes the SQL task, then produces test cases.
@@ -2875,7 +4044,7 @@ class LlamaModel(BaseAIModel):
         raw_text, model_used = self._call_llama(
             prompt,
             system=TRAINING_SYSTEM_PROMPT,
-            timeout=120,
+            timeout=int(kwargs.get("timeout", MAX_CODING_GENERATION_TIMEOUT_SEC)),
             num_predict=1024,
             temperature=temp,
             response_format={
@@ -3047,123 +4216,276 @@ class LlamaModel(BaseAIModel):
             "modelUsed": model_used,
         }
 
-    def _get_guaranteed_unique_coding_question(self, subject: str, difficulty: str, previous: list, previous_categories: list = None) -> dict:
-        subj = (subject or "java").lower()
-        diff = (difficulty or "medium").lower()
-        prev_cats = [c.lower() for c in (previous_categories or []) if c]
-        catalog = _GUARANTEED_UNIQUE_CODING_QUESTIONS.get((subj, diff))
-        if not catalog:
-            catalog = [prob for (s, d), items in _GUARANTEED_UNIQUE_CODING_QUESTIONS.items() if s == subj for prob in items]
-        if not catalog and subj != "dbms":
-            catalog = _GUARANTEED_UNIQUE_CODING_QUESTIONS.get(("java", "medium"), [])
-        if catalog:
-            for prob in catalog:
-                cat = (prob.get("category") or "").lower()
-                if cat and prev_cats.count(cat) >= 2:
-                    continue
-                sig = f"{prob['title']}: {prob['questionText']}"
-                if not _is_duplicate_question(sig, previous) and not _is_duplicate_question(prob['title'], previous, threshold=0.92):
-                    res = dict(prob)
-                    if "referenceSolution" not in res and "_referenceQuery" in res:
-                        res["referenceSolution"] = res["_referenceQuery"]
-                    res["modelUsed"] = "verified_adaptive_catalog"
-                    return res
-        for (s, d), items in _GUARANTEED_UNIQUE_CODING_QUESTIONS.items():
-            if s == subj:
-                for prob in items:
-                    cat = (prob.get("category") or "").lower()
-                    if cat and prev_cats.count(cat) >= 2:
-                        continue
-                    sig = f"{prob['title']}: {prob['questionText']}"
-                    if not _is_duplicate_question(sig, previous) and not _is_duplicate_question(prob['title'], previous, threshold=0.92):
-                        res = dict(prob)
-                        if "referenceSolution" not in res and "_referenceQuery" in res:
-                            res["referenceSolution"] = res["_referenceQuery"]
-                        res["difficulty"] = diff
-                        res["modelUsed"] = "verified_adaptive_catalog"
-                        return res
-        return None
+    def _get_guaranteed_unique_coding_question(self, subject: str, difficulty: str, previous: list, previous_categories: list = None, exclude_question_ids: list = None, exclude_question_texts: list = None, question_history: list = None, session_id: str = None) -> dict:
+        import random
+        from app.services.embedding_service import embedding_service
 
-    def _get_guaranteed_unique_output_prediction(self, subject: str, difficulty: str, previous: list, previous_categories: list = None) -> dict:
         subj = (subject or "java").lower()
         diff = (difficulty or "medium").lower()
+        previous = list(previous or [])
         prev_cats = [c.lower() for c in (previous_categories or []) if c]
-        catalog = _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS.get((subj, diff)) or _GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS.get(("java", "medium"), [])
-        for prob in catalog:
+        exclude_ids_set = {str(x).strip().lower() for x in (exclude_question_ids or []) if x}
+        exclude_texts = [str(x).strip() for x in (exclude_question_texts or []) if x]
+
+        # Strictly use catalogue for (subj, diff) - DO NOT BORROW FROM ANOTHER DIFFICULTY
+        catalog = list(_GUARANTEED_UNIQUE_CODING_QUESTIONS.get((subj, diff)) or [])
+        if not catalog and subj != "dbms":
+            catalog = list(_GUARANTEED_UNIQUE_CODING_QUESTIONS.get(("java", "medium"), []))
+
+        hist_by_id = {}
+        hist_by_text = {}
+        if question_history:
+            for h in question_history:
+                qid = str(h.get("questionId") or "").strip().lower()
+                if qid:
+                    hist_by_id[qid] = h
+                txt = str(h.get("text") or "").strip().lower()
+                if txt:
+                    hist_by_text[txt] = h
+
+        def _get_rank_key(prob):
+            qid = str(prob.get("id") or prob.get("title") or "").strip().lower()
+            qtext = str(prob.get("questionText") or prob.get("title") or "").strip().lower()
+            h = hist_by_id.get(qid) or hist_by_text.get(qtext)
+            if h:
+                times_asked = int(h.get("timesAsked", 1))
+                last_idx = int(h.get("lastAskedSessionIndex", 0))
+            elif not question_history and exclude_ids_set and qid in exclude_ids_set:
+                times_asked = 1
+                last_idx = 999999
+            else:
+                times_asked = 0
+                last_idx = -1
+
+            seed_str = f"{session_id}:{len(previous)}:{qid}:{qtext[:20]}"
+            tie_break = random.Random(seed_str).random()
+            return (times_asked, last_idx, tie_break)
+
+        def is_eligible(prob, check_sbert: bool = True) -> bool:
             cat = (prob.get("category") or "").lower()
             if cat and prev_cats.count(cat) >= 2:
-                continue
-            if not _is_duplicate_question(prob["codeSnippet"], previous):
-                res = dict(prob)
-                res["modelUsed"] = "verified_adaptive_catalog"
-                return res
-        return None
+                return False
+            sig = f"{prob.get('title', '')}: {prob.get('questionText', '')}"
+            if _is_duplicate_question(sig, previous) or _is_duplicate_question(prob.get('title', ''), previous, threshold=0.92):
+                return False
+            if not question_history and exclude_ids_set:
+                q_id = str(prob.get("id") or prob.get("title") or "").strip().lower()
+                if q_id and q_id in exclude_ids_set:
+                    return False
+            if check_sbert and exclude_texts:
+                is_sim, _, _ = embedding_service.is_similar_to_any(prob.get("questionText", "") or sig, exclude_texts, threshold=0.88)
+                if is_sim:
+                    return False
+            return True
 
-    def _get_guaranteed_unique_theory_question(self, subject: str, difficulty: str, previous: list, previous_categories: list = None) -> dict:
+        candidates = [p for p in catalog if is_eligible(p, check_sbert=True)]
+        if not candidates:
+            # Bank exhaustion: relax SBERT check, still strictly (subj, diff) and never repeat in current session
+            candidates = [p for p in catalog if is_eligible(p, check_sbert=False)]
+        if not candidates:
+            candidates = [p for p in catalog if not _is_duplicate_question(f"{p.get('title', '')}: {p.get('questionText', '')}", previous)]
+        if not candidates:
+            candidates = list(catalog)
+
+        candidates.sort(key=_get_rank_key)
+        chosen = dict(candidates[0])
+        if "referenceSolution" not in chosen and "_referenceQuery" in chosen:
+            chosen["referenceSolution"] = chosen["_referenceQuery"]
+        chosen["difficulty"] = diff
+        chosen["source"] = "catalogue_fallback"
+        chosen["modelUsed"] = "catalogue_fallback"
+
+        rank_tuple = _get_rank_key(chosen)
+        if rank_tuple[0] > 0:
+            logger.warning(
+                f"[QuestionSelection] Coding bank repeat selected for {subj} ({diff}) in session '{session_id}': {chosen.get('title')}"
+            )
+        return chosen
+
+    def _get_guaranteed_unique_output_prediction(self, subject: str, difficulty: str, previous: list, previous_categories: list = None, exclude_question_ids: list = None, exclude_question_texts: list = None, question_history: list = None, session_id: str = None) -> dict:
+        import random
+        from app.services.embedding_service import embedding_service
+
         subj = (subject or "java").lower()
         diff = (difficulty or "medium").lower()
+        previous = list(previous or [])
+        prev_cats = [c.lower() for c in (previous_categories or []) if c]
+        exclude_ids_set = {str(x).strip().lower() for x in (exclude_question_ids or []) if x}
+        exclude_texts = [str(x).strip() for x in (exclude_question_texts or []) if x]
+
+        # Strictly use catalogue for (subj, diff) - DO NOT BORROW FROM ANOTHER DIFFICULTY
+        catalog = list(_GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS.get((subj, diff)) or [])
+        if not catalog:
+            catalog = list(_GUARANTEED_UNIQUE_OUTPUT_PREDICTIONS.get(("java", "medium"), []))
+
+        hist_by_id = {}
+        hist_by_text = {}
+        if question_history:
+            for h in question_history:
+                qid = str(h.get("questionId") or "").strip().lower()
+                if qid:
+                    hist_by_id[qid] = h
+                txt = str(h.get("text") or "").strip().lower()
+                if txt:
+                    hist_by_text[txt] = h
+
+        def _get_rank_key(prob):
+            qid = str(prob.get("id") or prob.get("title") or "").strip().lower()
+            qtext = str(prob.get("codeSnippet") or prob.get("questionText") or "").strip().lower()
+            h = hist_by_id.get(qid) or hist_by_text.get(qtext)
+            if h:
+                times_asked = int(h.get("timesAsked", 1))
+                last_idx = int(h.get("lastAskedSessionIndex", 0))
+            elif not question_history and exclude_ids_set and qid in exclude_ids_set:
+                times_asked = 1
+                last_idx = 999999
+            else:
+                times_asked = 0
+                last_idx = -1
+
+            seed_str = f"{session_id}:{len(previous)}:{qid}:{qtext[:20]}"
+            tie_break = random.Random(seed_str).random()
+            return (times_asked, last_idx, tie_break)
+
+        def is_eligible(prob, check_sbert: bool = True) -> bool:
+            cat = (prob.get("category") or "").lower()
+            if cat and prev_cats.count(cat) >= 2:
+                return False
+            if _is_duplicate_question(prob.get("codeSnippet", ""), previous):
+                return False
+            if not question_history and exclude_ids_set:
+                q_id = str(prob.get("id") or prob.get("title") or "").strip().lower()
+                if q_id and q_id in exclude_ids_set:
+                    return False
+            if check_sbert and exclude_texts:
+                is_sim, _, _ = embedding_service.is_similar_to_any(prob.get("questionText", "") or prob.get("codeSnippet", ""), exclude_texts, threshold=0.88)
+                if is_sim:
+                    return False
+            return True
+
+        candidates = [p for p in catalog if is_eligible(p, check_sbert=True)]
+        if not candidates:
+            # Bank exhaustion: relax SBERT check, still strictly (subj, diff)
+            candidates = [p for p in catalog if is_eligible(p, check_sbert=False)]
+        if not candidates:
+            candidates = [p for p in catalog if not _is_duplicate_question(p.get("codeSnippet", ""), previous)]
+        if not candidates:
+            candidates = list(catalog)
+
+        candidates.sort(key=_get_rank_key)
+        chosen = dict(candidates[0])
+        chosen["source"] = "catalogue_fallback"
+        chosen["modelUsed"] = "catalogue_fallback"
+
+        rank_tuple = _get_rank_key(chosen)
+        if rank_tuple[0] > 0:
+            logger.warning(
+                f"[QuestionSelection] Output prediction bank repeat selected for {subj} ({diff}) in session '{session_id}': {chosen.get('title') or chosen.get('id')}"
+            )
+        return chosen
+
+    def _get_guaranteed_unique_theory_question(self, subject: str, difficulty: str, previous: list, previous_categories: list = None, exclude_question_ids: list = None, exclude_question_texts: list = None, question_history: list = None, session_id: str = None) -> dict:
+        import random
+        from app.services.embedding_service import embedding_service
+
+        subj = (subject or "java").lower()
+        diff = (difficulty or "medium").lower()
+        previous = list(previous or [])
         prev_cats = [c.lower() for c in (previous_categories or []) if c]
         has_pair = any(prev_cats.count(c) >= 2 for c in set(prev_cats))
         distinct_cats = len(set(prev_cats))
         must_choose_new_cat = has_pair or (len(prev_cats) >= 3 and distinct_cats < 3) or (len(prev_cats) == 4 and distinct_cats < 4)
 
-        catalog = _GUARANTEED_UNIQUE_THEORY_QUESTIONS.get((subj, diff))
-        if not catalog:
-            catalog = [prob for (s, d), items in _GUARANTEED_UNIQUE_THEORY_QUESTIONS.items() if s == subj for prob in items]
-        if not catalog:
-            catalog = _GUARANTEED_UNIQUE_THEORY_QUESTIONS.get(("java", "medium"), [])
+        exclude_ids_set = {str(x).strip().lower() for x in (exclude_question_ids or []) if x}
+        exclude_texts = [str(x).strip() for x in (exclude_question_texts or []) if x]
 
-        # Pass 1: Try with must_choose_new_cat constraint
-        if catalog:
-            for prob in catalog:
-                cat = (prob.get("category") or "").lower()
-                if cat and prev_cats.count(cat) >= 2:
-                    continue
-                if must_choose_new_cat and cat and cat in prev_cats:
-                    continue
-                if not _is_duplicate_question(prob["questionText"], previous):
-                    res = dict(prob)
-                    res["modelUsed"] = "verified_adaptive_catalog"
-                    return res
-        for (s, d), items in _GUARANTEED_UNIQUE_THEORY_QUESTIONS.items():
-            if s == subj:
-                for prob in items:
-                    cat = (prob.get("category") or "").lower()
-                    if cat and prev_cats.count(cat) >= 2:
-                        continue
-                    if must_choose_new_cat and cat and cat in prev_cats:
-                        continue
-                    if not _is_duplicate_question(prob["questionText"], previous):
-                        res = dict(prob)
-                        res["difficulty"] = diff
-                        res["modelUsed"] = "verified_adaptive_catalog"
-                        return res
+        # Strictly use catalogue for (subj, diff) - DO NOT BORROW FROM ANOTHER DIFFICULTY
+        catalog = list(_GUARANTEED_UNIQUE_THEORY_QUESTIONS.get((subj, diff)) or [])
+        if not catalog:
+            catalog = list(_GUARANTEED_UNIQUE_THEORY_QUESTIONS.get(("java", "medium"), []))
 
-        # Pass 2: Fallback without must_choose_new_cat (only max 2 per cat and deduplication)
-        if catalog:
-            for prob in catalog:
-                cat = (prob.get("category") or "").lower()
-                if cat and prev_cats.count(cat) >= 2:
-                    continue
-                if not _is_duplicate_question(prob["questionText"], previous):
-                    res = dict(prob)
-                    res["modelUsed"] = "verified_adaptive_catalog"
-                    return res
-        for (s, d), items in _GUARANTEED_UNIQUE_THEORY_QUESTIONS.items():
-            if s == subj:
-                for prob in items:
-                    cat = (prob.get("category") or "").lower()
-                    if cat and prev_cats.count(cat) >= 2:
-                        continue
-                    if not _is_duplicate_question(prob["questionText"], previous):
-                        res = dict(prob)
-                        res["difficulty"] = diff
-                        res["modelUsed"] = "verified_adaptive_catalog"
-                        return res
-        return None
+        hist_by_id = {}
+        hist_by_text = {}
+        if question_history:
+            for h in question_history:
+                qid = str(h.get("questionId") or "").strip().lower()
+                if qid:
+                    hist_by_id[qid] = h
+                txt = str(h.get("text") or "").strip().lower()
+                if txt:
+                    hist_by_text[txt] = h
+
+        def _get_rank_key(prob):
+            qid = str(prob.get("id") or "").strip().lower()
+            qtext = str(prob.get("questionText") or "").strip().lower()
+            h = hist_by_id.get(qid) or hist_by_text.get(qtext)
+            if h:
+                times_asked = int(h.get("timesAsked", 1))
+                last_idx = int(h.get("lastAskedSessionIndex", 0))
+            elif not question_history and exclude_ids_set and qid in exclude_ids_set:
+                times_asked = 1
+                last_idx = 999999
+            else:
+                times_asked = 0
+                last_idx = -1
+
+            seed_str = f"{session_id}:{len(previous)}:{qid}:{qtext[:20]}"
+            tie_break = random.Random(seed_str).random()
+            # Order: (1) never asked (times_asked == 0), (2) fewest times, (3) oldest session (last_idx)
+            return (times_asked, last_idx, tie_break)
+
+        def is_eligible(prob, check_new_cat: bool = True, check_sbert: bool = True) -> bool:
+            if _is_duplicate_question(prob.get("questionText", ""), previous):
+                return False
+            cat = (prob.get("category") or "").lower()
+            if cat and prev_cats.count(cat) >= 2:
+                return False
+            if check_new_cat and must_choose_new_cat and cat and cat in prev_cats:
+                return False
+            if not question_history and exclude_ids_set:
+                q_id = str(prob.get("id") or "").strip().lower()
+                if q_id and q_id in exclude_ids_set:
+                    return False
+            if check_sbert and exclude_texts:
+                is_sim, _, _ = embedding_service.is_similar_to_any(prob.get("questionText", ""), exclude_texts, threshold=0.88)
+                if is_sim:
+                    return False
+            return True
+
+        # Pass 1: Eligible with new cat constraint & SBERT check
+        candidates = [p for p in catalog if is_eligible(p, check_new_cat=True, check_sbert=True)]
+
+        # Pass 2: Eligible without new cat constraint, still with SBERT check
+        if not candidates:
+            candidates = [p for p in catalog if is_eligible(p, check_new_cat=False, check_sbert=True)]
+
+        # Pass 3: Bank exhaustion (all questions in bank for (subj, diff) hit last 5 sessions SBERT)
+        # Relax SBERT check, still strictly (subj, diff), never repeat current session
+        if not candidates:
+            candidates = [p for p in catalog if is_eligible(p, check_new_cat=False, check_sbert=False)]
+
+        # Pass 4: Safety net (never repeat current session)
+        if not candidates:
+            candidates = [p for p in catalog if not _is_duplicate_question(p.get("questionText", ""), previous)]
+        if not candidates:
+            candidates = list(catalog)
+
+        candidates.sort(key=_get_rank_key)
+        chosen = dict(candidates[0])
+        chosen["difficulty"] = diff
+        chosen["source"] = "catalogue_fallback"
+        chosen["modelUsed"] = "catalogue_fallback"
+
+        rank_tuple = _get_rank_key(chosen)
+        if rank_tuple[0] > 0:
+            logger.warning(
+                f"[QuestionSelection] Bank nearly exhausted for {subj} ({diff}) in session '{session_id}'. "
+                f"Selecting least recently asked question: {chosen.get('id')} - '{chosen.get('questionText')}'"
+            )
+        return chosen
 
     # UNTRAINED TASK (no fine-tuning data)
-    def generate_followup(self, question: str, answer: str, concepts: list, previous: list = None, interview_type: str = "technical") -> dict:
+    def generate_followup(self, question: str, answer: str, concepts: list, previous: list = None, interview_type: str = "technical", subject: str = None, previous_score: int = None, **kwargs) -> dict:
         if (interview_type or "").lower() == "hr":
             return self._generate_hr_followup(question, answer, concepts, previous)
 
@@ -3188,15 +4510,99 @@ class LlamaModel(BaseAIModel):
         if not question_text:
             raise ValueError(f"LLaMA returned no usable questionText for follow-up: {raw_text[:200]!r}")
 
+        # Requirement 4 & Task A5: Create referenceAnswer and expectedConcepts with safety checks
+        parent_cat = find_parent_or_closest_theory_item(question, subject=subject)
+        parent_ref = parent_cat.get("referenceAnswer") if parent_cat else None
+        parent_concepts = (parent_cat.get("expectedConcepts") if parent_cat else None) or concepts or ["Response elaboration"]
+
+        from app.services.embedding_service import embedding_service
+        if previous_score is None and parent_ref:
+            try:
+                eval_prev = _evaluate_theory_with_rubric(question, answer, parent_ref, embedding_service)
+                previous_score = eval_prev.get("score")
+            except Exception:
+                previous_score = None
+
+        ref_answer = None
+        followup_concepts = None
+        try:
+            extra_guidance = ""
+            if previous_score is not None and previous_score < 40:
+                extra_guidance = (
+                    f"Note: Candidate's prior answer scored low/incorrect. Reference answer must state correct technical facts "
+                    f"grounded in standard {subject or 'technical'} concepts only; do not repeat or accept false claims.\n"
+                )
+            ref_prompt = (
+                f"You are a technical interviewer. A candidate was asked the following follow-up question in a {subject or 'technical'} interview:\n"
+                f"Follow-up Question: {question_text}\n"
+                f"Topic / Subject: {subject or 'technical'}\n"
+                f"Parent Question Reference Context: {parent_ref or question}\n"
+                f"{extra_guidance}\n"
+                f"Write a concise reference answer for this follow-up question. "
+                f"Keep it short: exactly 2 to 4 sentences, where each sentence states a distinct key point. "
+                f"Also list 2 to 5 expected technical concepts (short phrases).\n\n"
+                f"Respond ONLY with a JSON object in this format:\n"
+                f'{{"referenceAnswer": "Sentence 1. Sentence 2. Sentence 3.", "expectedConcepts": ["concept1", "concept2"]}}'
+            )
+            ref_raw, _ = self._call_llama(ref_prompt, timeout=30, num_predict=512, temperature=0.0, response_format="json")
+            ref_data = _extract_json(ref_raw)
+            candidate_ref = _safe_str(ref_data.get("referenceAnswer"))
+            candidate_kps = _split_reference_key_points(candidate_ref)
+            if len(candidate_kps) >= 2:
+                ref_answer = candidate_ref
+                raw_c = ref_data.get("expectedConcepts")
+                if isinstance(raw_c, list) and 2 <= len(raw_c) <= 5:
+                    followup_concepts = [str(c).strip() for c in raw_c if str(c).strip()]
+                elif isinstance(raw_c, list) and len(raw_c) > 0:
+                    followup_concepts = [str(c).strip() for c in raw_c if str(c).strip()][:5]
+        except Exception as e:
+            logger.warning(f"[FollowupGen] Failed to generate referenceAnswer for follow-up ({e}). Falling back to parent reference.")
+
+        # Task A5 (a): Check candidate reference against parent reference (cosine >= 0.5 to some parent key point)
+        if parent_ref and ref_answer:
+            parent_kps = _split_reference_key_points(parent_ref)
+            cand_kps = _split_reference_key_points(ref_answer)
+            aligned = any(embedding_service.compute_similarity(pkp, ckp) >= 0.5 for pkp in parent_kps for ckp in cand_kps)
+            if not aligned:
+                logger.warning("[FollowupSafety] Follow-up reference key points have no cosine >= 0.5 alignment with parent reference. Discarding follow-up reference and using parent reference.")
+                ref_answer = parent_ref
+                followup_concepts = parent_concepts
+
+        # Task A5 (b): If previous answer scored below 40, do not borrow false claims into reference or expectedConcepts
+        if previous_score is not None and previous_score < 40 and answer:
+            student_tokens = {w for w in re.findall(r"[A-Za-z][A-Za-z'-]*", answer.lower()) if len(w) >= 3 and w not in STOP}
+            parent_tokens = {w for w in re.findall(r"[A-Za-z][A-Za-z'-]*", (parent_ref or "").lower()) if len(w) >= 3 and w not in STOP}
+            bad_borrowed = student_tokens - parent_tokens
+            if ref_answer:
+                ref_tokens = {w for w in re.findall(r"[A-Za-z][A-Za-z'-]*", ref_answer.lower()) if len(w) >= 3 and w not in STOP}
+                if len(ref_tokens & bad_borrowed) >= 3 and parent_ref:
+                    logger.warning("[FollowupSafety] Follow-up reference repeated false claims from wrong student answer. Using parent reference.")
+                    ref_answer = parent_ref
+            clean_concepts = []
+            for c in (followup_concepts or []):
+                c_toks = {w for w in re.findall(r"[A-Za-z][A-Za-z'-]*", str(c).lower()) if len(w) >= 3 and w not in STOP}
+                if c_toks and c_toks.issubset(bad_borrowed):
+                    continue
+                clean_concepts.append(str(c).strip())
+            followup_concepts = clean_concepts if len(clean_concepts) >= 2 else parent_concepts
+
+        if not ref_answer or len(_split_reference_key_points(ref_answer)) < 2:
+            ref_answer = parent_ref or "A complete, correct technical explanation addressing all aspects of the question."
+        if not followup_concepts:
+            followup_concepts = data.get("expectedConcepts") or parent_concepts
+
         return {
             "questionText": question_text,
             "questionType": "follow_up",
-            "subject": "follow_up",
+            "subject": subject or "follow_up",
             "difficulty": "medium",
             "category": "Adaptive Follow-Up",
-            "expectedConcepts": data.get("expectedConcepts") or (concepts or ["Response elaboration"]),
+            "expectedConcepts": followup_concepts,
+            "referenceAnswer": ref_answer,
+            "questionFormat": "theory",
             "modelUsed": model_used,
         }
+
 
     def _generate_hr_followup(self, question: str, answer: str, concepts: list, previous: list = None) -> dict:
         prev_str = ", ".join(_safe_str(p) for p in (previous or [])) if previous else "None"
@@ -3256,7 +4662,7 @@ class LlamaModel(BaseAIModel):
         )
 
     # UNTRAINED TASK (no fine-tuning data)
-    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, **kwargs) -> dict:
+    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, reference_answer: str = None, **kwargs) -> dict:
         if question_format == "output_prediction":
             return self._evaluate_output_prediction(question, answer, concepts, expected_output, explanation, code_snippet=code_snippet, subject=subject)
         if question_format == "coding":
@@ -3269,6 +4675,16 @@ class LlamaModel(BaseAIModel):
         # Java/DBMS theory: a bare list of terms is not an answer (see _is_bare_term_list).
         if _should_reject_term_list(question, answer):
             res = _keyword_list_evaluation(concepts)
+            res["evidence"] = None
+            res["llamaRubric"] = None
+            res["formulaVersion"] = "v2"
+            res["evaluatedBy"] = "rules"
+            res["llamaEvaluation"] = "ok"
+            return res
+
+        # No new content gate: repeats question words + filler -> score 0
+        if _has_no_new_content(question, answer, MIN_NEW_WORDS_THEORY):
+            res = _no_new_content_evaluation(concepts)
             res["evidence"] = None
             res["llamaRubric"] = None
             res["formulaVersion"] = "v2"
@@ -3297,6 +4713,137 @@ class LlamaModel(BaseAIModel):
 
         from app.services.embedding_service import embedding_service
 
+        is_sql_query = (language or "").lower() == "sql" or (
+            (subject or "").lower() == "dbms" and bool(re.search(r'^\s*(?:--[^\n]*\n\s*)*SELECT\b', (answer or '').strip(), re.IGNORECASE))
+        )
+
+        cat_item = find_theory_item(question, subject=subject)
+        ref_arg = reference_answer or kwargs.get("reference_answer") or kwargs.get("referenceAnswer")
+
+        # Catalogue theory questions use the deterministic predefined rubric.
+        # Follow-ups / Llama-written questions are judged against the question itself under Rule I.
+        if cat_item and cat_item.get("referenceAnswer"):
+            ref_ans = cat_item["referenceAnswer"]
+            concepts_to_use = cat_item.get("expectedConcepts") or concepts
+
+            # Deterministic predefined rubric scoring based on catalogue referenceAnswer
+            rubric_res = _evaluate_theory_with_rubric(
+                question, answer, str(ref_ans), embedding_service,
+                expected_concepts=concepts_to_use
+            )
+            final_score = rubric_res["score"]
+            concept_coverage = rubric_res["conceptCoverage"]
+            correctness = rubric_res["correctness"]
+            relevance = rubric_res["relevance"]
+            accuracy = rubric_res.get("accuracy", concept_coverage)
+            communication = rubric_res["communication"]
+            formula = rubric_res.get("formula")
+            covered = rubric_res["coveredConcepts"]
+            missing_concepts = rubric_res["missingConcepts"]
+            feedback = rubric_res["feedback"]
+            strengths = rubric_res["strengths"]
+            weaknesses = rubric_res["weaknesses"]
+            score_reason = rubric_res["scoreReason"]
+            evaluator_entity = "predefined_rubric"
+            llama_eval_status = "skipped"
+            llama_rubric = {
+                "correctness": round(correctness * 100),
+                "relevance": round(relevance * 100),
+                "completeness": round(concept_coverage * 100),
+                "clarity": round(communication * 100) if communication is not None else 80,
+                "rubricMean": round(final_score, 2),
+            }
+
+            if final_score > 0:
+                # Rule H: Language model is used ONLY to write feedback text, strengths and weaknesses,
+                # and it can NEVER raise the score.
+                try:
+                    base_model = getattr(settings, "BASE_MODEL_NAME", self.model_name)
+                    prompt = (
+                        f"You are a technical interviewer evaluating a {subject.upper() if subject else 'technical'} interview answer.\n\n"
+                        f"Question:\n{question}\n\n"
+                        f"Reference Answer:\n{ref_ans}\n\n"
+                        f"Candidate's Answer:\n{answer}\n\n"
+                        f"Provide 2-3 sentences of constructive technical feedback, up to 2 strengths, and up to 2 weaknesses.\n"
+                        f"Respond ONLY with a JSON object in this format:\n"
+                        f'{{"feedback": "...", "strengths": ["..."], "weaknesses": ["..."]}}'
+                    )
+                    raw_text, _ = self._call_llama(
+                        prompt,
+                        timeout=30,
+                        num_predict=512,
+                        temperature=0.0,
+                        response_format="json",
+                        model_override=base_model,
+                    )
+                    llm_data = _extract_json(raw_text)
+                    if llm_data.get("feedback"):
+                        llm_comment = _safe_str(llm_data["feedback"]).strip()
+                        first_sentence = re.split(r'(?<=[.!?])\s+', llm_comment)[0]
+                        feedback = f"{score_reason} {first_sentence}".strip()
+                    if isinstance(llm_data.get("strengths"), list) and llm_data["strengths"]:
+                        strengths = [str(s) for s in llm_data["strengths"] if s][:2]
+                    if isinstance(llm_data.get("weaknesses"), list) and llm_data["weaknesses"]:
+                        weaknesses = [str(w) for w in llm_data["weaknesses"] if w][:2]
+                    llama_eval_status = "ok"
+                    evaluator_entity = "predefined_rubric+llama_feedback"
+                except Exception as e:
+                    logger.warning(f"[TheoryEval] LLaMA feedback generation failed ({e}); using rubric feedback.")
+
+            evidence = {
+                "conceptCoverage": round(concept_coverage, 2),
+                "conceptCoverageScore": round(concept_coverage * 100.0),
+                "coveredConcepts": covered,
+                "partiallyCoveredConcepts": [],
+                "missingConcepts": missing_concepts,
+            }
+
+            eval_res = {
+                "score": final_score,
+                "conceptCoverage": round(concept_coverage, 2),
+                "correctness": correctness,
+                "relevance": relevance,
+                "accuracy": accuracy,
+                "communication": None if is_sql_query else communication,
+                "formula": formula,
+                "source": "model",
+                "isIrrelevant": False,
+                "evidence": evidence,
+                "llamaRubric": llama_rubric,
+                "formulaVersion": "v2",
+                "evaluatedBy": evaluator_entity,
+                "llamaEvaluation": llama_eval_status,
+                "feedback": feedback or score_reason,
+                "strengths": strengths,
+                "weaknesses": weaknesses,
+                "coveredConcepts": covered,
+                "partiallyCoveredConcepts": [],
+                "missingConcepts": missing_concepts,
+                "deeperConcepts": [],
+                "improvementSuggestion": rubric_res["improvementSuggestion"],
+                "scoreReason": score_reason,
+                "whyNot100": None if final_score == 100 else (rubric_res.get("whyNot100") or rubric_res["improvementSuggestion"]),
+                "modelUsed": getattr(self, "model_name", settings.MODEL_NAME),
+                "usedFallback": False,
+                "scoringSources": ["catalogue_rubric", "bert"],
+            }
+            if hasattr(self, "_eval_cache"):
+                self._eval_cache[cache_key] = eval_res
+            _THEORY_EVAL_CACHE[cache_key] = eval_res
+            return eval_res
+
+        # Rule I: Questions WITHOUT a referenceAnswer (questions written by the model)
+        concept_anchors = set()
+        for c in (concepts or []):
+            concept_anchors.update(_get_key_point_anchors(str(c), question))
+
+        ans_tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", answer.lower())
+        ans_stems = {stem(w) for w in ans_tokens}
+        has_any_concept_anchor = any(a in ans_stems for a in concept_anchors) if concept_anchors else True
+        has_code = bool(re.search(r"[{}()=;<>]", answer)) or bool(re.search(r'\b(?:class|void|public|extends|implements|SELECT|FROM|WHERE)\b', answer, re.IGNORECASE))
+        is_list_q = _question_asks_for_list(question)
+        # A word-match miss alone must not zero the answer: synonyms and paraphrases are judged by
+        # meaning below (semantic relevance, concept coverage and the off-topic check).
         expected_text = ", ".join(concepts) if concepts else question
         semantic_sim = embedding_service.compute_similarity(expected_text, answer)
         question_sim = embedding_service.compute_similarity(question, answer)
@@ -3360,7 +4907,7 @@ class LlamaModel(BaseAIModel):
         try:
             raw_text, _ = self._call_llama(
                 prompt,
-                timeout=60,
+                timeout=120,
                 num_predict=768,
                 temperature=0.0,
                 response_format="json",
@@ -3406,7 +4953,9 @@ class LlamaModel(BaseAIModel):
             c for c in (concepts or [])
             if not any(g in str(c).lower() for g in ("fundamentals", "core concepts", "basic principles", "general"))
         ]
-        is_keyword_dump = _looks_like_keyword_dump(answer, valid_concepts)
+        ans_words = re.findall(r"[A-Za-z][A-Za-z'-]*", answer)
+        has_clause = _has_strong_cue(ans_words)
+        is_keyword_dump = _looks_like_keyword_dump(answer, valid_concepts) and not has_clause
         covered, partially_covered, missing_concepts = _classify_expected_concepts(
             valid_concepts,
             answer,
@@ -3423,51 +4972,55 @@ class LlamaModel(BaseAIModel):
 
         concept_coverage_score = round(concept_coverage * 100.0)
 
-        # Formula: round(0.60 * llamaRubricScore + 0.40 * conceptCoverageScore)
-        if llama_eval_status == "ok" and llama_rubric_mean is not None:
-            formula_score = round(0.60 * llama_rubric_mean + 0.40 * concept_coverage_score)
-        else:
-            formula_score = round(concept_coverage_score)
+        relevance_val = round(r_score / 100.0 if llama_eval_status == "ok" else semantic_relevance, 2)
+        correctness_val = round(c_score / 100.0 if llama_eval_status == "ok" else concept_coverage, 2)
+        coverage_val = round(concept_coverage, 2)
+        comm_val = None if is_sql_query else round(clar_score / 100.0 if llama_eval_status == "ok" else 0.8, 2)
 
-        # Strict Guards:
-        # Guard 1: If conceptCoverage == 0 and answer doesn't mention a single concept or synonym -> final score <= 20
-        if concept_coverage <= 0.05 and not mentions_any_concept:
-            final_score = min(20, formula_score)
-        else:
-            final_score = formula_score
-
-        # Guard 2: If conceptCoverage >= 0.85 and llamaRubricScore >= 80 -> final score >= 80
-        if concept_coverage >= 0.85 and (llama_rubric_mean is not None and llama_rubric_mean >= 80):
-            final_score = max(80, final_score)
-
-        final_score = max(0, min(100, final_score))
-
-        if is_keyword_dump or data.get("demonstratesUnderstanding") is False:
+        if is_keyword_dump:
             c_score = min(c_score, 30.0)
-            final_score = min(20, final_score)
+            correctness_val = min(correctness_val, 0.3)
+            relevance_val = min(relevance_val, 0.2)
+            if comm_val is not None:
+                comm_val = min(comm_val, 0.2)
             feedback = "This lists relevant terms but does not explain what any of them mean or how they relate to the question."
             weaknesses = ["Answer is a list of terms, not an explanation"]
             strengths = []
+        elif data.get("demonstratesUnderstanding") is False:
+            c_score = min(c_score, 30.0)
+            correctness_val = min(correctness_val, 0.3)
+            relevance_val = min(relevance_val, 0.2)
+            comp_score = min(comp_score, 30.0)
+            if comm_val is not None:
+                comm_val = min(comm_val, 0.3)
+
+        accuracy_val = round(comp_score / 100.0 if llama_eval_status == "ok" else concept_coverage, 2)
+        from app.utils.scoring_formulas import build_formula_object, round_half_up
+        acc_p = round_half_up(accuracy_val * 100.0)
+        cor_p = round_half_up(correctness_val * 100.0)
+        rel_p = round_half_up(relevance_val * 100.0)
+        cov_p = round_half_up(coverage_val * 100.0)
+        formula = build_formula_object("theory", acc_p, cor_p, rel_p, cov_p)
+        final_score = formula["score"]
 
         score_reason = feedback or f"Evaluation based on technical accuracy and concept coverage ({concept_coverage_score}%)."
         evidence = {
-            "conceptCoverage": round(concept_coverage, 2),
+            "conceptCoverage": coverage_val,
             "conceptCoverageScore": concept_coverage_score,
             "coveredConcepts": covered,
             "partiallyCoveredConcepts": partially_covered,
             "missingConcepts": missing_concepts,
         }
 
-        is_sql_query = (language or "").lower() == "sql" or (
-            (subject or "").lower() == "dbms" and bool(re.search(r'^\s*(?:--[^\n]*\n\s*)*SELECT\b', (answer or '').strip(), re.IGNORECASE))
-        )
-
         eval_res = {
             "score": final_score,
-            "conceptCoverage": round(concept_coverage, 2),
-            "correctness": round(c_score / 100.0 if llama_eval_status == "ok" else concept_coverage, 2),
-            "relevance": round(r_score / 100.0 if llama_eval_status == "ok" else semantic_relevance, 2),
-            "communication": None if is_sql_query else round(clar_score / 100.0 if llama_eval_status == "ok" else 0.8, 2),
+            "conceptCoverage": coverage_val,
+            "correctness": correctness_val,
+            "relevance": relevance_val,
+            "accuracy": accuracy_val,
+            "communication": comm_val,
+            "formula": formula,
+            "source": "model",
             "isIrrelevant": False,
             "evidence": evidence,
             "llamaRubric": llama_rubric,
@@ -3520,9 +5073,37 @@ class LlamaModel(BaseAIModel):
         from app.utils.hr_gate import is_off_topic, find_hr_item
         hr_item = find_hr_item(question)
 
+        # Reject verbatim copied question as answer
+        if norm_ans in (norm_q, norm_q.rstrip("?").strip()):
+            res = _not_related_hr_evaluation()
+            self._eval_cache[cache_key] = res
+            _THEORY_EVAL_CACHE[cache_key] = res
+            return res
+
+        # Bare keyword list rejection
+        if _should_reject_term_list(question, answer):
+            res = _not_related_hr_evaluation()
+            self._eval_cache[cache_key] = res
+            _THEORY_EVAL_CACHE[cache_key] = res
+            return res
+
+        # No new content gate: repeats question words + filler -> score 0
+        if _has_no_new_content(question, answer, MIN_NEW_WORDS_HR):
+            missing = list(hr_item["concepts"]) if hr_item and "concepts" in hr_item else (concepts or ["Context and situation for the question", "Concrete personal actions taken", "Quantifiable or tangible outcome", "Professional self-reflection and ownership"])
+            res = _no_new_content_evaluation(missing)
+            res["evidence"] = None
+            res["llamaRubric"] = None
+            res["formulaVersion"] = "v2"
+            res["evaluatedBy"] = "rules"
+            res["llamaEvaluation"] = "ok"
+            self._eval_cache[cache_key] = res
+            _THEORY_EVAL_CACHE[cache_key] = res
+            return res
+
         # 1. Deterministic Off-Topic Gate (0 score for completely irrelevant answers)
         if is_off_topic(question, answer):
             missing = list(hr_item["concepts"]) if hr_item and "concepts" in hr_item else (concepts or ["Context and situation for the question", "Concrete personal actions taken", "Quantifiable or tangible outcome", "Professional self-reflection and ownership"])
+            from app.utils.scoring_formulas import build_formula_object
             res = {
                 "score": 0,
                 "conceptCoverage": 0.0,
@@ -3530,6 +5111,8 @@ class LlamaModel(BaseAIModel):
                 "relevance": 0.0,
                 "accuracy": 0.0,
                 "communication": 0.0,
+                "formula": build_formula_object("hr", 0, 0, 0, 0),
+                "source": "rule",
                 "isIrrelevant": True,
                 "feedback": _HR_NOT_RELATED_MESSAGE,
                 "strengths": [],
@@ -3549,13 +5132,8 @@ class LlamaModel(BaseAIModel):
             _THEORY_EVAL_CACHE[cache_key] = res
             return res
 
-        if _should_reject_term_list(question, answer):
-            res = _not_related_hr_evaluation()
-            self._eval_cache[cache_key] = res
-            _THEORY_EVAL_CACHE[cache_key] = res
-            return res
-
         from app.services.embedding_service import embedding_service
+        from app.utils.scoring_formulas import percent, question_score, round_half_up, build_formula_object
 
         effective_concepts = (hr_item.get("concepts") if hr_item else None) or concepts or []
         expected_text = ", ".join(effective_concepts) if effective_concepts else question
@@ -3579,16 +5157,63 @@ class LlamaModel(BaseAIModel):
             input_dict["hrDeliveryMetrics"] = hr_delivery_metrics
 
         prompt = build_training_style_prompt("evaluate_answer", input_dict)
-        chosen_model = getattr(self, "ft_model_name", settings.FINE_TUNED_MODEL_NAME) if getattr(settings, "USE_FT_HR", True) else getattr(self, "model_name", settings.MODEL_NAME)
-        raw_text, model_used = self._call_llama(
-            prompt,
-            timeout=90,
-            num_predict=1024,
-            temperature=0.0,
-            system=TRAINING_SYSTEM_PROMPT,
-            model_override=chosen_model
-        )
-        data = _extract_json(raw_text)
+        if hr_item:
+            chosen_model = getattr(self, "ft_model_name", getattr(settings, "FINE_TUNED_MODEL_NAME", "mockmate-hr100"))
+        else:
+            chosen_model = getattr(self, "model_name", getattr(settings, "MODEL_NAME", "llama3.2:3b"))
+        raw_text = None
+        model_used = chosen_model
+        last_error = None
+        for attempt in range(2):
+            try:
+                raw_text, model_used = self._call_llama(
+                    prompt,
+                    timeout=180,
+                    num_predict=1024,
+                    temperature=0.0,
+                    system=TRAINING_SYSTEM_PROMPT,
+                    model_override=chosen_model
+                )
+                if raw_text and raw_text.strip():
+                    break
+            except Exception as e:
+                last_error = e
+                logger.warning(f"[HREval] Fine-tuned model attempt {attempt+1} failed: {e}")
+
+        if not raw_text or not raw_text.strip():
+            logger.warning(f"[HREval] Model call failed after retries ({last_error}). Falling back to semantic evaluation.")
+            return DevFallbackModel._evaluate_hr_fallback(self, question, answer, effective_concepts)
+
+        try:
+            data = _extract_json(raw_text)
+        except Exception as e:
+            logger.error(f"[HREval] JSON extraction failed: {e}")
+            err_msg = "evaluation engine unavailable, please retry"
+            return {
+                "score": 0,
+                "conceptCoverage": 0.0,
+                "correctness": 0.0,
+                "relevance": 0.0,
+                "accuracy": 0.0,
+                "communication": 0.0,
+                "formula": build_formula_object("hr", 0, 0, 0, 0),
+                "isIrrelevant": False,
+                "feedback": err_msg,
+                "error": err_msg,
+                "strengths": [],
+                "weaknesses": [],
+                "coveredConcepts": [],
+                "partiallyCoveredConcepts": [],
+                "missingConcepts": [],
+                "deeperConcepts": [],
+                "improvementSuggestion": None,
+                "scoreReason": err_msg,
+                "whyNot100": err_msg,
+                "modelUsed": chosen_model,
+                "source": "error",
+                "usedFallback": False,
+                "scoringSources": ["fine_tuned_llama"],
+            }
 
         # Normalize fields in case model outputs alternate keys or boolean fields
         raw_feedback = data.get("feedback")
@@ -3629,7 +5254,8 @@ class LlamaModel(BaseAIModel):
             _THEORY_EVAL_CACHE[cache_key] = res
             return res
 
-        if irrelevant_signal and semantic_relevance < 0.45:
+        hr_irrel_threshold = 0.45 if hr_item else 0.25
+        if irrelevant_signal and semantic_relevance < hr_irrel_threshold:
             res = _not_related_hr_evaluation()
             self._eval_cache[cache_key] = res
             _THEORY_EVAL_CACHE[cache_key] = res
@@ -3655,9 +5281,27 @@ class LlamaModel(BaseAIModel):
         correctness, relevance, accuracy, communication = (
             round(v, 2) for v in (correctness, relevance, accuracy, communication)
         )
-        
-        # Overall score strictly equals the rounded mean of the 4 displayed sub-scores
-        score = calculate_hr_overall(correctness, relevance, accuracy, communication)
+
+        # Concept coverage: bank rubric concepts covered via Sentence-BERT (4 rubric concepts)
+        bank_concepts = effective_concepts if effective_concepts else (hr_item.get("concepts") if hr_item else [])
+        if not bank_concepts:
+            bank_concepts = [
+                "Context and situation",
+                "Actions taken",
+                "Measurable outcome",
+                "Reflection"
+            ]
+        covered_count = sum(1 for c in bank_concepts[:4] if embedding_service.best_sentence_similarity(c, answer) >= 0.11)
+        cov_pct = percent(covered_count, 4)
+        concept_coverage_val = round(cov_pct / 100.0, 2)
+
+        acc_pct = round_half_up(accuracy * 100.0) if accuracy <= 1.0 else round_half_up(accuracy)
+        corr_pct = round_half_up(correctness * 100.0) if correctness <= 1.0 else round_half_up(correctness)
+        rel_pct = round_half_up(relevance * 100.0) if relevance <= 1.0 else round_half_up(relevance)
+
+        # Overall score strictly equals the mean of the 4 common parameters
+        formula = build_formula_object("hr", acc_pct, corr_pct, rel_pct, cov_pct)
+        score = formula["score"]
         # Relevant answers score at least 1
         if score == 0:
             score = 1
@@ -3684,11 +5328,13 @@ class LlamaModel(BaseAIModel):
 
         res = {
             "score": score,
-            "conceptCoverage": accuracy,
+            "conceptCoverage": concept_coverage_val,
             "correctness": correctness,
             "relevance": relevance,
             "accuracy": accuracy,
             "communication": communication,
+            "formula": formula,
+            "source": "model",
             "isIrrelevant": False,
             "feedback": feedback_str or "Evaluation completed.",
             "strengths": strengths,
@@ -3747,7 +5393,7 @@ class LlamaModel(BaseAIModel):
             if ans_lines_to_spaces == exp_lines_to_spaces:
                 is_exact_match = True
 
-        # Tolerance for quotes, markdown code fences/backticks, or 'Output:' prefixes
+        # Tolerance for quotes, markdown code fences/backticks, or 'Output:' prefixes and explanation suffixes
         if not is_exact_match and effective_expected and answer and answer.strip():
             clean_ans = answer.strip()
             if (clean_ans.startswith("`") and clean_ans.endswith("`")) or (clean_ans.startswith('"') and clean_ans.endswith('"')) or (clean_ans.startswith("'") and clean_ans.endswith("'")):
@@ -3765,12 +5411,17 @@ class LlamaModel(BaseAIModel):
 
         # Guard 1: Exact match against JVM stdout -> score 100 immediately
         if is_exact_match:
+            from app.utils.scoring_formulas import build_formula_object
+            formula = build_formula_object("output_prediction", 100, 100, 100, 100)
             res = {
                 "score": 100,
                 "conceptCoverage": 1.0,
                 "correctness": 1.0,
                 "relevance": 1.0,
+                "accuracy": 1.0,
                 "communication": None,
+                "formula": formula,
+                "source": "exact_match",
                 "isIrrelevant": False,
                 "evidence": evidence,
                 "llamaRubric": None,
@@ -3805,12 +5456,17 @@ class LlamaModel(BaseAIModel):
 
         # Guard 2: No explanation provided for wrong answer -> score 0
         if not has_explanation or not clean_text:
+            from app.utils.scoring_formulas import build_formula_object
+            formula = build_formula_object("output_prediction", 0, 0, 0, 0)
             res = {
                 "score": 0,
                 "conceptCoverage": 0.0,
                 "correctness": 0.0,
-                "relevance": 1.0 if clean_text else 0.0,
+                "relevance": 0.0,
+                "accuracy": 0.0,
                 "communication": None,
+                "formula": formula,
+                "source": "rule",
                 "isIrrelevant": False,
                 "evidence": evidence,
                 "llamaRubric": None,
@@ -3860,7 +5516,7 @@ class LlamaModel(BaseAIModel):
             base_model = getattr(settings, "BASE_MODEL_NAME", self.model_name)
             raw_text, _ = self._call_llama(
                 prompt,
-                timeout=60,
+                timeout=120,
                 num_predict=512,
                 temperature=0.0,
                 response_format="json",
@@ -3879,31 +5535,57 @@ class LlamaModel(BaseAIModel):
             evaluator_entity = "base_llama"
         except Exception as e:
             logger.warning(f"[OutputPredictionEval] Base LLaMA misconception call failed ({e}). Falling back to execution-only scoring.")
+            if isinstance(e, requests.exceptions.Timeout):
+                error_message = "Output-prediction evaluation timed out."
+                return {
+                    "source": "error",
+                    "error": error_message,
+                    "feedback": error_message,
+                    "modelUsed": base_model,
+                    "usedFallback": False,
+                    "scoringSources": ["base_llama"],
+                }
             llama_eval_status = "unavailable"
             evaluator_entity = "executor"
 
-        if llama_eval_status == "ok":
-            # Partial score formula: min(30, round(0.30 * reasoningScore))
-            final_score = min(30, round(0.30 * reasoning_score))
-        else:
-            final_score = 0
+        from app.utils.scoring_formulas import percent, build_formula_object
+        R_lines = [norm(l) for l in effective_expected.strip().splitlines() if norm(l)]
+        if not R_lines and effective_expected.strip():
+            R_lines = [norm(effective_expected.strip())]
+        A_lines = [norm(l) for l in answer.strip().splitlines() if norm(l)]
 
-        # Guard: When output is wrong, score can NEVER exceed 30
-        final_score = max(0, min(30, final_score))
+        covered_l = sum(1 for r in R_lines if any(r == a for a in A_lines))
+        correct_l = sum(1 for a in A_lines if any(a == r for r in R_lines))
+        in_order_l = sum(1 for i in range(min(len(R_lines), len(A_lines))) if R_lines[i] == A_lines[i])
+
+        cov_p = percent(covered_l, len(R_lines))
+        corr_p = percent(correct_l, len(A_lines)) if A_lines else 0
+        acc_p = percent(in_order_l, len(R_lines))
+        rel_p = 100 if has_explanation or A_lines else 0
+
+        # A wrong predicted value is a hard fail; an explanation only informs feedback.
+        rel_p = 0
+        acc_p = 0
+        corr_p = 0
+        cov_p = 0
+
+        formula = build_formula_object("output_prediction", acc_p, corr_p, rel_p, cov_p)
+        final_score = formula["score"]
 
         score_reason = (
-            f"Partial credit ({final_score}%): predicted output was incorrect (expected '{effective_expected}'), "
-            f"but reasoning showed partial understanding. Misconception: {misconception or 'None'}."
-            if final_score > 0 else
-            f"The prediction is incorrect. The actual output is '{effective_expected}'. Misconception: {misconception or 'Incorrect logic'}."
+            f"The prediction is incorrect. The actual output is '{effective_expected}'. "
+            f"Misconception: {misconception or 'Incorrect logic'}."
         )
 
         res = {
             "score": final_score,
-            "conceptCoverage": round(final_score / 100.0, 2),
-            "correctness": round(final_score / 100.0, 2),
-            "relevance": 1.0,
+            "conceptCoverage": round(cov_p / 100.0, 2),
+            "correctness": round(corr_p / 100.0, 2),
+            "relevance": round(rel_p / 100.0, 2),
+            "accuracy": round(acc_p / 100.0, 2),
             "communication": None,
+            "formula": formula,
+            "source": "model",
             "isIrrelevant": False,
             "evidence": evidence,
             "llamaRubric": llama_rubric,
@@ -3929,10 +5611,12 @@ class LlamaModel(BaseAIModel):
 
     def _analyze_code_complexity(self, question: str, code: str, lang: str = "java") -> dict:
         """
-        Uses fine-tuned LLaMA to determine the Big-O Time Complexity and Space Complexity
-        of the candidate's code with a concise explanation.
+        Uses fine-tuned LLaMA (mockmate-hr100) to determine Big-O Time and Space Complexity.
+        Regex heuristic rule is the last fallback, marked source: 'rule'.
         """
         heuristic = _estimate_code_complexity_heuristic(code)
+        heuristic["source"] = "rule"
+        heuristic["modelUsed"] = "heuristic_rule"
         if not code or not code.strip():
             return heuristic
 
@@ -3942,11 +5626,11 @@ class LlamaModel(BaseAIModel):
             "code": code
         }
         prompt = build_training_style_prompt("analyze_code_complexity", input_dict)
-        chosen_model = getattr(self, "complexity_model_name", getattr(settings, "COMPLEXITY_MODEL_NAME", getattr(self, "ft_model_name", settings.FINE_TUNED_MODEL_NAME))) if getattr(settings, "USE_FT_COMPLEXITY", True) else getattr(self, "model_name", settings.MODEL_NAME)
+        chosen_model = getattr(self, "complexity_model_name", getattr(settings, "COMPLEXITY_MODEL_NAME", "mockmate-hr100"))
         try:
             raw_text, model_used = self._call_llama(
                 prompt,
-                timeout=45,
+                timeout=180,
                 num_predict=256,
                 temperature=0.0,
                 response_format="json",
@@ -3963,11 +5647,23 @@ class LlamaModel(BaseAIModel):
                     "spaceComplexity": sc or heuristic["spaceComplexity"],
                     "explanation": exp or heuristic["explanation"],
                     "modelUsed": model_used,
+                    "source": "model",
                     "scoringSource": "fine_tuned_llama"
                 }
             return heuristic
+        except requests.exceptions.Timeout as e:
+            error_message = f"Complexity analysis timed out: {e}"
+            logger.warning(f"[ComplexityAnalysis] {error_message}")
+            return {
+                "timeComplexity": None,
+                "spaceComplexity": None,
+                "explanation": error_message,
+                "modelUsed": chosen_model,
+                "source": "error",
+                "error": error_message,
+            }
         except Exception as e:
-            logger.warning(f"[ComplexityAnalysis] Fine-tuned model complexity analysis failed ({e}). Using heuristic fallback.")
+            logger.warning(f"[ComplexityAnalysis] Fine-tuned model complexity analysis failed ({e}). Using regex rule fallback.")
             return heuristic
 
     def _evaluate_coding_answer(self, question: str, answer: str, concepts: list, test_cases: list, language: str = None, explanation: str = None, schema: str = None, sample_data: str = None, reference_solution: str = None) -> dict:
@@ -4107,32 +5803,24 @@ class LlamaModel(BaseAIModel):
                 llama_eval_status = "unavailable"
                 evaluator_entity = "executor"
 
-        # Fixed Formula: round(0.80 * passRate + 0.20 * llamaRubricScore)
-        if llama_eval_status == "ok" and rubric_mean is not None:
-            formula_score = round(0.80 * pass_rate + 0.20 * rubric_mean)
+        from app.utils.scoring_formulas import percent, build_formula_object
+
+        module_type = "coding" if lang != "sql" else "sql"
+        if not answer.strip() or compile_error or total_count == 0:
+            p = 0
+            acc = 0
+            cor = 0
+            rel = 0
+            cov = 0
         else:
-            formula_score = round(pass_rate)
+            p = percent(passed_count, total_count)
+            acc = p
+            cor = p
+            rel = p
+            cov = p
 
-        # Strict Guards
-        # Guard 1: 100% pass -> final score >= 90 (model cannot fail passing code)
-        if pass_rate == 100.0 and not compile_error:
-            final_score = max(90, formula_score)
-        # Guard 2: 0% pass -> final score <= 20 (model cannot pass code that fails every test)
-        elif pass_rate == 0.0:
-            final_score = min(20, formula_score)
-        else:
-            final_score = formula_score
-
-        # Guard 3: Compile error -> final score <= 10
-        if compile_error:
-            final_score = min(10, final_score)
-
-        # Score clamp [0, 100]
-        final_score = max(0, min(100, final_score))
-
-        # Empty submission guard
-        if not answer.strip():
-            final_score = 0
+        formula = build_formula_object(module_type, acc, cor, rel, cov)
+        final_score = formula["score"]
 
         # Build whyNot100, correctedCode, and correctionSummary
         if (passed_count == total_count and total_count > 0 and not compile_error) or final_score == 100:
@@ -4160,8 +5848,26 @@ class LlamaModel(BaseAIModel):
                 weaknesses = [f"Failed {total_count - passed_count} test case(s)"]
 
         complexity = None
+        complexity_details = None
         if lang == "java" and answer.strip() and not compile_error:
             complexity = self._analyze_code_complexity(question=question, code=answer, lang=lang)
+            try:
+                from app.services.complexity_analyzer import analyze_java_complexity
+                from app.services.performance_benchmark_runner import run_performance_benchmarks
+
+                complexity_details = analyze_java_complexity(question=question, code=answer)
+                if passed_count > 0 and not compile_error:
+                    bench_res = run_performance_benchmarks(
+                        candidate_code=answer,
+                        test_cases=test_cases,
+                        time_complexity=complexity_details.get("timeComplexity", "O(N)"),
+                        problem_id=complexity_details.get("problemId"),
+                        optimal_time_complexity=(complexity_details.get("optimalApproach") or {}).get("timeComplexity")
+                    )
+                    complexity_details.update(bench_res)
+            except Exception as e:
+                logger.warning(f"[EnhancedComplexity] Analysis skipped safely: {e}")
+                complexity_details = None
 
         model_used = getattr(self, "model_name", settings.MODEL_NAME)
         res = {
@@ -4185,10 +5891,14 @@ class LlamaModel(BaseAIModel):
             "timeComplexity": complexity.get("timeComplexity") if complexity else None,
             "spaceComplexity": complexity.get("spaceComplexity") if complexity else None,
             "timeComplexityExplanation": complexity.get("explanation") if complexity else None,
+            "complexityDetails": complexity_details,
             "conceptCoverage": None,
             "correctness": None,
             "relevance": None,
+            "accuracy": None,
             "communication": None,
+            "formula": formula,
+            "source": "model",
             "strengths": strengths,
             "weaknesses": weaknesses,
             "missingConcepts": [],
@@ -4301,8 +6011,12 @@ class LlamaModel(BaseAIModel):
                 "label": tc.get("label"),
             })
 
+        from app.utils.scoring_formulas import percent, build_formula_object
         total_count = len(test_cases)
-        final_score = round(100 * passed_count / total_count) if total_count > 0 else 0
+        p = percent(passed_count, total_count)
+        module_type = "coding" if language != "sql" else "sql"
+        formula = build_formula_object(module_type, p, p, p, p)
+        final_score = formula["score"]
         why_not_100 = None if final_score == 100 else (_safe_str(data.get("whyNot100")) or f"{total_count - passed_count} of {total_count} test cases failed.")
 
         complexity = None
@@ -4328,7 +6042,10 @@ class LlamaModel(BaseAIModel):
             "conceptCoverage": None,
             "correctness": None,
             "relevance": None,
+            "accuracy": None,
             "communication": None,
+            "formula": formula,
+            "source": "model",
             "strengths": ["All test cases passed"] if final_score == 100 else [],
             "weaknesses": [] if final_score == 100 else [f"Failed {total_count - passed_count} test case(s)"],
             "missingConcepts": [],
@@ -4363,14 +6080,14 @@ class DevFallbackModel(BaseAIModel):
             "('ollama serve') with the configured model pulled, then check /health."
         )
 
-    def generate_followup(self, question: str, answer: str, concepts: list, previous: list = None, interview_type: str = "technical") -> dict:
+    def generate_followup(self, question: str, answer: str, concepts: list, previous: list = None, interview_type: str = "technical", subject: str = None, **kwargs) -> dict:
         raise AIGenerationUnavailableError(
             "Follow-up question generation requires the fine-tuned LLaMA model and no "
             "static follow-up bank is used as a substitute. Make sure Ollama is running "
             "('ollama serve') with the configured model pulled, then check /health."
         )
 
-    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, **kwargs) -> dict:
+    def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, reference_answer: str = None, **kwargs) -> dict:
         if question_format == "output_prediction":
             return self._evaluate_output_prediction_fallback(answer, concepts, expected_output, explanation, code_snippet=code_snippet, subject=subject)
         if question_format == "coding":
@@ -4409,6 +6126,113 @@ class DevFallbackModel(BaseAIModel):
             res["llamaEvaluation"] = "ok"
             return res
 
+        # No new content gate: repeats question words + filler -> score 0
+        if _has_no_new_content(question, answer, MIN_NEW_WORDS_THEORY):
+            res = _no_new_content_evaluation(concepts)
+            res["evidence"] = None
+            res["llamaRubric"] = None
+            res["formulaVersion"] = "v2"
+            res["evaluatedBy"] = "rules"
+            res["llamaEvaluation"] = "ok"
+            return res
+
+        cat_item = find_theory_item(question, subject=subject)
+        ref_arg = reference_answer or kwargs.get("reference_answer") or kwargs.get("referenceAnswer")
+        ref_ans = (cat_item.get("referenceAnswer") if cat_item else None) or ref_arg or reference_solution or explanation
+        parent_cat = None
+        if not ref_ans or len(re.findall(r"[A-Za-z][A-Za-z'-]*", str(ref_ans))) < 4:
+            is_followup = (
+                (subject or "").lower() == "follow_up"
+                or bool(kwargs.get("is_follow_up"))
+                or kwargs.get("question_type") == "follow_up"
+                or kwargs.get("category") in ("Adaptive Follow-Up", "HR & Behavioral Follow-Up")
+                or bool(kwargs.get("parent_question"))
+                or "follow-up" in (question or "").lower()
+                or "follow up" in (question or "").lower()
+                or "can you provide an example of" in (question or "").lower()
+            )
+            if is_followup:
+                parent_cat = find_parent_or_closest_theory_item(question, subject=subject)
+                if parent_cat and parent_cat.get("referenceAnswer"):
+                    ref_ans = parent_cat.get("referenceAnswer")
+
+        if ref_ans:
+            concepts_to_use = (cat_item.get("expectedConcepts") if cat_item else None) or concepts
+            if not concepts_to_use and parent_cat:
+                concepts_to_use = parent_cat.get("expectedConcepts")
+
+            rubric_res = _evaluate_theory_with_rubric(
+                question, answer, str(ref_ans), embedding_service,
+                expected_concepts=concepts_to_use
+            )
+            final_score = rubric_res["score"]
+            concept_coverage = rubric_res["conceptCoverage"]
+            correctness = rubric_res["correctness"]
+            relevance = rubric_res["relevance"]
+            accuracy = rubric_res.get("accuracy", concept_coverage)
+            communication = rubric_res["communication"]
+            formula = rubric_res.get("formula")
+            covered = rubric_res["coveredConcepts"]
+            missing_concepts = rubric_res["missingConcepts"]
+            feedback = rubric_res["feedback"]
+            strengths = rubric_res["strengths"]
+            weaknesses = rubric_res["weaknesses"]
+            score_reason = rubric_res["scoreReason"]
+
+            evidence = {
+                "conceptCoverage": round(concept_coverage, 2),
+                "conceptCoverageScore": round(concept_coverage * 100.0),
+                "coveredConcepts": covered,
+                "partiallyCoveredConcepts": [],
+                "missingConcepts": missing_concepts,
+            }
+
+            is_sql_query = (language or "").lower() == "sql" or (
+                (subject or "").lower() == "dbms" and bool(re.search(r'^\s*(?:--[^\n]*\n\s*)*SELECT\b', (answer or '').strip(), re.IGNORECASE))
+            )
+
+            return {
+                "score": final_score,
+                "conceptCoverage": round(concept_coverage, 2),
+                "correctness": correctness,
+                "relevance": relevance,
+                "accuracy": accuracy,
+                "communication": None if is_sql_query else communication,
+                "formula": formula,
+                "source": "model",
+                "isIrrelevant": False,
+                "evidence": evidence,
+                "llamaRubric": None,
+                "formulaVersion": "v2",
+                "evaluatedBy": "predefined_rubric",
+                "llamaEvaluation": "unavailable",
+                "feedback": feedback or score_reason,
+                "strengths": strengths,
+                "weaknesses": weaknesses,
+                "coveredConcepts": covered,
+                "partiallyCoveredConcepts": [],
+                "missingConcepts": missing_concepts,
+                "deeperConcepts": [],
+                "improvementSuggestion": rubric_res["improvementSuggestion"],
+                "scoreReason": score_reason,
+                "whyNot100": None if final_score == 100 else (rubric_res.get("whyNot100") or rubric_res["improvementSuggestion"]),
+                "modelUsed": "predefined_rubric_fallback",
+                "usedFallback": True,
+                "scoringSources": ["catalogue_rubric", "bert"],
+            }
+
+        # Rule I: Questions WITHOUT a referenceAnswer
+        concept_anchors = set()
+        for c in (concepts or []):
+            concept_anchors.update(_get_key_point_anchors(str(c), question))
+
+        ans_tokens = re.findall(r"[A-Za-z][A-Za-z'-]*", answer.lower())
+        ans_stems = {stem(w) for w in ans_tokens}
+        has_any_concept_anchor = any(a in ans_stems for a in concept_anchors) if concept_anchors else True
+        has_code = bool(re.search(r"[{}()=;<>]", answer)) or bool(re.search(r'\b(?:class|void|public|extends|implements|SELECT|FROM|WHERE)\b', answer, re.IGNORECASE))
+        is_list_q = _question_asks_for_list(question)
+        # A word-match miss alone must not zero the answer: synonyms and paraphrases are judged by
+        # meaning below (semantic relevance, concept coverage and the off-topic check).
         matched, partially_covered, missing = _classify_expected_concepts(
             concepts, answer, embedding_service
         )
@@ -4439,9 +6263,14 @@ class DevFallbackModel(BaseAIModel):
             (subject or "").lower() == "dbms" and bool(re.search(r'^\s*(?:--[^\n]*\n\s*)*SELECT\b', (answer or '').strip(), re.IGNORECASE))
         )
         comm_val = None if is_sql_query else (0.8 if length > 50 else 0.6)
-        if is_keyword_dump:
-            correctness = min(correctness, 0.3)
-        score = _calculate_text_score(relevance, correctness, coverage, comm_val)
+        accuracy = (len(matched) / len(concepts)) if concepts else 0.75
+        from app.utils.scoring_formulas import build_formula_object, round_half_up
+        p_acc = round_half_up(accuracy * 100.0)
+        p_cor = round_half_up(correctness * 100.0)
+        p_rel = round_half_up(relevance * 100.0)
+        p_cov = round_half_up(coverage * 100.0)
+        formula = build_formula_object("theory", p_acc, p_cor, p_rel, p_cov)
+        score = formula["score"]
 
         if is_keyword_dump:
             fb = "This lists relevant terms but does not explain what any of them mean or how they relate to the question."
@@ -4474,10 +6303,13 @@ class DevFallbackModel(BaseAIModel):
 
         return {
             "score": score,
+            "accuracy": round(accuracy, 2),
             "conceptCoverage": 0.0 if is_irrelevant else round(coverage, 2),
             "correctness": round(correctness, 2),
             "relevance": round(relevance, 2),
             "communication": comm_val,
+            "formula": formula,
+            "source": "rule",
             "isIrrelevant": False,
             "evidence": evidence,
             "llamaRubric": None,
@@ -4523,6 +6355,8 @@ class DevFallbackModel(BaseAIModel):
             }
         if _should_reject_term_list(question, text):
             return _not_related_hr_evaluation()
+        if _has_no_new_content(question, text, MIN_NEW_WORDS_HR):
+            return _no_new_content_evaluation(concepts)
 
         overall_sim = embedding_service.compute_similarity(", ".join(concepts) if concepts else question, text)
         question_sim = embedding_service.compute_similarity(question, text)
@@ -4536,8 +6370,17 @@ class DevFallbackModel(BaseAIModel):
         relevance = clamp(semantic_relevance)
         correctness = clamp(coverage)
         accuracy = clamp(overall_sim)
+        concept_coverage = clamp(coverage)
         communication = 0.8 if len(text) > 50 else 0.6
-        score = calculate_hr_overall(correctness, relevance, accuracy, communication)
+        from app.utils.scoring_formulas import build_formula_object, round_half_up
+        formula = build_formula_object(
+            "hr",
+            round_half_up(accuracy * 100),
+            round_half_up(correctness * 100),
+            round_half_up(relevance * 100),
+            round_half_up(concept_coverage * 100)
+        )
+        score = formula["score"]
         if score == 0:
             score = 1
 
@@ -4557,11 +6400,13 @@ class DevFallbackModel(BaseAIModel):
 
         return {
             "score": score,
-            "conceptCoverage": accuracy,
+            "conceptCoverage": concept_coverage,
             "correctness": correctness,
             "relevance": relevance,
             "accuracy": accuracy,
             "communication": communication,
+            "formula": formula,
+            "source": "model",
             "isIrrelevant": False,
             "feedback": "Answer assessed with the offline grader.",
             "strengths": [f"Covered: {c}" for c in matched[:2]] or ["Attempted the question"],
@@ -4806,6 +6651,78 @@ class DevFallbackModel(BaseAIModel):
         }
 
 
+_HARDCODED_CODE_TIP = (
+    "All test cases passed, but your method returns a fixed value instead of working it out from the input. "
+    "It passes only because the sample tests expect that value. You could have improved it by using the "
+    "input (for example with a loop or the given parameters) so that it works for any input."
+)
+_HARDCODED_CODE_WEAKNESS = "Returns a fixed value instead of using the input"
+
+
+def _java_returns_fixed_value(code: str) -> bool:
+    """
+    True when a Java solution method only returns fixed values: either one constant return, or a few
+    'if (x == literal) return literal;' branches. Such code can pass the sample test cases without solving
+    the problem. It never changes the score; it is only used to add a note to the feedback.
+    """
+    try:
+        src = re.sub(r"/\*.*?\*/", " ", code or "", flags=re.S)
+        src = re.sub(r"//[^\n]*", " ", src)
+        lit = r'(?:-?\d+(?:\.\d+)?[lLfFdD]?|"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|true|false|null)'
+        sig = re.compile(r"(?:public|private|protected|static|final|\s)+[\w<>\[\],\s]+?\s+(\w+)\s*\(([^)]*)\)\s*(?:throws\s+[\w,\s.]+)?\{")
+        found_method = False
+        for m in sig.finditer(src):
+            name = m.group(1)
+            if name in ("main", "if", "for", "while", "switch", "catch", "synchronized") or not m.group(2).strip():
+                continue
+            if re.search(r"\bvoid\s+" + re.escape(name) + r"\s*\(", src):
+                continue
+            depth, i = 1, m.end()
+            while i < len(src) and depth:
+                depth += (src[i] == "{") - (src[i] == "}")
+                i += 1
+            body = src[m.end():i - 1]
+            found_method = True
+            if re.search(r"\b(for|while|do|switch)\b", body):
+                return False
+            rets = re.findall(r"\breturn\s+([^;]+);", body)
+            if not rets or not all(re.fullmatch(lit, r.strip()) for r in rets):
+                return False
+            conds = re.findall(r"\bif\s*\((.*?)\)\s*(?:\{|return\b)", body)
+            for c in conds:
+                c = c.strip()
+                if not (re.fullmatch(r"\w+\s*==\s*" + lit, c) or re.fullmatch(r"\w+\.equals\(\s*" + lit + r"\s*\)", c) or re.fullmatch(lit + r"\s*==\s*\w+", c)):
+                    return False
+        return found_method
+    except Exception:
+        return False
+
+
+def _add_hardcoded_code_note(res: dict, question_format: str, language: str, answer: str) -> dict:
+    """If a Java coding answer passed every test case with fixed return values, add a 'could have improved'
+    note. The score, pass counts and test results are left exactly as they are."""
+    try:
+        if not isinstance(res, dict) or (question_format or "").lower() != "coding":
+            return res
+        if (language or "java").lower().strip() != "java":
+            return res
+        total = int(res.get("totalCount") or 0)
+        if total <= 0 or int(res.get("passedCount") or 0) != total or res.get("compileError"):
+            return res
+        if not _java_returns_fixed_value(answer):
+            return res
+        if not res.get("improvementSuggestion"):
+            res["improvementSuggestion"] = _HARDCODED_CODE_TIP
+        weak = list(res.get("weaknesses") or [])
+        if _HARDCODED_CODE_WEAKNESS not in weak:
+            weak.append(_HARDCODED_CODE_WEAKNESS)
+        res["weaknesses"] = weak
+        res["strengths"] = ["All test cases passed"]
+    except Exception:
+        pass
+    return res
+
+
 class ResilientAIModel(BaseAIModel):
     """
     Question/follow-up GENERATION always goes through the real fine-tuned
@@ -4835,9 +6752,9 @@ class ResilientAIModel(BaseAIModel):
                 f"check /health. Underlying error: {e}"
             ) from e
 
-    def generate_followup(self, question: str, answer: str, concepts: list, previous: list = None, interview_type: str = "technical") -> dict:
+    def generate_followup(self, question: str, answer: str, concepts: list, previous: list = None, interview_type: str = "technical", subject: str = None, **kwargs) -> dict:
         try:
-            return self.llama.generate_followup(question, answer, concepts, previous, interview_type)
+            return self.llama.generate_followup(question, answer, concepts, previous, interview_type, subject=subject, **kwargs)
         except Exception as e:
             logger.error(f"[LLaMA] generate_followup failed: {e}")
             raise AIGenerationUnavailableError(
@@ -4847,8 +6764,21 @@ class ResilientAIModel(BaseAIModel):
             ) from e
 
     def evaluate_answer(self, question: str, answer: str, concepts: list, context: list, question_format: str = "theory", expected_output: str = None, explanation: str = None, test_cases: list = None, language: str = None, hr_delivery_metrics: dict = None, interview_type: str = "technical", schema: str = None, sample_data: str = None, reference_solution: str = None, code_snippet: str = None, subject: str = None, **kwargs) -> dict:
+        is_hr = (interview_type or "").lower() == "hr"
+        is_theory = (question_format or "theory").lower() == "theory"
+        if is_theory:
+            min_words = MIN_NEW_WORDS_HR if is_hr else MIN_NEW_WORDS_THEORY
+            if _has_no_new_content(question, answer, min_words):
+                res = _no_new_content_evaluation(concepts)
+                res["evidence"] = None
+                res["llamaRubric"] = None
+                res["formulaVersion"] = "v2"
+                res["evaluatedBy"] = "rules"
+                res["llamaEvaluation"] = "ok"
+                return res
+
         try:
-            return self.llama.evaluate_answer(question, answer, concepts, context, question_format, expected_output, explanation, test_cases, language, hr_delivery_metrics, interview_type, schema=schema, sample_data=sample_data, reference_solution=reference_solution, code_snippet=code_snippet, subject=subject, **kwargs)
+            return _add_hardcoded_code_note(self.llama.evaluate_answer(question, answer, concepts, context, question_format, expected_output, explanation, test_cases, language, hr_delivery_metrics, interview_type, schema=schema, sample_data=sample_data, reference_solution=reference_solution, code_snippet=code_snippet, subject=subject, **kwargs), question_format, language, answer)
         except Exception as e:
             if (question_format or "theory").lower() == "theory" and (interview_type or "").lower() != "hr":
                 logger.warning(f"[LLaMA] evaluate_answer failed: {e}. Base model down: falling back to deterministic concept-coverage evaluation.")
@@ -4865,7 +6795,7 @@ class ResilientAIModel(BaseAIModel):
                     "Fallback evaluation is disabled to enforce fine-tuned model inference."
                 ) from e
             logger.warning(f"[LLaMA] evaluate_answer failed: {e}. Falling back to offline fallback model.")
-            return self.fallback.evaluate_answer(question, answer, concepts, context, question_format, expected_output, explanation, test_cases, language, hr_delivery_metrics, interview_type, schema=schema, sample_data=sample_data, reference_solution=reference_solution, code_snippet=code_snippet, subject=subject, **kwargs)
+            return _add_hardcoded_code_note(self.fallback.evaluate_answer(question, answer, concepts, context, question_format, expected_output, explanation, test_cases, language, hr_delivery_metrics, interview_type, schema=schema, sample_data=sample_data, reference_solution=reference_solution, code_snippet=code_snippet, subject=subject, **kwargs), question_format, language, answer)
 
 
 def get_ai_model_provider() -> BaseAIModel:

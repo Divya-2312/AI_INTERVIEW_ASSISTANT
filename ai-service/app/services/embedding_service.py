@@ -118,23 +118,60 @@ class EmbeddingService:
         self.using_bert = self.model is not None
 
     def get_embedding(self, text: str) -> np.ndarray:
+        if not hasattr(self, "_cache"):
+            self._cache = {}
+        cleaned = (text or "").strip()
+        if cleaned in self._cache:
+            return self._cache[cleaned]
         model = _load_model()
         if model is not None:
-            return model.encode(text or "", convert_to_numpy=True, normalize_embeddings=True)
-        return self._bow_vector(text or "")
-
-    def _bow_vector(self, text: str, dims: int = 512) -> np.ndarray:
-        words = re.findall(r"\w+", text.lower())
-        vec = np.zeros(dims)
-        for w in words:
-            vec[hash(w) % dims] += 1.0
-        norm = np.linalg.norm(vec)
-        return vec / norm if norm > 0 else vec
+            vec = model.encode(cleaned, convert_to_numpy=True, normalize_embeddings=True)
+        else:
+            vec = self._bow_vector(cleaned)
+        if len(self._cache) < 5000:
+            self._cache[cleaned] = vec
+        return vec
 
     def compute_similarity(self, text1: str, text2: str) -> float:
         v1 = self.get_embedding(text1)
         v2 = self.get_embedding(text2)
         return cosine_similarity(v1, v2)
+
+    def is_similar_to_any(self, text: str, target_texts: list, threshold: float = 0.88) -> tuple:
+        """
+        Checks if `text` has Sentence-BERT cosine similarity >= `threshold` (default 0.88)
+        against any string in `target_texts`, or matches after whitespace/case normalization.
+        Returns (is_similar: bool, max_similarity: float, matching_target: str).
+        """
+        if not text or not target_texts:
+            return False, 0.0, None
+
+        norm_cand = re.sub(r"\s+", " ", str(text).lower().strip())
+        for t in target_texts:
+            if not t:
+                continue
+            norm_t = re.sub(r"\s+", " ", str(t).lower().strip())
+            if norm_cand and norm_cand == norm_t:
+                return True, 1.0, str(t)
+
+        cand_vec = self.get_embedding(text)
+        if cand_vec is None or len(cand_vec) == 0:
+            return False, 0.0, None
+
+        best_sim = 0.0
+        best_match = None
+        for t in target_texts:
+            if not t:
+                continue
+            t_vec = self.get_embedding(str(t))
+            sim = float(cosine_similarity(cand_vec, t_vec))
+            if sim > best_sim:
+                best_sim = sim
+                best_match = str(t)
+            if sim >= threshold:
+                return True, sim, str(t)
+
+        return best_sim >= threshold, best_sim, best_match
 
     def best_sentence_similarity(self, concept: str, text: str) -> float:
         """

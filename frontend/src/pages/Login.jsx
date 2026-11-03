@@ -6,7 +6,7 @@ import { Bot, LogIn, Eye, EyeOff, AlertCircle, CheckCircle2, Clock, Mail, Refres
 import '../styles/auth.css';
 
 export const Login = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -15,10 +15,21 @@ export const Login = () => {
     ? `${destination.pathname || ''}${destination.search || ''}${destination.hash || ''}`
     : '/dashboard';
 
+  // If already authenticated and redirected from a protected route, navigate to that destination
+  useEffect(() => {
+    if (!loading && isAuthenticated && location.state?.from) {
+      navigate(returnTo, { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate, returnTo, location.state]);
+
+  // Read persisted remember me state from localStorage
+  const rememberedEmail = localStorage.getItem('mockmate_remembered_email') || localStorage.getItem('assistant_remembered_email') || '';
+  const rememberedChoice = localStorage.getItem('mockmate_remember_me') === 'true' || !!rememberedEmail;
+
   const [formData, setFormData] = useState({
-    email: location.state?.email || '',
+    email: location.state?.email || rememberedEmail,
     password: '',
-    rememberMe: false,
+    rememberMe: location.state?.email ? false : (rememberedChoice || !!rememberedEmail),
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +42,7 @@ export const Login = () => {
   // Resend verification state
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendStatus, setResendStatus] = useState(''); // 'success' | 'error' | ''
   const [resendMessage, setResendMessage] = useState('');
 
   // Manage 30-second cooldown timer
@@ -78,6 +90,7 @@ export const Login = () => {
     setServerError('');
     setServerErrorCode('');
     setResendMessage('');
+    setResendStatus('');
 
     if (!validate()) return;
 
@@ -86,7 +99,17 @@ export const Login = () => {
     setSubmitting(false);
 
     if (result.success) {
-      navigate(returnTo, { replace: true });
+      if (formData.rememberMe) {
+        localStorage.setItem('mockmate_remembered_email', formData.email.trim());
+        localStorage.setItem('assistant_remembered_email', formData.email.trim());
+        localStorage.setItem('mockmate_remember_me', 'true');
+      } else {
+        localStorage.removeItem('mockmate_remembered_email');
+        localStorage.removeItem('assistant_remembered_email');
+        localStorage.removeItem('mockmate_remember_me');
+      }
+      const target = returnTo === '/login' ? '/dashboard' : returnTo;
+      navigate(target, { replace: true });
     } else {
       setServerErrorCode(result.code || '');
       setServerError(result.message || 'Invalid email or password');
@@ -100,12 +123,24 @@ export const Login = () => {
     if (resendCooldown > 0 || resending || !unverifiedEmail) return;
 
     setResending(true);
+    setResendMessage('');
+    setResendStatus('');
     try {
-      await apiService.resendVerification(unverifiedEmail);
-      setResendMessage('Verification link sent! Please check your inbox.');
-      setResendCooldown(30);
+      const res = await apiService.resendVerification(unverifiedEmail);
+      if (res.success && res.emailSent) {
+        setResendStatus('success');
+        setResendMessage(res.message || 'Verification code sent! Please check your inbox.');
+        setResendCooldown(30);
+      } else {
+        setResendStatus('error');
+        setResendMessage(res.message || 'Could not send verification email. Please try again later.');
+      }
     } catch (err) {
-      setResendMessage(err.message || 'Unable to resend verification email.');
+      setResendStatus('error');
+      setResendMessage(err.message || 'Unable to resend verification code.');
+      if (err.status === 429) {
+        setResendCooldown(err.retryAfter || 30);
+      }
     } finally {
       setResending(false);
     }
@@ -144,6 +179,16 @@ export const Login = () => {
             </div>
           )}
 
+          {location.state?.accountDeleted && (
+            <div className="auth-alert auth-alert-success" role="status">
+              <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <strong>Account deleted successfully</strong>
+                <div>Your account and all associated data have been permanently removed from the server.</div>
+              </div>
+            </div>
+          )}
+
           {location.state?.sessionExpired && (
             <div className="auth-alert auth-alert-warning" role="alert">
               <Clock size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -158,13 +203,16 @@ export const Login = () => {
               <div style={{ width: '100%' }}>
                 <strong>Email not verified</strong>
                 <p style={{ margin: '4px 0 8px 0', fontSize: '0.825rem' }}>
-                  Please click the link in your verification email before logging in.
+                  Please enter the 6-digit verification code sent to your email before logging in (codes are valid for 1 minute).
                 </p>
-                {resendMessage ? (
-                  <div style={{ fontSize: '0.825rem', color: '#15803d', fontWeight: 600 }}>
-                    {resendMessage}
-                  </div>
-                ) : (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '8px' }}>
+                  <Link
+                    to={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                    className="auth-submit-btn"
+                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', padding: '0.35rem 0.75rem', width: 'auto' }}
+                  >
+                    Enter Verification Code &rarr;
+                  </Link>
                   <button
                     type="button"
                     onClick={handleResendVerification}
@@ -179,9 +227,14 @@ export const Login = () => {
                     ) : resendCooldown > 0 ? (
                       `Resend in ${resendCooldown}s`
                     ) : (
-                      'Resend Verification Link'
+                      'Resend Verification Code'
                     )}
                   </button>
+                </div>
+                {resendMessage && (
+                  <div style={{ fontSize: '0.825rem', color: resendStatus === 'error' ? '#ef4444' : '#15803d', fontWeight: 600 }}>
+                    {resendMessage}
+                  </div>
                 )}
               </div>
             </div>

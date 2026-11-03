@@ -1,0 +1,10 @@
+{
+  "model": "mockmate-hr100",
+  "task": "cx",
+  "rows": 50,
+  "valid_json": 50,
+  "seconds_per_row_median": 4.02997088432312,
+  "total_minutes": 3.5,
+  "time_exact": 49,
+  "space_exact": 48
+}

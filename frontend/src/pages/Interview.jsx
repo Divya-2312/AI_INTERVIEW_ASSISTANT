@@ -123,6 +123,56 @@ const computeHRDeliveryMetrics = (segments) => {
   };
 };
 
+const computeTheorySpeechFeedback = (segments) => {
+  try {
+    if (!Array.isArray(segments) || segments.length === 0) return null;
+    const metrics = computeHRDeliveryMetrics(segments);
+    let approximateWpm = null;
+    if (segments.length >= 2) {
+      const firstTs = segments[0].timestamp;
+      const lastTs = segments[segments.length - 1].timestamp;
+      const durationSeconds = (lastTs - firstTs) / 1000;
+      if (durationSeconds > 0) {
+        const transcript = segments.slice(1).map((s) => s.text).join(' ').trim();
+        const words = transcript.toLowerCase().match(/[a-z']+/g) || [];
+        const rawWpm = Math.round((words.length / durationSeconds) * 60);
+        if (rawWpm >= 40 && rawWpm <= 250) {
+          approximateWpm = rawWpm;
+        }
+      }
+    }
+    const tips = [];
+    if ((metrics?.fillerFrequencyPer100Words ?? 0) >= 5) {
+      tips.push("Use fewer filler words; pause briefly instead");
+    }
+    if ((metrics?.noticeablePauseCount ?? 0) >= 3) {
+      tips.push("Several long pauses; prepare your key points first");
+    }
+    if ((metrics?.repetitionCount ?? 0) >= 2) {
+      tips.push("Avoid repeating phrases; finish one thought before the next");
+    }
+    if (metrics?.sentenceCompleteness === 'possible_fragment') {
+      tips.push("Your answer may have ended mid-sentence");
+    }
+    if (approximateWpm !== null && approximateWpm !== undefined) {
+      if (approximateWpm < 90) {
+        tips.push("Pace is slow; try to speak a little faster");
+      } else if (approximateWpm > 180) {
+        tips.push("Pace is fast; slow down slightly");
+      }
+    }
+    const rating = tips.length >= 3 ? "Needs work" : (tips.length >= 1 ? "Fair" : "Clear");
+    return {
+      metrics,
+      approximateWpm,
+      rating,
+      tips,
+    };
+  } catch (err) {
+    return null;
+  }
+};
+
 export const Interview = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -136,6 +186,7 @@ export const Interview = () => {
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [validationError, setValidationError] = useState('');
   const [lastEvalFeedback, setLastEvalFeedback] = useState(null);
+  const [lastHRVoiceFeedback, setLastHRVoiceFeedback] = useState(null);
   const [pendingNextQuestion, setPendingNextQuestion] = useState(null);
   const [isInterviewCompleted, setIsInterviewCompleted] = useState(false);
   const [isFollowUpBadge, setIsFollowUpBadge] = useState(false);
@@ -150,6 +201,140 @@ export const Interview = () => {
   const languageRejectedRef = React.useRef(false);
   const interviewTypeRef = React.useRef(null);
   interviewTypeRef.current = interview?.type;
+  const audioChunksRef = React.useRef([]);
+  const mediaRecorderRef = React.useRef(null);
+  const audioStreamRef = React.useRef(null);
+  const [isAnalyzingAudioDelivery, setIsAnalyzingAudioDelivery] = useState(false);
+  const [isVoiceSettling, setIsVoiceSettling] = useState(false);
+  const voiceStateRef = React.useRef({
+    token: 0,
+    questionId: null,
+    controller: null,
+    feedback: null,
+    timeoutId: null,
+  });
+
+  const stopMediaRecording = () => {
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+    } catch (e) {}
+    try {
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach((track) => track.stop());
+        audioStreamRef.current = null;
+      }
+    } catch (e) {}
+  };
+
+  const triggerVoiceAnalysis = () => {
+    const capturedChunks = [...(audioChunksRef.current || [])];
+    if (!capturedChunks || capturedChunks.length === 0) return;
+    const isVoiceEligible = interview?.type === 'hr' || (interview?.type === 'technical' && (currentQuestion?.questionFormat || 'theory') === 'theory');
+    if (!isVoiceEligible) return;
+
+    const targetQId = currentQuestion?.id || currentQuestion?.questionId || `q-${questionCount}`;
+    const token = ++voiceStateRef.current.token;
+    voiceStateRef.current.questionId = targetQId;
+    setIsVoiceSettling(true);
+    setIsAnalyzingAudioDelivery(true);
+
+    // 20s safety timeout
+    clearTimeout(voiceStateRef.current.timeoutId);
+    voiceStateRef.current.timeoutId = setTimeout(() => {
+      if (voiceStateRef.current.token === token) {
+        setIsVoiceSettling(false);
+        setIsAnalyzingAudioDelivery(false);
+        const noticeMsg = 'Recording analysis unavailable (timeout). Showing the browser-based estimate.';
+        setLastHRVoiceFeedback(prev => prev ? { ...prev, recordingNotice: noticeMsg } : { recordingNotice: noticeMsg });
+      }
+    }, 20000);
+
+    const mimeType = capturedChunks[0]?.type || 'audio/webm';
+    const audioBlob = new Blob(capturedChunks, { type: mimeType });
+    const controller = new AbortController();
+    voiceStateRef.current.controller = controller;
+
+    (async () => {
+      try {
+        if (!apiService.post) {
+          apiService.post = async (endpoint, data, config = {}) => {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const authToken = localStorage.getItem('assistant_token') || localStorage.getItem('mockmate_token') || localStorage.getItem('token');
+            const query = config.params ? '?' + new URLSearchParams(config.params).toString() : '';
+            const headers = {
+              ...(config.headers || {}),
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            };
+            const postRes = await fetch(`${API_BASE_URL}${endpoint}${query}`, {
+              method: 'POST',
+              headers,
+              body: data,
+              signal: config.signal,
+              credentials: 'include',
+            });
+            let parsed = null;
+            try { parsed = await postRes.json(); } catch (_) {}
+            return { data: parsed, status: postRes.status, ok: postRes.ok };
+          };
+        }
+
+        const res = await apiService.post(
+          `/interviews/${interview._id || interview.id}/speech-delivery`,
+          audioBlob,
+          {
+            params: { questionId: targetQId },
+            headers: { 'Content-Type': mimeType },
+            signal: controller.signal,
+            transformRequest: [(d) => d],
+          }
+        );
+
+        if (voiceStateRef.current.token !== token) return; // Stale result from prior question
+        clearTimeout(voiceStateRef.current.timeoutId);
+
+        const speechDeliveryData = res.data || res;
+        if (speechDeliveryData && speechDeliveryData.success && speechDeliveryData.speechFeedback && speechDeliveryData.speechFeedback.source === 'audio') {
+          voiceStateRef.current.feedback = speechDeliveryData.speechFeedback;
+          setLastHRVoiceFeedback({
+            metrics: speechDeliveryData.speechFeedback.metrics,
+            approximateWpm: speechDeliveryData.speechFeedback.approximateWpm,
+            rating: speechDeliveryData.speechFeedback.rating,
+            tips: speechDeliveryData.speechFeedback.tips,
+            source: 'audio',
+            transcript: speechDeliveryData.speechFeedback.transcript,
+            model: speechDeliveryData.speechFeedback.model,
+          });
+        } else {
+          let failReason = speechDeliveryData?.reason || speechDeliveryData?.error;
+          if (!failReason) {
+            failReason = res.status ? `status ${res.status}` : 'no response';
+          } else if (res.status === 401 || res.status === 404) {
+            failReason = `${res.status} (${failReason})`;
+          }
+          const noticeMsg = `Recording analysis unavailable (${failReason}). Showing the browser-based estimate.`;
+          setLastHRVoiceFeedback(prev => prev ? { ...prev, recordingNotice: noticeMsg } : { recordingNotice: noticeMsg });
+        }
+      } catch (err) {
+        if (voiceStateRef.current.token !== token) return;
+        clearTimeout(voiceStateRef.current.timeoutId);
+        let errReason = 'network error';
+        if (err.name === 'AbortError') {
+          errReason = 'timeout';
+        } else if (err.message) {
+          errReason = err.message;
+        }
+        const noticeMsg = `Recording analysis unavailable (${errReason}). Showing the browser-based estimate.`;
+        setLastHRVoiceFeedback(prev => prev ? { ...prev, recordingNotice: noticeMsg } : { recordingNotice: noticeMsg });
+      } finally {
+        if (voiceStateRef.current.token === token) {
+          setIsVoiceSettling(false);
+          setIsAnalyzingAudioDelivery(false);
+        }
+      }
+    })();
+  };
   // Web Speech API accuracy depends heavily on matching the acoustic model
   // to the speaker's accent -- 'en-US' alone routinely mis-hears real
   // English words from non-US accents (e.g. "related" -> "regulated",
@@ -163,6 +348,7 @@ export const Interview = () => {
   // separate from interim guesses so a rejected/garbled interim chunk never
   // gets baked into the answer permanently.
   const committedTranscriptRef = React.useRef('');
+  const baseTextRef = React.useRef('');
 
   useEffect(() => {
     const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -204,7 +390,7 @@ export const Interview = () => {
           // -- otherwise continuous dictation reads back with a full stop
           // after every natural pause instead of only at real sentence ends.
           const cleaned = stripAutoFullStop(text);
-          if (interviewTypeRef.current === 'hr' && cleaned) {
+          if (cleaned) {
             speechSegmentsRef.current.push({ text: cleaned, timestamp: Date.now() });
           }
           committedTranscriptRef.current = `${committedTranscriptRef.current} ${cleaned}`.trim();
@@ -217,12 +403,13 @@ export const Interview = () => {
       // confidently hear as English is rejected, never graded as an answer.
       if (sawUnrecognizable) {
         languageRejectedRef.current = true;
-        setSpeechError("Couldn't understand the language.");
+        setSpeechError("Couldn't understand the language. Please speak in English.");
       } else if ((interim || committedTranscriptRef.current) && !languageRejectedRef.current) {
         setSpeechError('');
       }
 
-      const combined = `${committedTranscriptRef.current} ${interim}`.trim();
+      const speechCombined = `${committedTranscriptRef.current} ${interim}`.trim();
+      const combined = `${baseTextRef.current}${speechCombined}`.trim();
       // When a chunk was rejected, always refresh the box -- even to empty -- so
       // the non-English guess shown while speaking can't remain as the answer.
       if (combined || sawUnrecognizable) setCurrentAnswer(combined);
@@ -233,7 +420,8 @@ export const Interview = () => {
       const messages = {
         'no-speech': "I didn't hear anything. Please try again.",
         'audio-capture': 'No microphone was found. Please check your device.',
-        'not-allowed': 'Microphone access was blocked. Please allow microphone permission.',
+        'not-allowed': 'Microphone access was blocked. Please allow microphone permission in your browser settings.',
+        'permission-denied': 'Microphone access was blocked. Please allow microphone permission in your browser settings.',
         'language-not-supported': 'English speech recognition is not available on this device.',
         network: 'A network error interrupted speech recognition. Please try again.',
       };
@@ -242,6 +430,7 @@ export const Interview = () => {
 
     recognition.onend = () => {
       setIsListening(false);
+      stopMediaRecording();
     };
 
     recognitionRef.current = recognition;
@@ -252,21 +441,68 @@ export const Interview = () => {
   }, [speechLang]);
 
   const toggleSpeechInput = () => {
+    if (!speechSupported) {
+      setSpeechError('Voice input is not supported in this browser. Please use Google Chrome or Microsoft Edge.');
+      return;
+    }
     if (!recognitionRef.current || answerLockedRef.current) return;
     if (isListening) {
-      recognitionRef.current.stop();
+      stopMediaRecording();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
       setIsListening(false);
     } else {
-      if (currentQuestion?.questionFormat !== 'coding') setCurrentAnswer('');
+      baseTextRef.current = currentAnswer ? currentAnswer.trim() + ' ' : '';
       committedTranscriptRef.current = '';
       speechSegmentsRef.current = [];
+      audioChunksRef.current = [];
+      voiceStateRef.current.controller?.abort();
+      clearTimeout(voiceStateRef.current.timeoutId);
+      voiceStateRef.current.token += 1;
+      voiceStateRef.current.feedback = null;
+      setIsVoiceSettling(false);
+      setIsAnalyzingAudioDelivery(false);
+      if (interview?.type === 'hr' || (interview?.type === 'technical' && (currentQuestion?.questionFormat || 'theory') === 'theory')) {
+        try {
+          navigator.mediaDevices?.getUserMedia({ audio: true }).then((stream) => {
+            audioStreamRef.current = stream;
+            const recorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = recorder;
+            recorder.ondataavailable = (event) => {
+              if (event.data && event.data.size > 0) {
+                audioChunksRef.current.push(event.data);
+              }
+            };
+            recorder.onstop = () => {
+              triggerVoiceAnalysis();
+            };
+            recorder.start(250);
+          }).catch(() => {});
+        } catch (recErr) {}
+      }
       languageRejectedRef.current = false;
       setSpeechError('');
       if (validationError) setValidationError('');
-      recognitionRef.current.start();
-      setIsListening(true);
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        console.error('Speech recognition start failed', err);
+      }
     }
   };
+
+  useEffect(() => {
+    return () => {
+      stopMediaRecording();
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const loadInterview = async () => {
@@ -348,6 +584,7 @@ export const Interview = () => {
       recognitionRef.current.stop();
       setIsListening(false);
     }
+    stopMediaRecording();
 
     // Immediately lock the answer and disable submission while in flight
     answerLockedRef.current = true;
@@ -355,8 +592,16 @@ export const Interview = () => {
     setEvaluating(true);
     setValidationError('');
     setLastEvalFeedback(null);
+    if (!voiceStateRef.current.feedback) {
+      setLastHRVoiceFeedback(null);
+    }
 
     try {
+      const isSpokenTheory = interview.type === 'technical' &&
+        (currentQuestion?.questionFormat || 'theory') === 'theory' &&
+        speechSegmentsRef.current.length > 0;
+      const theorySpeechFeedback = isSpokenTheory ? computeTheorySpeechFeedback(speechSegmentsRef.current) : null;
+
       const payload = {
         questionId: currentQuestion?.id || currentQuestion?.questionId || `q-${questionCount}`,
         questionIndex: questionCount - 1,
@@ -371,6 +616,7 @@ export const Interview = () => {
         ...(interview.type === 'hr' && speechSegmentsRef.current.length > 0
           ? { hrDeliveryMetrics: computeHRDeliveryMetrics(speechSegmentsRef.current) }
           : {}),
+        ...(voiceStateRef.current.feedback ? { speechFeedback: voiceStateRef.current.feedback } : (theorySpeechFeedback ? { speechFeedback: theorySpeechFeedback } : {})),
         // Carried through so the backend can record the real
         // distinguishing content for this question (codeSnippet for
         // "predict the output", title for coding) -- without these, every
@@ -382,6 +628,62 @@ export const Interview = () => {
       };
 
       const res = await apiService.submitAnswer(interview._id || interview.id, payload);
+
+      try {
+        const isTheoryQuestion = currentQuestion?.questionFormat === 'theory';
+        if ((interview.type === 'hr' || isTheoryQuestion) && speechSegmentsRef.current.length > 0) {
+          const clientDeliveryMetrics = computeHRDeliveryMetrics(speechSegmentsRef.current);
+          let approximateWpm = null;
+          if (speechSegmentsRef.current.length >= 2) {
+            const segs = speechSegmentsRef.current;
+            const firstTs = segs[0].timestamp;
+            const lastTs = segs[segs.length - 1].timestamp;
+            const durationSeconds = (lastTs - firstTs) / 1000;
+            if (durationSeconds > 0) {
+              const transcript = segs.slice(1).map((s) => s.text).join(' ').trim();
+              const words = transcript.toLowerCase().match(/[a-z']+/g) || [];
+              const rawWpm = Math.round((words.length / durationSeconds) * 60);
+              if (rawWpm >= 40 && rawWpm <= 250) {
+                approximateWpm = rawWpm;
+              }
+            }
+          }
+          const effectiveMetrics = res.evaluation?.deliveryMetrics || res.answer?.deliveryMetrics || clientDeliveryMetrics;
+          if (voiceStateRef.current.feedback) {
+            const fb = voiceStateRef.current.feedback;
+            setLastHRVoiceFeedback({
+              metrics: fb.metrics,
+              approximateWpm: fb.approximateWpm,
+              rating: fb.rating,
+              tips: fb.tips,
+              source: 'audio',
+              transcript: fb.transcript,
+              model: fb.model,
+            });
+          } else {
+            setLastHRVoiceFeedback({
+              metrics: effectiveMetrics,
+              approximateWpm,
+            });
+          }
+        } else {
+          setLastHRVoiceFeedback(null);
+        }
+      } catch (voiceFeedbackErr) {
+        if (!voiceStateRef.current.feedback) {
+          setLastHRVoiceFeedback(null);
+        }
+      }
+
+      if ((interview?.type === 'hr' || (interview?.type === 'technical' && (currentQuestion?.questionFormat || 'theory') === 'theory')) && speechSegmentsRef.current.length > 0) {
+        if (!audioChunksRef.current || audioChunksRef.current.length === 0) {
+          const noAudioMsg = 'Recording analysis unavailable (no audio captured). Showing the browser-based estimate.';
+          console.warn(noAudioMsg);
+          setLastHRVoiceFeedback(prev => prev ? { ...prev, recordingNotice: noAudioMsg } : { recordingNotice: noAudioMsg });
+        } else if (!voiceStateRef.current.feedback && !isVoiceSettling) {
+          triggerVoiceAnalysis();
+        }
+      }
 
       const normalizedEval = normalizeEvaluation(res.evaluation);
       if (normalizedEval) {
@@ -439,6 +741,14 @@ export const Interview = () => {
   };
 
   const handleAdvanceToNextQuestion = () => {
+    voiceStateRef.current.controller?.abort();
+    clearTimeout(voiceStateRef.current.timeoutId);
+    voiceStateRef.current.token += 1;
+    voiceStateRef.current.feedback = null;
+    voiceStateRef.current.questionId = null;
+    setIsVoiceSettling(false);
+    setIsAnalyzingAudioDelivery(false);
+
     if (pendingNextQuestion) {
       setCurrentQuestion(pendingNextQuestion);
       setQuestionCount((prev) => Math.min(prev + 1, totalQ));
@@ -450,9 +760,12 @@ export const Interview = () => {
       setPendingNextQuestion(null);
     }
     setLastEvalFeedback(null);
+    setLastHRVoiceFeedback(null);
     setIsFollowUpBadge(false);
     committedTranscriptRef.current = '';
     speechSegmentsRef.current = [];
+    audioChunksRef.current = [];
+    setIsAnalyzingAudioDelivery(false);
     languageRejectedRef.current = false;
     setSpeechError('');
     answerLockedRef.current = false;
@@ -546,8 +859,20 @@ export const Interview = () => {
             isSubmitted={!!lastEvalFeedback}
           />
           {validationError && (
-            <div className="speech-error-banner" style={{ marginTop: '0.6rem' }}>
-              <span>{validationError}</span>
+            <div className="speech-error-banner flex-between" style={{ marginTop: '0.6rem', padding: '0.65rem 0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={16} />
+                <span>{validationError}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAnswerSubmit}
+                disabled={evaluating}
+                style={{ marginLeft: '1rem', whiteSpace: 'nowrap' }}
+              >
+                {evaluating ? 'Retrying...' : 'Retry'}
+              </Button>
             </div>
           )}
         </div>
@@ -611,8 +936,11 @@ export const Interview = () => {
                 language={currentQuestion.language || (interview?.subject === 'dbms' ? 'sql' : 'java')}
                 questionKey={currentQuestion.questionText || currentQuestion.question || currentQuestion.title}
                 disabled={!lastEvalFeedback}
-                disabledTooltip="Submit your answer first to view the reference solution"
-                buttonText="Reference Solution"
+                disabledTooltip="Submit your answer first to view the reference answer"
+                buttonText="Reference Answer"
+                panelTitle="Reference Answer"
+                preferFetch={true}
+                emptyMessage="No verified reference answer is stored for this AI-generated question. Your answer was evaluated against the key concepts of the question."
                 preloadedSolution={
                   lastEvalFeedback?.idealAnswer ||
                   lastEvalFeedback?.referenceSolution ||
@@ -624,7 +952,44 @@ export const Interview = () => {
                             }`
                           : ''
                       }`
-                    : null)
+                    : null) ||
+                  (() => {
+                    const raw = currentQuestion?.expectedConcepts;
+                    const concepts = Array.isArray(raw)
+                      ? raw.map((c) => String(c).trim()).filter(Boolean)
+                      : typeof raw === 'string' && raw.trim()
+                        ? raw.split(',').map((c) => c.trim()).filter(Boolean)
+                        : [];
+                    return concepts.length > 0
+                      ? `Key points a good answer should cover:\n• ${concepts.join('\n• ')}`
+                      : null;
+                  })()
+                }
+              />
+            </div>
+          )}
+
+          {interview?.type === 'hr' && (
+            <div style={{ marginBottom: '0.85rem' }}>
+              <SolutionViewer
+                interviewId={interview?._id || interview?.id || id}
+                format="theory"
+                language="text"
+                questionKey={currentQuestion.questionText || currentQuestion.question || currentQuestion.title}
+                disabled={!lastEvalFeedback}
+                disabledTooltip="Submit your answer first to view the answer guide"
+                buttonText="Answer Guide"
+                panelTitle="Answer Guide"
+                preferFetch={true}
+                preloadedSolution={
+                  lastEvalFeedback?.referenceSolution
+                    ? lastEvalFeedback.referenceSolution +
+                      ((currentQuestion.expectedConcepts || []).length > 0
+                        ? '\n\nKey Concepts:\n• ' + currentQuestion.expectedConcepts.join('\n• ')
+                        : '')
+                    : ((currentQuestion.expectedConcepts || []).length > 0
+                      ? 'Key Concepts:\n• ' + currentQuestion.expectedConcepts.join('\n• ')
+                      : null)
                 }
               />
             </div>
@@ -642,11 +1007,30 @@ export const Interview = () => {
           disabled={answerLocked}
           onChange={(e) => {
             if (answerLocked) return;
+            voiceStateRef.current.feedback = null;
             setCurrentAnswer(e.target.value);
             if (validationError) setValidationError('');
           }}
           error={validationError}
         />
+
+        {validationError && (
+          <div className="speech-error-banner flex-between" style={{ marginTop: '0.75rem', padding: '0.65rem 0.85rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertCircle size={16} />
+              <span>{validationError}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAnswerSubmit}
+              disabled={evaluating}
+              style={{ marginLeft: '1rem', whiteSpace: 'nowrap' }}
+            >
+              {evaluating ? 'Retrying...' : 'Retry'}
+            </Button>
+          </div>
+        )}
 
         {/* Performance Assessment (shown after submitting an answer) */}
         {lastEvalFeedback && !evaluating && (
@@ -691,6 +1075,7 @@ export const Interview = () => {
             <ScoreBreakdown
               evaluation={{
                 ...lastEvalFeedback,
+                interviewType: interview?.type,
                 questionFormat: currentQuestion?.questionFormat || lastEvalFeedback?.questionFormat,
                 language: currentQuestion?.language || lastEvalFeedback?.language,
                 subject: interview?.subject || currentQuestion?.subject || lastEvalFeedback?.subject,
@@ -733,8 +1118,231 @@ export const Interview = () => {
                 </p>
               </div>
             )}
+
+            {interview?.type === 'hr' && (lastHRVoiceFeedback?.metrics || isAnalyzingAudioDelivery || isVoiceSettling) && (
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                  SPEECH DELIVERY
+                </div>
+                {(isAnalyzingAudioDelivery || isVoiceSettling) && (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--primary, #6366f1)', margin: '0 0 0.35rem', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span className="spinner-border spinner-border-sm" style={{ display: 'inline-block', width: '0.85rem', height: '0.85rem', border: '2px solid currentColor', borderRightColor: 'transparent', borderRadius: '50%', animation: 'spin 0.75s linear infinite' }} />
+                    Analysing your voice...
+                  </p>
+                )}
+                {lastHRVoiceFeedback?.recordingNotice && (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', margin: '0 0 0.35rem', fontStyle: 'italic' }}>
+                    {lastHRVoiceFeedback.recordingNotice}
+                  </p>
+                )}
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', margin: '0 0 0.35rem' }}>
+                  Filler words: {lastHRVoiceFeedback.metrics.fillerWordCount ?? 0} ({(lastHRVoiceFeedback.metrics.fillerFrequencyPer100Words ?? 0)} per 100 words)
+                  {' · '}Long pauses: {lastHRVoiceFeedback.metrics.noticeablePauseCount ?? 0}
+                  {' · '}Repeated words or phrases: {lastHRVoiceFeedback.metrics.repetitionCount ?? 0}
+                </p>
+                {lastHRVoiceFeedback.source === 'audio' && (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+                    Hesitation sounds (um/uh): {lastHRVoiceFeedback.metrics.hesitationSoundCount ?? 0}
+                    {' · '}Stretched words: {lastHRVoiceFeedback.metrics.stretchedWordCount ?? 0}
+                  </p>
+                )}
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+                  Sentence completeness: {lastHRVoiceFeedback.metrics.sentenceCompleteness === 'likely_complete' ? 'likely complete' : 'possible fragment'}
+                  {lastHRVoiceFeedback.approximateWpm !== null ? ` · Speaking pace (approximate): ${lastHRVoiceFeedback.approximateWpm} wpm` : ''}
+                </p>
+                {(() => {
+                  try {
+                    const metrics = lastHRVoiceFeedback.metrics;
+                    const wpm = lastHRVoiceFeedback.approximateWpm;
+                    const tips = [];
+                    if ((metrics.fillerFrequencyPer100Words ?? 0) >= 5) {
+                      tips.push("Use fewer filler words; pause briefly instead");
+                    }
+                    if ((metrics.noticeablePauseCount ?? 0) >= 3) {
+                      tips.push("Several long pauses; prepare your key points first");
+                    }
+                    if ((metrics.repetitionCount ?? 0) >= 2) {
+                      tips.push("Avoid repeating phrases; finish one thought before the next");
+                    }
+                    if (metrics.sentenceCompleteness === 'possible_fragment') {
+                      tips.push("Your answer may have ended mid-sentence");
+                    }
+                    if (wpm !== null && wpm !== undefined) {
+                      if (wpm < 90) {
+                        tips.push("Pace is slow; try to speak a little faster");
+                      } else if (wpm > 180) {
+                        tips.push("Pace is fast; slow down slightly");
+                      }
+                    }
+
+                    const rating = tips.length >= 3 ? "Needs work" : (tips.length >= 1 ? "Fair" : "Clear");
+                    const existingObs = Array.isArray(metrics.observations) ? metrics.observations : [];
+                    const displayTips = tips.filter(t => !existingObs.some(o => o.toLowerCase().includes(t.toLowerCase().slice(0, 15)))).slice(0, 3);
+
+                    return (
+                      <div style={{ marginTop: '0.4rem' }}>
+                        <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.25rem' }}>
+                          Delivery summary: <span style={{ color: rating === 'Clear' ? 'var(--success, #10b981)' : rating === 'Fair' ? 'var(--warning, #f59e0b)' : 'var(--danger, #ef4444)' }}>{rating}</span>
+                        </p>
+                        {existingObs.length > 0 && (
+                          <ul className="analysis-list">
+                            {existingObs.map((observation, observationIndex) => (
+                              <li key={`obs-${observationIndex}`}>{observation}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {displayTips.length > 0 ? (
+                          <ul className="analysis-list">
+                            {displayTips.map((tip, tipIdx) => (
+                              <li key={`tip-${tipIdx}`}>{tip}</li>
+                            ))}
+                          </ul>
+                        ) : (existingObs.length === 0 && (
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.25rem' }}>
+                            Delivery was clear.
+                          </p>
+                        ))}
+                      </div>
+                    );
+                  } catch (e) {
+                    return null;
+                  }
+                })()}
+                {lastHRVoiceFeedback.source === 'audio' && lastHRVoiceFeedback.transcript && (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', margin: '0.35rem 0', fontStyle: 'italic' }}>
+                    Heard in your recording: {lastHRVoiceFeedback.transcript.slice(0, 300)}
+                  </p>
+                )}
+                {lastHRVoiceFeedback.source === 'audio' ? (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0', fontWeight: 500 }}>
+                    Analysed from your recording
+                  </p>
+                ) : (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                    Approximate findings from browser-recognized text and callback timing, not audio or prosody analysis.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
+
+        {/* Speech Evaluation (separate card for technical theory spoken answers) */}
+        {(() => {
+          try {
+            if (
+              interview?.type !== 'hr' &&
+              currentQuestion?.questionFormat === 'theory' &&
+              (lastHRVoiceFeedback?.metrics || isAnalyzingAudioDelivery || isVoiceSettling) &&
+              !evaluating
+            ) {
+              const metrics = lastHRVoiceFeedback?.metrics || {};
+              const wpm = lastHRVoiceFeedback?.approximateWpm ?? null;
+
+              const tips = [];
+              if ((metrics.fillerFrequencyPer100Words ?? 0) >= 5) {
+                tips.push("Use fewer filler words; pause briefly instead");
+              }
+              if ((metrics.noticeablePauseCount ?? 0) >= 3) {
+                tips.push("Several long pauses; prepare your key points first");
+              }
+              if ((metrics.repetitionCount ?? 0) >= 2) {
+                tips.push("Avoid repeating phrases; finish one thought before the next");
+              }
+              if (metrics.sentenceCompleteness === 'possible_fragment') {
+                tips.push("Your answer may have ended mid-sentence");
+              }
+              if (wpm !== null && wpm !== undefined) {
+                if (wpm < 90) {
+                  tips.push("Pace is slow; try to speak a little faster");
+                } else if (wpm > 180) {
+                  tips.push("Pace is fast; slow down slightly");
+                }
+              }
+
+              const rating = tips.length >= 3 ? "Needs work" : (tips.length >= 1 ? "Fair" : "Clear");
+              const existingObs = Array.isArray(metrics.observations) ? metrics.observations : [];
+              const displayTips = tips.filter(t => !existingObs.some(o => o.toLowerCase().includes(t.toLowerCase().slice(0, 15)))).slice(0, 3);
+
+              return (
+                <div className="speech-evaluation-box" style={{ marginTop: '1rem', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-subtle, #f8fafc)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+                    Speech Evaluation
+                  </div>
+                  {(isAnalyzingAudioDelivery || isVoiceSettling) && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--primary, #6366f1)', margin: '0 0 0.35rem', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span className="spinner-border spinner-border-sm" style={{ display: 'inline-block', width: '0.85rem', height: '0.85rem', border: '2px solid currentColor', borderRightColor: 'transparent', borderRadius: '50%', animation: 'spin 0.75s linear infinite' }} />
+                      Analysing your voice...
+                    </p>
+                  )}
+                  {lastHRVoiceFeedback?.recordingNotice && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', margin: '0 0 0.35rem', fontStyle: 'italic' }}>
+                      {lastHRVoiceFeedback.recordingNotice}
+                    </p>
+                  )}
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', margin: '0 0 0.35rem' }}>
+                    Filler words: {metrics.fillerWordCount ?? 0} ({(metrics.fillerFrequencyPer100Words ?? 0)} per 100 words)
+                    {' · '}Long pauses: {metrics.noticeablePauseCount ?? 0}
+                    {' · '}Repeated words or phrases: {metrics.repetitionCount ?? 0}
+                    {metrics.stammerCount !== undefined && metrics.stammerCount !== null && (
+                      <span>{' · '}Stammers or restarts: {metrics.stammerCount}</span>
+                    )}
+                  </p>
+                  {lastHRVoiceFeedback?.source === 'audio' && (
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+                      Hesitation sounds (um/uh): {metrics.hesitationSoundCount ?? 0}
+                      {' · '}Stretched words: {metrics.stretchedWordCount ?? 0}
+                    </p>
+                  )}
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+                    Sentence completeness: {metrics.sentenceCompleteness === 'likely_complete' ? 'likely complete' : 'possible fragment'}
+                    {wpm !== null && wpm !== undefined ? ` · Speaking pace (approximate): ${wpm} wpm` : ''}
+                  </p>
+                  <div style={{ marginTop: '0.4rem' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 0.25rem' }}>
+                      Delivery summary: <span style={{ color: rating === 'Clear' ? 'var(--success, #10b981)' : rating === 'Fair' ? 'var(--warning, #f59e0b)' : 'var(--danger, #ef4444)' }}>{rating}</span>
+                    </p>
+                    {existingObs.length > 0 && (
+                      <ul className="analysis-list">
+                        {existingObs.map((observation, observationIndex) => (
+                          <li key={`obs-${observationIndex}`}>{observation}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {displayTips.length > 0 ? (
+                      <ul className="analysis-list">
+                        {displayTips.map((tip, tipIdx) => (
+                          <li key={`tip-${tipIdx}`}>{tip}</li>
+                        ))}
+                      </ul>
+                    ) : (existingObs.length === 0 && (
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.25rem' }}>
+                            Delivery was clear.
+                          </p>
+                    ))}
+                  </div>
+                  {lastHRVoiceFeedback?.source === 'audio' && lastHRVoiceFeedback?.transcript && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', margin: '0.35rem 0', fontStyle: 'italic' }}>
+                      Heard in your recording: {lastHRVoiceFeedback.transcript.slice(0, 300)}
+                    </p>
+                  )}
+                  {lastHRVoiceFeedback?.source === 'audio' ? (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0', fontWeight: 500 }}>
+                      Analysed from your recording
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                      Approximate findings from browser-recognized text and callback timing, not audio or prosody analysis.
+                    </p>
+                  )}
+                </div>
+              );
+            }
+          } catch (e) {
+            return null;
+          }
+          return null;
+        })()}
 
         {/* Voice Input */}
         <div className="voice-placeholder-box flex-between">
@@ -800,12 +1408,12 @@ export const Interview = () => {
 
           {lastEvalFeedback ? (
             isInterviewCompleted || questionCount >= totalQ ? (
-              <Button onClick={handleFinishInterview} disabled={evaluating} icon={Send}>
-                {evaluating ? 'Finalizing...' : 'View Final Results'}
+              <Button onClick={handleFinishInterview} disabled={evaluating || isVoiceSettling} icon={Send}>
+                {evaluating ? 'Finalizing...' : isVoiceSettling ? 'Analysing your voice...' : 'View Final Results'}
               </Button>
             ) : (
-              <Button onClick={handleAdvanceToNextQuestion} icon={ArrowRight}>
-                Next Question &rarr;
+              <Button onClick={handleAdvanceToNextQuestion} disabled={isVoiceSettling} icon={ArrowRight}>
+                {isVoiceSettling ? 'Analysing your voice...' : 'Next Question \u2192'}
               </Button>
             )
           ) : (

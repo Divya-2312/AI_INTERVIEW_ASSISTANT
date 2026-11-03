@@ -7,6 +7,7 @@ import {
   completeInterview,
   getQuestionSolution,
   deleteInterview,
+  submitSpeechDelivery,
 } from '../controllers/interviewController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -28,5 +29,8 @@ router.route('/:id/answers')
 
 router.route('/:id/complete')
   .post(protect, completeInterview);
+
+router.route('/:id/speech-delivery')
+  .post(protect, express.raw({ type: () => true, limit: '15mb' }), submitSpeechDelivery);
 
 export default router;
